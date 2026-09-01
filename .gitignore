@@ -30,8 +30,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# local environment files and secrets
 .env*
+!.env.example
+
+# Supabase CLI local state (keep migrations and seed.sql version-controlled)
+/supabase/.temp/
+/supabase/.branches/
 
 # vercel
 .vercel
