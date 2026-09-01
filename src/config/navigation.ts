@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-export type UserRole = "admin" | "teacher" | "student"
+import type { UserRole } from "@/features/auth/roles"
 
 export interface NavigationItem {
   title: string
@@ -26,25 +26,22 @@ export interface NavigationGroup {
 
 export const roleMeta: Record<
   UserRole,
-  { label: string; home: string; profile: string; placeholderEmail: string }
+  { label: string; home: string; profile: string }
 > = {
   admin: {
     label: "Administrator",
     home: "/admin/dashboard",
     profile: "/admin/settings",
-    placeholderEmail: "admin@school.edu",
   },
   teacher: {
     label: "Teacher",
     home: "/teacher/dashboard",
     profile: "/teacher/settings",
-    placeholderEmail: "teacher@school.edu",
   },
   student: {
     label: "Student",
     home: "/student/dashboard",
     profile: "/student/profile",
-    placeholderEmail: "student@school.edu",
   },
 }
 
@@ -85,10 +82,4 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
       ],
     },
   ],
-}
-
-export function getRoleFromPathname(pathname: string): UserRole {
-  if (pathname.startsWith("/teacher")) return "teacher"
-  if (pathname.startsWith("/student")) return "student"
-  return "admin"
 }

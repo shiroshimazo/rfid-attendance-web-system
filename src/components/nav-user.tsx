@@ -6,6 +6,7 @@ import {
   CircleUser,
 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { Logo } from "@/components/logo"
 import {
@@ -23,6 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { createBrowserSupabaseClient } from "@/services/supabase/client"
 
 export function NavUser({
   user,
@@ -36,6 +38,17 @@ export function NavUser({
   profileUrl: string
 }) {
   const { isMobile } = useSidebar()
+  const router = useRouter()
+
+  async function handleSignOut() {
+    try {
+      const supabase = createBrowserSupabaseClient()
+      await supabase.auth.signOut()
+    } finally {
+      router.replace("/sign-in")
+      router.refresh()
+    }
+  }
 
   return (
     <SidebarMenu>
@@ -87,11 +100,15 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="cursor-pointer">
-              <Link href="/sign-in">
-                <LogOut />
-                Log out
-              </Link>
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onSelect={(event) => {
+                event.preventDefault()
+                void handleSignOut()
+              }}
+            >
+              <LogOut />
+              Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

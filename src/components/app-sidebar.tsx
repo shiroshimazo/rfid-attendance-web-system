@@ -2,16 +2,15 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
 import { Logo } from "@/components/logo"
 
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
-  getRoleFromPathname,
   navigationByRole,
   roleMeta,
 } from "@/config/navigation"
+import type { UserRole } from "@/features/auth/roles"
 import {
   Sidebar,
   SidebarContent,
@@ -22,9 +21,16 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const pathname = usePathname()
-  const role = getRoleFromPathname(pathname)
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  role: UserRole
+  user: {
+    name: string
+    email: string
+    avatar: string
+  }
+}
+
+export function AppSidebar({ role, user, ...props }: AppSidebarProps) {
   const meta = roleMeta[role]
 
   return (
@@ -54,11 +60,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         <NavUser
           profileUrl={meta.profile}
-          user={{
-            name: meta.label,
-            email: meta.placeholderEmail,
-            avatar: "",
-          }}
+          user={user}
         />
       </SidebarFooter>
     </Sidebar>

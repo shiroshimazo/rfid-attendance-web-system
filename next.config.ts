@@ -33,8 +33,8 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/home',
-        destination: '/admin/dashboard',
-        permanent: true,
+        destination: '/',
+        permanent: false,
       },
     ];
   },
