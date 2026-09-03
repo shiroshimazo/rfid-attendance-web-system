@@ -425,7 +425,7 @@ export function TeachersDirectory({ directory }: { directory: TeacherDirectory }
                       <AccountStatusBadge status={teacher.status} />
                     </TableCell>
                     <TableCell className="px-3 text-right">
-                      <DropdownMenu>
+                      <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"

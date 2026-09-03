@@ -4,6 +4,15 @@ import { revalidatePath } from "next/cache"
 
 import { requireRole } from "@/features/auth/server"
 import {
+  describeError as describeDatabaseError,
+  failure,
+  flattenIssues,
+  nullable,
+  success,
+  validationFailureMessage,
+  type ActionResult,
+} from "@/features/shared/actions"
+import {
   accountStatuses,
   createTeacherSchema,
   teacherIdSchema,
@@ -14,42 +23,13 @@ import {
 import { createAdminSupabaseClient } from "@/services/supabase/admin"
 import { createServerSupabaseClient } from "@/services/supabase/server"
 
-export interface ActionResult {
-  ok: boolean
-  message: string
-  /** Field-level messages keyed by dotted form path, when validation failed. */
-  fieldErrors?: Record<string, string>
-}
-
 const TEACHERS_PATH = "/admin/teachers"
 
-/** Empty strings from the form are stored as SQL NULL, never as blanks. */
-function nullable(value: string | undefined) {
-  const trimmed = value?.trim()
-  return trimmed ? trimmed : null
-}
-
-function failure(message: string, fieldErrors?: Record<string, string>) {
-  return { ok: false as const, message, fieldErrors }
-}
-
-function flattenIssues(issues: { path: PropertyKey[]; message: string }[]) {
-  const fieldErrors: Record<string, string> = {}
-
-  for (const issue of issues) {
-    const path = issue.path.map(String).join(".")
-    if (path && !fieldErrors[path]) fieldErrors[path] = issue.message
-  }
-
-  return fieldErrors
-}
-
 function describeError(error: { message: string; code?: string }) {
-  if (error.code === "23505") {
-    return "A teacher with that ID or email already exists."
-  }
-
-  return error.message
+  return describeDatabaseError(
+    error,
+    "A teacher with that ID or email already exists."
+  )
 }
 
 type AssignmentValues = {
@@ -90,10 +70,7 @@ export async function createTeacherAction(
   const parsed = createTeacherSchema.safeParse(input)
 
   if (!parsed.success) {
-    return failure(
-      "Check the highlighted fields and try again.",
-      flattenIssues(parsed.error.issues)
-    )
+    return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
   }
 
   const values = parsed.data
@@ -171,7 +148,7 @@ export async function createTeacherAction(
 
   revalidatePath(TEACHERS_PATH)
 
-  return { ok: true, message: `${values.fullName} was added.` }
+  return success(`${values.fullName} was added.`)
 }
 
 export async function updateTeacherAction(
@@ -182,10 +159,7 @@ export async function updateTeacherAction(
   const parsed = updateTeacherSchema.safeParse(input)
 
   if (!parsed.success) {
-    return failure(
-      "Check the highlighted fields and try again.",
-      flattenIssues(parsed.error.issues)
-    )
+    return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
   }
 
   const values = parsed.data
@@ -265,7 +239,7 @@ export async function updateTeacherAction(
 
   revalidatePath(TEACHERS_PATH)
 
-  return { ok: true, message: `${values.fullName} was updated.` }
+  return success(`${values.fullName} was updated.`)
 }
 
 export async function setTeacherStatusAction(
@@ -316,11 +290,9 @@ export async function setTeacherStatusAction(
 
   revalidatePath(TEACHERS_PATH)
 
-  return {
-    ok: true,
-    message:
-      status === "archived"
-        ? `${teacher.full_name} was archived.`
-        : `${teacher.full_name} was restored.`,
-  }
+  return success(
+    status === "archived"
+      ? `${teacher.full_name} was archived.`
+      : `${teacher.full_name} was restored.`
+  )
 }
