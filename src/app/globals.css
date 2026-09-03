@@ -170,3 +170,33 @@ html {
 .animate-logo-scroll:hover {
   animation-play-state: paused;
 }
+
+/* Print-to-PDF for report pages */
+@media print {
+  [data-slot="sidebar"],
+  [data-slot="sidebar-gap"],
+  [data-slot="sidebar-container"],
+  [data-slot="sidebar-rail"],
+  [data-slot="sidebar-inset"] > header,
+  [data-print="hide"] {
+    display: none !important;
+  }
+
+  [data-slot="sidebar-inset"] {
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  [data-print="region"] {
+    padding: 0 !important;
+  }
+
+  [data-print="block"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  body {
+    background: #fff !important;
+  }
+}
