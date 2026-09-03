@@ -20,6 +20,7 @@ import {
 import { createServerSupabaseClient } from "@/services/supabase/server"
 
 const SETTINGS_PATH = "/admin/settings"
+const STUDENT_PROFILE_PATH = "/student/profile"
 
 /** Supabase Auth errors are technical, so the common ones are reworded. */
 function describeAuthError(error: { message: string; code?: string }) {
@@ -132,6 +133,34 @@ export async function changeAdminPasswordAction(
   }
 
   revalidatePath(SETTINGS_PATH)
+
+  return success("Your password was changed.")
+}
+
+export async function changeStudentPasswordAction(
+  input: ChangePasswordInput
+): Promise<ActionResult> {
+  await requireRole("student")
+
+  const parsed = changePasswordSchema.safeParse(input)
+
+  if (!parsed.success) {
+    return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
+  }
+
+  const supabase = await createServerSupabaseClient()
+
+  // Supabase hashes and stores the credential; the plain value is never kept.
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  })
+
+  if (error) {
+    const message = describeAuthError(error)
+    return failure(message, { password: message })
+  }
+
+  revalidatePath(STUDENT_PROFILE_PATH)
 
   return success("Your password was changed.")
 }
