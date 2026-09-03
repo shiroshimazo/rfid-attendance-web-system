@@ -13,7 +13,14 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-export function DashboardErrorCard({ message }: { message: string }) {
+/** Inline failure panel for a server-rendered section that could not load. */
+export function DataErrorCard({
+  title = "This data could not be loaded",
+  message,
+}: {
+  title?: string
+  message: string
+}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -23,7 +30,7 @@ export function DashboardErrorCard({ message }: { message: string }) {
         <div className="flex size-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
           <AlertTriangle aria-hidden className="size-5" />
         </div>
-        <CardTitle>Dashboard data could not be loaded</CardTitle>
+        <CardTitle>{title}</CardTitle>
         <CardDescription className="text-pretty">{message}</CardDescription>
       </CardHeader>
       <CardContent>

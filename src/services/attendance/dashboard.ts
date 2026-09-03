@@ -1,5 +1,4 @@
-import type { PostgrestError } from "@supabase/supabase-js"
-
+import { fetchAllRows } from "@/services/supabase/pagination"
 import { createServerSupabaseClient } from "@/services/supabase/server"
 
 export type AttendanceStatus = "Present" | "Late" | "Absent" | "Excused"
@@ -12,7 +11,7 @@ export interface StudentRow {
   full_name: string
   year_level: string
   section: string
-  course: string
+  program_id: number
 }
 
 export interface AttendanceRow {
@@ -41,32 +40,6 @@ export interface DashboardSnapshotRange {
   toDate: string
 }
 
-/** PostgREST caps a single response at 1000 rows, so every read is paginated. */
-const PAGE_SIZE = 1000
-const MAX_PAGES = 25
-
-type PageResponse<T> = { data: T[] | null; error: PostgrestError | null }
-
-async function fetchAllRows<T>(
-  loadPage: (from: number, to: number) => PromiseLike<PageResponse<T>>
-): Promise<T[]> {
-  const rows: T[] = []
-
-  for (let page = 0; page < MAX_PAGES; page += 1) {
-    const from = page * PAGE_SIZE
-    const { data, error } = await loadPage(from, from + PAGE_SIZE - 1)
-
-    if (error) throw new Error(error.message)
-    if (!data || data.length === 0) break
-
-    rows.push(...data)
-
-    if (data.length < PAGE_SIZE) break
-  }
-
-  return rows
-}
-
 /**
  * Reads every row the admin dashboard aggregates from. Row Level Security
  * already restricts these tables to admin and teacher accounts, so no
@@ -82,7 +55,7 @@ export async function fetchAdminDashboardSnapshot({
     fetchAllRows<StudentRow>((from, to) =>
       supabase
         .from("students")
-        .select("id, student_id, full_name, year_level, section, course")
+        .select("id, student_id, full_name, year_level, section, program_id")
         .eq("status", "active")
         .order("full_name", { ascending: true })
         .range(from, to)

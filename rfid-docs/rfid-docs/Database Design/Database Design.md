@@ -8,6 +8,8 @@ The main purpose of the database is to manage:
 -   User authentication and roles
 -   Student information
 -   Teacher information
+-   Degree programs and courses/subjects
+-   Teacher class assignments
 -   RFID card assignment
 -   Attendance records
 -   Parent SMS notifications
@@ -122,7 +124,7 @@ Stores student personal, academic, and parent information.
 
     section
 
-    course
+    program_id (FK)
 
     campus
 
@@ -139,6 +141,9 @@ Stores student personal, academic, and parent information.
 
     Student ID:
     2026-001
+
+    Program:
+    BSIT
 
     Year Level:
     1st Year
@@ -183,8 +188,6 @@ Stores teacher profile and employment information.
 
     department
 
-    course
-
     date_hired
 
     status
@@ -199,10 +202,11 @@ Stores teacher profile and employment information.
     T-001
 
     Department:
-    BSIT
+    College of Computer Studies
 
-    Course:
-    IT Fundamentals
+Course/subject, program, year level, section, and campus are stored in
+the Teacher Assignments table because a teacher may handle multiple
+classes.
 
 ------------------------------------------------------------------------
 
@@ -350,14 +354,47 @@ Tracks SMS notifications sent to parents or guardians.
 
 ------------------------------------------------------------------------
 
-# 7. Courses Table
+# 7. Programs Table
 
 ### Purpose
 
-Stores department and course information.
+Stores degree programs such as BSIT and BSHM. A program is not a
+course/subject.
 
-This supports academic classification such as BSIT, BSHM, and other
-programs.
+### Table Structure
+
+    programs
+
+    id (PK)
+
+    program_code
+
+    program_name
+
+    department
+
+    status
+
+    created_at
+
+    updated_at
+
+### Example
+
+    Program Code:
+    BSIT
+
+    Program Name:
+    Bachelor of Science in Information Technology
+
+------------------------------------------------------------------------
+
+# 8. Courses Table
+
+### Purpose
+
+Stores courses or subjects taught within a program, such as IPT, ITE,
+and MS101.
 
 ### Table Structure
 
@@ -365,42 +402,97 @@ programs.
 
     id (PK)
 
-    department
+    program_id (FK)
+
+    course_code
 
     course_name
 
     created_at
 
+    updated_at
+
 ### Example
 
-    Department:
+    Program:
     BSIT
 
-    Courses:
-
+    Course Code:
     IPT
-    ITE
-    MS101
+
+    Course Name:
+    Integrative Programming and Technologies
+
+------------------------------------------------------------------------
+
+# 9. Teacher Assignments Table
+
+### Purpose
+
+Connects a teacher to a program, course/subject, year level, section,
+and campus. This allows one teacher to handle multiple classes without
+duplicating the teacher profile.
+
+### Table Structure
+
+    teacher_assignments
+
+    id (PK)
+
+    teacher_id (FK)
+
+    program_id (FK)
+
+    course_id (FK)
+
+    year_level
+
+    section
+
+    campus
+
+    status
+
+    created_at
+
+    updated_at
+
+### Example
+
+    Teacher:
+    Maria Santos
+
+    Program:
+    BSIT
+
+    Course/Subject:
+    IPT
+
+    Year Level:
+    1st Year
+
+    Section:
+    BSIT-1A
 
 ------------------------------------------------------------------------
 
 # Database Relationship Diagram
 
-                     USERS
-                       |
-            +----------+----------+
-            |                     |
-            v                     v
-       TEACHERS              STUDENTS
-                                  |
-                                  |
-                           RFID CARDS
-                                  |
-                                  |
-                           ATTENDANCE
-                                  |
-                                  |
-                         SMS NOTIFICATIONS
+                         USERS
+                           |
+                +----------+----------+
+                |                     |
+                v                     v
+           TEACHERS                STUDENTS ------> PROGRAMS
+                |                     |
+                v                     v
+      TEACHER ASSIGNMENTS         RFID CARDS
+          |            |              |
+          v            v              v
+      PROGRAMS       COURSES       ATTENDANCE
+                                      |
+                                      v
+                              SMS NOTIFICATIONS
 
 ------------------------------------------------------------------------
 
@@ -497,7 +589,9 @@ Student can:
   RFID Cards           RFID assignment
   Attendance Records   Attendance history
   SMS Notifications    Parent notification logs
-  Courses              Academic classification
+  Programs             Degree program catalog (BSIT, BSHM)
+  Courses              Course/subject catalog (IPT, ITE, MS101)
+  Teacher Assignments  Teacher class and subject assignments
 
 ------------------------------------------------------------------------
 
@@ -506,6 +600,10 @@ Student can:
 The database supports the complete attendance workflow of the system by
 connecting user accounts, student information, RFID cards, attendance
 transactions, and parent SMS notifications.
+
+Academic data uses distinct concepts: programs are degree programs,
+courses are subjects, and teacher assignments connect teachers to
+programs, courses, year levels, sections, and campuses.
 
 The structure is designed specifically for the current system scope of
 Admin, Teacher, and Student users.

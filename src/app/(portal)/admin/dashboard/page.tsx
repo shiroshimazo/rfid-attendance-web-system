@@ -2,15 +2,15 @@ import { Suspense } from "react"
 import type { Metadata } from "next"
 import { format, parseISO } from "date-fns"
 
+import { DataErrorCard } from "@/components/data-error-card"
+import { RefreshButton } from "@/components/refresh-button"
 import { getAdminDashboardData } from "@/features/attendance/dashboard"
 
 import { AttendanceBreakdownChart } from "./components/attendance-breakdown-chart"
 import { AttendanceDistributionChart } from "./components/attendance-distribution-chart"
 import { AttendanceTrendChart } from "./components/attendance-trend-chart"
-import { DashboardErrorCard } from "./components/dashboard-error-card"
 import { DashboardSkeleton } from "./components/dashboard-skeleton"
 import { KpiCards } from "./components/kpi-cards"
-import { RefreshButton } from "./components/refresh-button"
 import { StudentAttendanceTable } from "./components/student-attendance-table"
 
 export const metadata: Metadata = {
@@ -27,7 +27,8 @@ async function DashboardContent() {
     data = await getAdminDashboardData()
   } catch (error) {
     return (
-      <DashboardErrorCard
+      <DataErrorCard
+        title="Dashboard data could not be loaded"
         message={
           error instanceof Error
             ? error.message

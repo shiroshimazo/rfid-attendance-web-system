@@ -32,3 +32,33 @@ export function formatClockTime(value: string | null | undefined) {
 
   return `${displayHour}:${String(minute).padStart(2, "0")} ${suffix}`
 }
+
+/** Two-letter monogram used by avatar fallbacks, e.g. `Maria Santos` -> `MS`. */
+export function initialsOf(name: string) {
+  const parts = name
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+
+  if (parts.length === 0) return "?"
+
+  const first = parts[0][0] ?? ""
+  const last = parts.length > 1 ? (parts[parts.length - 1][0] ?? "") : ""
+
+  return `${first}${last}`.toUpperCase()
+}
+
+/** Formats a stored `yyyy-MM-dd` date, or an em dash when it is missing. */
+export function formatDateValue(value: string | null | undefined) {
+  if (!value) return "—"
+
+  const parsed = new Date(`${value}T00:00:00`)
+
+  if (Number.isNaN(parsed.getTime())) return value
+
+  return parsed.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}

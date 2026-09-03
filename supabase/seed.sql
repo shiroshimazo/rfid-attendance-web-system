@@ -118,12 +118,23 @@ set
   identity_data = excluded.identity_data,
   updated_at = now();
 
-insert into public.courses (department, course_name)
+insert into public.programs (program_code, program_name, department)
 values
-  ('BSIT', 'IPT'),
-  ('BSIT', 'ITE'),
-  ('BSIT', 'MS101')
-on conflict (department, course_name) do nothing;
+  ('BSIT', 'Bachelor of Science in Information Technology', 'College of Computer Studies'),
+  ('BSHM', 'Bachelor of Science in Hospitality Management', 'College of Hospitality Management')
+on conflict do nothing;
+
+insert into public.courses (program_id, course_code, course_name)
+select program.id, course.course_code, course.course_name
+from (
+  values
+    ('BSIT', 'IPT', 'Integrative Programming and Technologies'),
+    ('BSIT', 'ITE', 'IT Elective'),
+    ('BSIT', 'MS101', 'MS101')
+) as course(program_code, course_code, course_name)
+join public.programs as program
+  on program.program_code = course.program_code
+on conflict do nothing;
 
 insert into public.teachers (
   user_id,
@@ -135,7 +146,6 @@ insert into public.teachers (
   email,
   phone_number,
   department,
-  course,
   date_hired,
   status
 )
@@ -148,8 +158,7 @@ values (
   'Married',
   'teacher@rfid.local',
   '+639171234567',
-  'BSIT',
-  'IPT',
+  'College of Computer Studies',
   '2022-06-01',
   'active'
 )
@@ -159,7 +168,6 @@ set
   full_name = excluded.full_name,
   email = excluded.email,
   department = excluded.department,
-  course = excluded.course,
   status = excluded.status;
 
 insert into public.students (
@@ -176,11 +184,11 @@ insert into public.students (
   parent_contact_number,
   year_level,
   section,
-  course,
+  program_id,
   campus,
   status
 )
-values (
+select
   '30000000-0000-0000-0000-000000000001',
   '2026-001',
   'Juan Dela Cruz',
@@ -194,10 +202,11 @@ values (
   '+639191234567',
   '1st Year',
   'BSIT-1A',
-  'BSIT',
+  program.id,
   'Main Campus',
   'active'
-)
+from public.programs as program
+where program.program_code = 'BSIT'
 on conflict (student_id) do update
 set
   user_id = excluded.user_id,
@@ -207,8 +216,36 @@ set
   parent_contact_number = excluded.parent_contact_number,
   year_level = excluded.year_level,
   section = excluded.section,
-  course = excluded.course,
+  program_id = excluded.program_id,
   campus = excluded.campus,
+  status = excluded.status;
+
+insert into public.teacher_assignments (
+  teacher_id,
+  program_id,
+  course_id,
+  year_level,
+  section,
+  campus,
+  status
+)
+select
+  teacher.id,
+  program.id,
+  course.id,
+  '1st Year',
+  'BSIT-1A',
+  'Main Campus',
+  'active'
+from public.teachers as teacher
+join public.programs as program on program.program_code = 'BSIT'
+join public.courses as course
+  on course.program_id = program.id
+ and course.course_code = 'IPT'
+where teacher.teacher_id = 'T-001'
+on conflict (teacher_id, course_id, year_level, section, campus) do update
+set
+  program_id = excluded.program_id,
   status = excluded.status;
 
 insert into public.rfid_cards (student_id, rfid_number, card_status, assigned_date)
@@ -277,4 +314,3 @@ where student.student_id = '2026-001'
     where existing.attendance_id = attendance.id
       and existing.sms_status = 'Sent'
   );
-

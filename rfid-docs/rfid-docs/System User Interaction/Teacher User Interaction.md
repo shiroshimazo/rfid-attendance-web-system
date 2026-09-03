@@ -20,10 +20,10 @@ Time In - Time Out - RFID Status
 
 ## Attendance Panel
 
-Filters: - Search Student - Year Level - Section - Course - Date -
+Filters: - Search Student - Program - Year Level - Section - Date -
 Status
 
-Table: - Student Name - Student ID - Year Level - Section - Course -
+Table: - Student Name - Student ID - Program - Year Level - Section -
 Attendance Status - Time In - Time Out - RFID Status
 
 Only assigned students are visible.
@@ -32,7 +32,7 @@ Only assigned students are visible.
 
 Read-only list.
 
-Columns: - Student Name - Student ID - Year Level - Section - Course -
+Columns: - Student Name - Student ID - Program - Year Level - Section -
 Attendance Status
 
 ## Reports Panel
@@ -45,6 +45,9 @@ Export: - PDF Report
 
 Teacher Profile: - Profile Picture - Full Name - Teacher ID -
 Department - Email - Phone Number
+
+Teaching Assignments: - Program - Course/Subject - Year Level - Section -
+Campus
 
 Change Password: - New Password - Confirm Password
 

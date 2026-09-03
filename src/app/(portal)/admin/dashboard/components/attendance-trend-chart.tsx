@@ -98,7 +98,7 @@ export function AttendanceTrendChart({
               aria-label="Attendance trend range"
               className="w-32 sm:hidden"
             >
-              <SelectValue />
+              <SelectValue>{activeRange.label}</SelectValue>
             </SelectTrigger>
             <SelectContent align="end">
               {ranges.map((item) => (

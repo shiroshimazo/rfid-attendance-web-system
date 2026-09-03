@@ -1,103 +1,112 @@
+## Academic Terminology
+
+- **Program**: A degree program such as BSIT or BSHM.
+- **Course/Subject**: A subject taught within a program, such as IPT, ITE, or MS101.
+- **Year Level**: The academic level, such as 1st Year or 2nd Year.
+- **Section**: A class group, such as BSIT-1A.
+
 ## Sidebar Menu
 
--   Dashboard
--   Manage Teachers
--   Manage Students
--   Manage RFID Cards
--   Attendance
--   Reports
--   Settings
+- Dashboard
+- Manage Teachers
+- Manage Students
+- Manage RFID Cards
+- Attendance
+- Reports
+- Settings
 
 ## Dashboard Panel
 
 ### KPI Cards
 
--   Total Students
--   Present Today
--   Absent Today
--   Attendance Rate
--   RFID Taps Today
+- Total Students
+- Present Today
+- Absent Today
+- Attendance Rate
+- RFID Taps Today
 
 ### Charts
 
-Line Chart: - Attendance Trend (Daily/Weekly/Monthly)
-
-Bar Chart: - Attendance by Year Level / Section
-
-Circle Chart: - Attendance Status Distribution (Present / Absent)
+- Line Chart: Attendance Trend (Daily/Weekly/Monthly)
+- Bar Chart: Attendance by Program, Year Level, or Section
+- Circle Chart: Attendance Status Distribution (Present/Absent)
 
 ### Student Attendance Status Table
 
-Columns: - Name - Year Level - Section - Attendance Status - Time In -
-Time Out - RFID Status
+Columns: Name, Program, Year Level, Section, Attendance Status, Time In,
+Time Out, and RFID Status.
 
 ## Manage Teachers
 
-Table: - No. - Teacher Name - Teacher ID - Department - Year Level -
-Email - Status - Action
+Table columns: No., Teacher Name, Teacher ID, Department, Teaching
+Assignments, Email, Status, and Actions. The Teaching Assignments column
+summarizes each assigned Program, Course/Subject, Year Level, and Section
+without duplicating the teacher row.
 
-Add Teacher Modal:
+### Add Teacher Modal
 
-Personal Information: - Profile Picture - Full Name - Gender - Date
-Birth - Civil Status - Email Address - Phone Address
+Personal Information: Profile Picture, Full Name, Gender, Date of Birth,
+Civil Status, Email Address, and Phone Number.
 
-Employment Information: - Teacher ID - Department - Course - Date
-Hired - Status
+Employment Information: Teacher ID, Department, Date Hired, and Status.
 
-Account Information: - Username - Password - Confirm Password
+Teaching Assignments: Program, Course/Subject, Year Level, Section, and
+Campus. A teacher may have multiple teaching assignments.
+
+Account Information: Email Address, Password, and Confirm Password. Email is
+the Supabase Auth login identifier; the application does not use a separate
+username.
 
 ## Manage Students
 
-Table: - No. - Student Name - Year Level - Section - RFID Number -
-Status - Actions
+Table columns: No., Student Name, Program, Year Level, Section, RFID Number,
+Status, and Actions.
 
-Add Student Modal:
+### Add Student Modal
 
-Personal: - Profile Picture - Full Name - Gender - Date Birth - Place of
-Birth - Address - Contact Number - Email
+Personal Information: Profile Picture, Full Name, Gender, Date of Birth,
+Place of Birth, Address, Contact Number, and Email.
 
-Parent: - Parent Full Name - Parent Contact Number
+Parent/Guardian Information: Full Name and Contact Number.
 
-Academic: - Student ID - Year Level - Section
+Academic Information: Student ID, Program, Year Level, Section, and Campus.
 
 ## Manage RFID Cards
 
-Table: - No. - RFID Card Number - Student Name - Student ID - Assigned
-On - Card Status - Action
+Table columns: No., RFID Card Number, Student Name, Student ID, Assigned On,
+Card Status, and Actions.
 
-Add RFID Modal: - RFID Card Number - Card Status - Search Student -
-Assign RFID
+Add RFID Modal: RFID Card Number, Card Status, Search Student, and Assign RFID.
 
 ## Attendance Panel
 
-KPI: - Total Students - Present - Absent
+KPI Cards: Total Students, Present, and Absent.
 
-Filters: - Search - Status - Year Level - Course
+Filters: Search, Status, Program, Year Level, and Section.
 
-Table: - Student Name - Year Level - Course - Attendance Status - Time
-In - Time Out
+Table columns: Student Name, Program, Year Level, Section, Attendance Status,
+Time In, and Time Out.
 
 ## Reports Panel
 
-KPI: - Total Students - Total Present - Total Absent - RFID Scans
+KPI Cards: Total Students, Total Present, Total Absent, and RFID Scans.
 
-Charts: - Attendance Summary - Attendance By Year Level - Attendance
-Status
+Charts: Attendance Summary, Attendance by Program/Year Level, and Attendance
+Status.
 
-Tables: Attendance By Sections: - Course - Total Students - Present -
-Absent - Attendance Rate
+Attendance by Section table: Program, Year Level, Section, Total Students,
+Present, Absent, and Attendance Rate.
 
-Recent Attendance Logs: - Time - Student Name - Year Level - Section -
-Status - RFID Status
+Recent Attendance Logs table: Time, Student Name, Program, Year Level,
+Section, Status, and RFID Status.
 
-Export: - PDF Report
+Export: PDF Report.
 
 ## Settings
 
-Admin Information: - Change Photo - Full Name - Email Address - Phone
-Number
+Admin Information: Change Photo, Full Name, Email Address, and Phone Number.
 
-Change Password: - New Password - Confirm Password
+Change Password: New Password and Confirm Password.
 
 Related Documents:
 [[Functional Requirement]]

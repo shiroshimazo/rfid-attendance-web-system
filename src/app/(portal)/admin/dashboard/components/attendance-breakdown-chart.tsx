@@ -78,7 +78,9 @@ export function AttendanceBreakdownChart({
             onValueChange={(value) => setGrouping(value as Grouping)}
           >
             <SelectTrigger size="sm" aria-label="Group attendance by" className="w-36">
-              <SelectValue />
+              <SelectValue>
+                {grouping === "yearLevel" ? "Year Level" : "Section"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent align="end">
               <SelectItem value="yearLevel">Year Level</SelectItem>
