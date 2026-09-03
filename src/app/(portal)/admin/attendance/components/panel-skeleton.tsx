@@ -1,0 +1,50 @@
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+
+function KpiCardSkeleton() {
+  return (
+    <Card className="gap-4">
+      <CardHeader>
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="mt-2 h-8 w-20" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-4 w-40" />
+      </CardContent>
+    </Card>
+  )
+}
+
+export function PanelSkeleton() {
+  return (
+    <div
+      aria-busy="true"
+      aria-label="Loading attendance"
+      className="flex flex-col gap-4 md:gap-6"
+    >
+      <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
+        {Array.from({ length: 3 }, (_, index) => (
+          <KpiCardSkeleton key={index} />
+        ))}
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {Array.from({ length: 6 }, (_, index) => (
+          <Skeleton key={index} className="h-9 w-full" />
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-44" />
+          <Skeleton className="mt-2 h-4 w-64" />
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {Array.from({ length: 10 }, (_, index) => (
+            <Skeleton key={index} className="h-11 w-full" />
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

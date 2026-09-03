@@ -89,3 +89,23 @@ export const databaseIdSchema = z.coerce.number().int().positive()
 /** Selects submit strings, so catalog ids are coerced back to numbers. */
 export const selectedId = (message: string) =>
   z.coerce.number().int(message).positive(message)
+
+export const rfidCardStatuses = [
+  "Active",
+  "Inactive",
+  "Lost",
+  "Deactivated",
+] as const
+
+/** RFID numbers are printed in mixed case, so they are normalised upwards. */
+export const rfidNumberField = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .min(4, "Enter the number printed on the card")
+  .max(64)
+  .regex(/^[A-Z0-9:-]+$/, "Use letters, digits, colons, or hyphens only")
+
+/** HTML date inputs that must be filled in before the form can be sent. */
+export const requiredDate = (message: string) =>
+  z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, message)

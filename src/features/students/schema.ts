@@ -11,18 +11,14 @@ import {
   optionalUrl,
   passwordFields,
   passwordsMatch,
+  requiredDate,
   requiredText,
+  rfidCardStatuses,
+  rfidNumberField,
   selectedId,
 } from "@/features/shared/schema"
 
-export { accountStatuses, genderOptions }
-
-export const rfidCardStatuses = [
-  "Active",
-  "Inactive",
-  "Lost",
-  "Deactivated",
-] as const
+export { accountStatuses, genderOptions, rfidCardStatuses }
 
 /** Fields shared by the browser form and the authoritative server schema. */
 const studentFields = {
@@ -77,23 +73,10 @@ export const updateStudentSchema = studentProfileSchema.extend({
   id: databaseIdSchema,
 })
 
-/** RFID numbers are printed in mixed case, so they are normalised upwards. */
 export const rfidAssignmentFormSchema = z.object({
-  rfidNumber: z
-    .string()
-    .trim()
-    .toUpperCase()
-    .min(4, "Enter the number printed on the card")
-    .max(64)
-    .regex(
-      /^[A-Z0-9:-]+$/,
-      "Use letters, digits, colons, or hyphens only"
-    ),
+  rfidNumber: rfidNumberField,
   cardStatus: z.enum(rfidCardStatuses),
-  assignedDate: z
-    .string()
-    .trim()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Choose the date the card was issued"),
+  assignedDate: requiredDate("Choose the date the card was issued"),
 })
 
 export const rfidAssignmentSchema = rfidAssignmentFormSchema.extend({

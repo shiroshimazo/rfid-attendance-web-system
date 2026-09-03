@@ -62,3 +62,20 @@ export function formatDateValue(value: string | null | undefined) {
     day: "numeric",
   })
 }
+
+/** Formats a stored timestamp, e.g. `Sep 1, 2026, 8:04 AM`. */
+export function formatTimestamp(value: string | null | undefined) {
+  if (!value) return "—"
+
+  const parsed = new Date(value)
+
+  if (Number.isNaN(parsed.getTime())) return value
+
+  return parsed.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })
+}
