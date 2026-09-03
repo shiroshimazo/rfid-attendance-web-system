@@ -83,25 +83,33 @@ export function AttendanceDistributionChart({
               >
                 <Label
                   content={({ viewBox }) => {
-                    if (!viewBox || !("cx" in viewBox)) return null
+                    if (
+                      !viewBox ||
+                      !("cx" in viewBox) ||
+                      viewBox.cx == null ||
+                      viewBox.cy == null
+                    )
+                      return null
+                    const cx = viewBox.cx
+                    const cy = viewBox.cy
 
                     return (
                       <text
-                        x={viewBox.cx}
-                        y={viewBox.cy}
+                        x={cx}
+                        y={cy}
                         textAnchor="middle"
                         dominantBaseline="middle"
                       >
                         <tspan
-                          x={viewBox.cx}
-                          y={viewBox.cy}
+                          x={cx}
+                          y={cy - 22}
                           className="fill-foreground text-2xl font-semibold tabular-nums"
                         >
                           {formatPercent(attendanceRate)}
                         </tspan>
                         <tspan
-                          x={viewBox.cx}
-                          y={(viewBox.cy ?? 0) + 22}
+                          x={cx}
+                          y={cy + 2}
                           className="fill-muted-foreground text-xs"
                         >
                           {formatNumber(total)} students
