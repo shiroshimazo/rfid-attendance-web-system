@@ -36,20 +36,39 @@ const chartConfig = {
   absent: { label: "Absent", color: "var(--destructive)" },
 } satisfies ChartConfig
 
-type Grouping = "yearLevel" | "section"
+type Grouping = "program" | "yearLevel" | "section"
+
+const groupingTitles: Record<Grouping, string> = {
+  program: "Program",
+  yearLevel: "Year Level",
+  section: "Section",
+}
+
+const groupingLabels: Record<Grouping, string> = {
+  program: "program",
+  yearLevel: "year level",
+  section: "section",
+}
 
 /** Keeps the axis readable when an institution has many sections. */
 const MAX_GROUPS = 10
 
 export function AttendanceBreakdownChart({
+  byProgram,
   byYearLevel,
   bySection,
 }: {
+  byProgram: GroupBreakdown[]
   byYearLevel: GroupBreakdown[]
   bySection: GroupBreakdown[]
 }) {
-  const [grouping, setGrouping] = React.useState<Grouping>("yearLevel")
-  const source = grouping === "yearLevel" ? byYearLevel : bySection
+  const [grouping, setGrouping] = React.useState<Grouping>("program")
+  const source =
+    grouping === "program"
+      ? byProgram
+      : grouping === "yearLevel"
+        ? byYearLevel
+        : bySection
 
   const groups = React.useMemo(() => {
     if (source.length <= MAX_GROUPS) return source
@@ -61,12 +80,12 @@ export function AttendanceBreakdownChart({
   }, [source])
 
   const truncated = source.length > groups.length
-  const groupLabel = grouping === "yearLevel" ? "year level" : "section"
+  const groupLabel = groupingLabels[grouping]
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Attendance by {grouping === "yearLevel" ? "Year Level" : "Section"}</CardTitle>
+        <CardTitle>Attendance by {groupingTitles[grouping]}</CardTitle>
         <CardDescription>
           {truncated
             ? `Largest ${MAX_GROUPS} of ${formatNumber(source.length)} groups today`
@@ -78,11 +97,10 @@ export function AttendanceBreakdownChart({
             onValueChange={(value) => setGrouping(value as Grouping)}
           >
             <SelectTrigger size="sm" aria-label="Group attendance by" className="w-36">
-              <SelectValue>
-                {grouping === "yearLevel" ? "Year Level" : "Section"}
-              </SelectValue>
+              <SelectValue>{groupingTitles[grouping]}</SelectValue>
             </SelectTrigger>
             <SelectContent align="end">
+              <SelectItem value="program">Program</SelectItem>
               <SelectItem value="yearLevel">Year Level</SelectItem>
               <SelectItem value="section">Section</SelectItem>
             </SelectContent>
@@ -135,7 +153,7 @@ export function AttendanceBreakdownChart({
           <EmptyState
             icon={BarChart3}
             title="No student groups yet"
-            description="Assign year levels and sections to students to see this breakdown."
+            description="Assign programs, year levels, and sections to students to see this breakdown."
           />
         )}
       </CardContent>

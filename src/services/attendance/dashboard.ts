@@ -5,6 +5,11 @@ export type AttendanceStatus = "Present" | "Late" | "Absent" | "Excused"
 
 export type RfidCardStatus = "Active" | "Inactive" | "Lost" | "Deactivated"
 
+export interface ProgramRef {
+  program_code: string
+  program_name: string
+}
+
 export interface StudentRow {
   id: number
   student_id: string
@@ -12,6 +17,7 @@ export interface StudentRow {
   year_level: string
   section: string
   program_id: number
+  program: ProgramRef | null
 }
 
 export interface AttendanceRow {
@@ -55,7 +61,9 @@ export async function fetchAdminDashboardSnapshot({
     fetchAllRows<StudentRow>((from, to) =>
       supabase
         .from("students")
-        .select("id, student_id, full_name, year_level, section, program_id")
+        .select(
+          "id, student_id, full_name, year_level, section, program_id, program:programs(program_code, program_name)"
+        )
         .eq("status", "active")
         .order("full_name", { ascending: true })
         .range(from, to)

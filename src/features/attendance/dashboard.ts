@@ -76,6 +76,7 @@ export interface AdminDashboardData {
   today: string
   kpis: DashboardKpis
   trend: TrendSeries
+  byProgram: GroupBreakdown[]
   byYearLevel: GroupBreakdown[]
   bySection: GroupBreakdown[]
   distribution: StatusSlice[]
@@ -330,6 +331,11 @@ export function buildAdminDashboardData(
       rfidTapsToday: todayRecords.length + timeOutTaps,
     },
     trend: buildTrendSeries(tallies, sessionDates, totalStudents),
+    byProgram: buildBreakdown(
+      students,
+      todayByStudent,
+      (student) => student.program?.program_code ?? "Unassigned"
+    ),
     byYearLevel: buildBreakdown(
       students,
       todayByStudent,

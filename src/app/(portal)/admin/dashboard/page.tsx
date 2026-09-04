@@ -69,6 +69,7 @@ async function DashboardContent() {
       </div>
 
       <AttendanceBreakdownChart
+        byProgram={data.byProgram}
         byYearLevel={data.byYearLevel}
         bySection={data.bySection}
       />
