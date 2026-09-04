@@ -12,6 +12,7 @@
 - Manage Students
 - Manage RFID Cards
 - Attendance
+- Schedules
 - Reports
 - Settings
 
@@ -86,6 +87,30 @@ Filters: Search, Status, Program, Year Level, and Section.
 
 Table columns: Student Name, Program, Year Level, Section, Attendance Status,
 Time In, and Time Out.
+
+## Schedules Panel
+
+KPI Cards: Sections Scheduled, Morning Sections, Afternoon Sections, and
+Average Grace (minutes).
+
+Filters: Search Section, Session (Morning/Afternoon), and Day (Mon-Fri).
+
+Table columns: Section, Session, Class Days, Time Start, Time End
+(informational only), Grace (minutes), Late Cutoff, Status, and Actions.
+
+Edit Schedule Modal: Time Start, Grace (minutes), Status, and Class Days.
+Program is locked to BSIT and Year Level to 2nd Year per the pilot scope.
+
+Rules: Late Cutoff = Time Start + Grace. Sections without a schedule row are
+never flagged Late. See [[Late Attendance Ruling]].
+
+Delete is deliberately absent. A removed row would silently mean "never Late",
+so a schedule is switched off with its Status instead, and unchecking a class
+day retires that day's row rather than dropping it.
+
+Status: built at `/admin/schedules` (admin only). Grouping, cutoff arithmetic,
+and the pilot locks live in `src/features/schedules/`; the reads live in
+`src/services/schedules/`.
 
 ## Reports Panel
 

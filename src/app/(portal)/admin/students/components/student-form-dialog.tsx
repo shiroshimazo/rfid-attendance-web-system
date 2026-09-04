@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
 import { accountStatusLabels } from "@/components/account-status-badge"
-import { ProgramCombobox } from "@/components/program-combobox"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -38,6 +37,12 @@ import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import type { ProgramOption } from "@/features/teachers/directory"
 import {
+  PILOT_CAMPUSES,
+  PILOT_PROGRAM_CODE,
+  PILOT_SECTIONS,
+  PILOT_YEAR_LEVEL,
+} from "@/features/academic/pilot"
+import {
   createStudentAction,
   updateStudentAction,
 } from "@/features/students/actions"
@@ -65,7 +70,7 @@ function defaultValues(student?: StudentView | null): StudentDialogValues {
       parentContactNumber: "",
       studentId: "",
       programId: "",
-      yearLevel: "",
+      yearLevel: PILOT_YEAR_LEVEL,
       section: "",
       campus: "",
       status: "active",
@@ -130,6 +135,11 @@ export function StudentFormDialog({
 }) {
   const mode = student ? "edit" : "create"
 
+  // Pilot scope: program is always BSIT. Resolve its id from the directory.
+  const bsitProgram = programs.find(
+    (program) => program.code === PILOT_PROGRAM_CODE
+  )
+
   const form = useForm<StudentDialogValues>({
     resolver: zodResolver(studentDialogSchema),
     defaultValues: defaultValues(student),
@@ -137,9 +147,19 @@ export function StudentFormDialog({
   })
 
   // Reopening the dialog for another student must not show stale values.
+  // Create mode always starts locked to the BSIT pilot program.
   React.useEffect(() => {
-    if (open) form.reset(defaultValues(student))
-  }, [open, student, form])
+    if (!open) return
+    const values = defaultValues(student)
+    form.reset({
+      ...values,
+      programId: student
+        ? values.programId
+        : bsitProgram
+          ? String(bsitProgram.id)
+          : "",
+    })
+  }, [open, student, form, bsitProgram])
 
   const isSubmitting = form.formState.isSubmitting
 
@@ -385,7 +405,7 @@ export function StudentFormDialog({
               <SectionHeading
                 id="student-academic"
                 title="Academic Information"
-                description="Placement used by attendance, reports, and teacher access."
+                description="BSIT 2nd Year pilot placement. Used by attendance, reports, and teacher access."
               />
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
@@ -404,19 +424,31 @@ export function StudentFormDialog({
                 <FormField
                   control={form.control}
                   name="programId"
-                  render={({ field, fieldState }) => (
-                    <FormItem>
-                      <FormLabel htmlFor="student-program">Program</FormLabel>
-                      <ProgramCombobox
-                        id="student-program"
-                        programs={programs}
-                        value={field.value}
-                        onChange={field.onChange}
-                        aria-invalid={Boolean(fieldState.error)}
-                      />
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const selected = programs.find(
+                      (program) => String(program.id) === field.value
+                    )
+                    return (
+                      <FormItem>
+                        <FormLabel>Program</FormLabel>
+                        <FormControl>
+                          <Input type="hidden" {...field} />
+                        </FormControl>
+                        <p className="text-sm font-medium">
+                          {selected
+                            ? `${selected.code} — ${selected.name}`
+                            : "BSIT — BS Information Technology"}
+                        </p>
+                        <FormDescription>
+                          Locked to the BSIT pilot.
+                          {bsitProgram
+                            ? null
+                            : " BSIT program missing; run the database migrations."}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )
+                  }}
                 />
                 <FormField
                   control={form.control}
@@ -425,8 +457,11 @@ export function StudentFormDialog({
                     <FormItem>
                       <FormLabel>Year level</FormLabel>
                       <FormControl>
-                        <Input placeholder="1st Year" {...field} />
+                        <Input {...field} readOnly aria-readonly />
                       </FormControl>
+                      <FormDescription>
+                        Fixed to the 2nd Year pilot.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -437,9 +472,23 @@ export function StudentFormDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Section</FormLabel>
-                      <FormControl>
-                        <Input placeholder="BSIT-1A" {...field} />
-                      </FormControl>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select section" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PILOT_SECTIONS.map((option) => (
+                            <SelectItem key={option.code} value={option.code}>
+                              {option.code} —{" "}
+                              {option.session === "morning"
+                                ? "Morning"
+                                : "Afternoon"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -450,9 +499,20 @@ export function StudentFormDialog({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Campus</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Main Campus" {...field} />
-                      </FormControl>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select campus" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PILOT_CAMPUSES.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

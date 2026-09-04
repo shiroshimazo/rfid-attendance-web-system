@@ -1,6 +1,11 @@
 import { z } from "zod"
 
 import {
+  isPilotCampus,
+  isPilotSection,
+  PILOT_YEAR_LEVEL,
+} from "@/features/academic/pilot"
+import {
   accountStatuses,
   applyCredentialRules,
   civilStatusOptions,
@@ -34,9 +39,19 @@ const teacherFields = {
 }
 
 const assignmentFields = {
-  yearLevel: optionalText(40),
-  section: optionalText(40),
-  campus: optionalText(80),
+  // BSIT 2nd Year pilot scope; blank stays allowed, anything else must be pilot.
+  yearLevel: optionalText(40).refine(
+    (value) => value === "" || value === PILOT_YEAR_LEVEL,
+    { message: `Only ${PILOT_YEAR_LEVEL} is supported in the pilot` }
+  ),
+  section: optionalText(40).refine(
+    (value) => value === "" || isPilotSection(value),
+    { message: "Section must be a pilot section (21001-21010)" }
+  ),
+  campus: optionalText(80).refine(
+    (value) => value === "" || isPilotCampus(value),
+    { message: "Campus must be Main Campus, MV Campus, or Bulacan Campus" }
+  ),
 }
 
 /** Browser shape: every control, including the selects, holds a string. */

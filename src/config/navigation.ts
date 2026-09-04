@@ -1,4 +1,5 @@
 import {
+  CalendarClock,
   ClipboardCheck,
   FileChartColumn,
   GraduationCap,
@@ -55,6 +56,7 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
         { title: "Manage Students", url: "/admin/students", icon: UsersRound },
         { title: "Manage RFID Cards", url: "/admin/rfid-cards", icon: ScanLine },
         { title: "Attendance", url: "/admin/attendance", icon: ClipboardCheck },
+        { title: "Schedules", url: "/admin/schedules", icon: CalendarClock },
         { title: "Reports", url: "/admin/reports", icon: FileChartColumn },
         { title: "Settings", url: "/admin/settings", icon: Settings },
       ],

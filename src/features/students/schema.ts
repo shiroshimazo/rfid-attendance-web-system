@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { isPilotCampus, isPilotSection, PILOT_YEAR_LEVEL } from "@/features/academic/pilot"
 import {
   accountStatuses,
   applyCredentialRules,
@@ -38,11 +39,18 @@ const studentFields = {
     .trim()
     .min(7, "Parent or guardian contact number is required")
     .max(32),
-  // Academic
+  // Academic (BSIT 2nd Year pilot scope)
   studentId: requiredText(40, "Student ID is required"),
-  yearLevel: requiredText(40, "Year level is required"),
-  section: requiredText(40, "Section is required"),
-  campus: requiredText(80, "Campus is required"),
+  yearLevel: requiredText(40, "Year level is required").refine(
+    (value) => value === PILOT_YEAR_LEVEL,
+    { message: `Only ${PILOT_YEAR_LEVEL} is supported in the pilot` }
+  ),
+  section: requiredText(40, "Section is required").refine(isPilotSection, {
+    message: "Section must be a pilot section (21001-21010)",
+  }),
+  campus: requiredText(80, "Campus is required").refine(isPilotCampus, {
+    message: "Campus must be Main Campus, MV Campus, or Bulacan Campus",
+  }),
   status: z.enum(accountStatuses),
 }
 

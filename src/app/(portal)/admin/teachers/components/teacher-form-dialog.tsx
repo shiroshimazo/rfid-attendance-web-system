@@ -43,6 +43,12 @@ import type {
   TeacherView,
 } from "@/features/teachers/directory"
 import {
+  PILOT_CAMPUSES,
+  PILOT_PROGRAM_CODE,
+  PILOT_SECTIONS,
+  PILOT_YEAR_LEVEL,
+} from "@/features/academic/pilot"
+import {
   accountStatuses,
   civilStatusOptions,
   genderOptions,
@@ -147,6 +153,12 @@ export function TeacherFormDialog({
   const mode = teacher ? "edit" : "create"
   const departmentListId = React.useId()
 
+  // Pilot scope: new assignments always start on BSIT 2nd Year.
+  const bsitProgramId = programs.find(
+    (program) => program.code === PILOT_PROGRAM_CODE
+  )?.id
+  const bsitProgramIdValue = bsitProgramId ? String(bsitProgramId) : ""
+
   const form = useForm<TeacherDialogValues>({
     resolver: zodResolver(teacherDialogSchema),
     defaultValues: defaultValues(teacher),
@@ -159,9 +171,19 @@ export function TeacherFormDialog({
   })
 
   // Reopening the dialog for another teacher must not show stale values.
+  // Create mode always starts locked to the BSIT pilot.
   React.useEffect(() => {
-    if (open) form.reset(defaultValues(teacher))
-  }, [open, teacher, form])
+    if (!open) return
+    const values = defaultValues(teacher)
+    if (!teacher && bsitProgramIdValue) {
+      values.assignments = values.assignments.map((assignment) => ({
+        ...assignment,
+        programId: bsitProgramIdValue,
+        yearLevel: PILOT_YEAR_LEVEL,
+      }))
+    }
+    form.reset(values)
+  }, [open, teacher, form, bsitProgramIdValue])
 
   const watchedAssignments = useWatch({
     control: form.control,
@@ -463,7 +485,7 @@ export function TeacherFormDialog({
               <SectionHeading
                 id="teacher-assignments"
                 title="Teaching Assignments"
-                description="A teacher can handle several classes without duplicating the profile."
+                description="BSIT 2nd Year pilot classes. A teacher can handle several without duplicating the profile."
               />
 
               <ul className="space-y-3">
@@ -500,40 +522,28 @@ export function TeacherFormDialog({
                         <FormField
                           control={form.control}
                           name={`assignments.${index}.programId`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Program</FormLabel>
-                              <Select
-                                value={field.value}
-                                onValueChange={(value) => {
-                                  field.onChange(value)
-                                  // Courses belong to one program, so the old
-                                  // subject can no longer be valid.
-                                  form.setValue(
-                                    `assignments.${index}.courseId`,
-                                    ""
-                                  )
-                                }}
-                              >
+                          render={({ field }) => {
+                            const selected = programs.find(
+                              (program) => String(program.id) === field.value
+                            )
+                            return (
+                              <FormItem>
+                                <FormLabel>Program</FormLabel>
                                 <FormControl>
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select program" />
-                                  </SelectTrigger>
+                                  <Input type="hidden" {...field} />
                                 </FormControl>
-                                <SelectContent>
-                                  {programs.map((program) => (
-                                    <SelectItem
-                                      key={program.id}
-                                      value={String(program.id)}
-                                    >
-                                      {program.code} — {program.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
+                                <p className="text-sm font-medium">
+                                  {selected
+                                    ? `${selected.code} — ${selected.name}`
+                                    : "BSIT — BS Information Technology"}
+                                </p>
+                                <FormDescription>
+                                  Locked to the BSIT pilot.
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )
+                          }}
                         />
                         <FormField
                           control={form.control}
@@ -583,9 +593,21 @@ export function TeacherFormDialog({
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Year level</FormLabel>
-                              <FormControl>
-                                <Input placeholder="1st Year" {...field} />
-                              </FormControl>
+                              <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select year level" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value={PILOT_YEAR_LEVEL}>
+                                    {PILOT_YEAR_LEVEL}
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -596,9 +618,29 @@ export function TeacherFormDialog({
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Section</FormLabel>
-                              <FormControl>
-                                <Input placeholder="BSIT-1A" {...field} />
-                              </FormControl>
+                              <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select section" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {PILOT_SECTIONS.map((option) => (
+                                    <SelectItem
+                                      key={option.code}
+                                      value={option.code}
+                                    >
+                                      {option.code} —{" "}
+                                      {option.session === "morning"
+                                        ? "Morning"
+                                        : "Afternoon"}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -609,9 +651,23 @@ export function TeacherFormDialog({
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Campus</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Main Campus" {...field} />
-                              </FormControl>
+                              <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select campus" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {PILOT_CAMPUSES.map((option) => (
+                                    <SelectItem key={option} value={option}>
+                                      {option}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -632,7 +688,13 @@ export function TeacherFormDialog({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => assignments.append({ ...emptyAssignment })}
+                onClick={() =>
+                  assignments.append({
+                    ...emptyAssignment,
+                    programId: bsitProgramIdValue,
+                    yearLevel: PILOT_YEAR_LEVEL,
+                  })
+                }
               >
                 <Plus aria-hidden />
                 Add assignment
