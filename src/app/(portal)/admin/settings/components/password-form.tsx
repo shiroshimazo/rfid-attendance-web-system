@@ -3,6 +3,7 @@
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Eye, EyeOff, KeyRound, Loader2 } from "lucide-react"
+import { motion } from "motion/react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
@@ -69,7 +70,7 @@ export function PasswordForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
         <Card>
           <CardHeader>
-            <CardTitle>Change password</CardTitle>
+            <CardTitle className="text-balance">Change password</CardTitle>
             <CardDescription className="text-pretty">
               Supabase Authentication stores the new password as a hash. Your
               other signed-in devices stay signed in.
@@ -100,12 +101,44 @@ export function PasswordForm() {
                       }
                       aria-pressed={isVisible}
                       onClick={() => setIsVisible((visible) => !visible)}
+                      className="relative shrink-0 transition-transform after:absolute after:-inset-1 after:content-[''] active:scale-[0.96]"
                     >
-                      {isVisible ? (
-                        <EyeOff aria-hidden />
-                      ) : (
-                        <Eye aria-hidden />
-                      )}
+                      <span className="relative block size-4">
+                        <motion.span
+                          aria-hidden
+                          initial={false}
+                          animate={
+                            isVisible
+                              ? { opacity: 0, scale: 0.25, filter: "blur(4px)" }
+                              : { opacity: 1, scale: 1, filter: "blur(0px)" }
+                          }
+                          transition={{
+                            type: "spring",
+                            duration: 0.3,
+                            bounce: 0,
+                          }}
+                          className="absolute inset-0"
+                        >
+                          <Eye aria-hidden className="size-4" />
+                        </motion.span>
+                        <motion.span
+                          aria-hidden
+                          initial={false}
+                          animate={
+                            isVisible
+                              ? { opacity: 1, scale: 1, filter: "blur(0px)" }
+                              : { opacity: 0, scale: 0.25, filter: "blur(4px)" }
+                          }
+                          transition={{
+                            type: "spring",
+                            duration: 0.3,
+                            bounce: 0,
+                          }}
+                          className="absolute inset-0"
+                        >
+                          <EyeOff aria-hidden className="size-4" />
+                        </motion.span>
+                      </span>
                     </Button>
                   </div>
                   <FormDescription>
@@ -136,7 +169,11 @@ export function PasswordForm() {
           </CardContent>
 
           <CardFooter className="justify-end">
-            <Button type="submit" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="transition-transform active:scale-[0.96]"
+            >
               {isSubmitting ? (
                 <Loader2 aria-hidden className="animate-spin" />
               ) : (

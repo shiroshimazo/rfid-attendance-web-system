@@ -73,7 +73,7 @@ export function ProfileForm({
       <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
         <Card>
           <CardHeader>
-            <CardTitle>Admin information</CardTitle>
+            <CardTitle className="text-balance">Admin information</CardTitle>
             <CardDescription className="text-pretty">
               These details identify you across the portal and appear beside
               your account in the sidebar.
@@ -82,7 +82,7 @@ export function ProfileForm({
 
           <CardContent className="space-y-6">
             <div className="flex flex-wrap items-center gap-4">
-              <Avatar className="size-16">
+              <Avatar className="size-16 ring-1 ring-[oklch(0_0_0/0.1)] dark:ring-[oklch(1_0_0/0.1)]">
                 {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
                 <AvatarFallback className="text-base">
                   {initialsOf(fullName || profile.email)}
@@ -183,6 +183,7 @@ export function ProfileForm({
             <Button
               type="submit"
               disabled={isSubmitting || !form.formState.isDirty}
+              className="transition-transform active:scale-[0.96]"
             >
               {isSubmitting ? (
                 <Loader2 aria-hidden className="animate-spin" />

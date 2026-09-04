@@ -42,15 +42,21 @@ const studentFields = {
   // Academic (BSIT 2nd Year pilot scope)
   studentId: requiredText(40, "Student ID is required"),
   yearLevel: requiredText(40, "Year level is required").refine(
-    (value) => value === PILOT_YEAR_LEVEL,
+    (value): boolean => value === PILOT_YEAR_LEVEL,
     { message: `Only ${PILOT_YEAR_LEVEL} is supported in the pilot` }
   ),
-  section: requiredText(40, "Section is required").refine(isPilotSection, {
-    message: "Section must be a pilot section (21001-21010)",
-  }),
-  campus: requiredText(80, "Campus is required").refine(isPilotCampus, {
-    message: "Campus must be Main Campus, MV Campus, or Bulacan Campus",
-  }),
+  section: requiredText(40, "Section is required").refine(
+    (value): boolean => isPilotSection(value),
+    {
+      message: "Section must be a pilot section (21001-21010)",
+    }
+  ),
+  campus: requiredText(80, "Campus is required").refine(
+    (value): boolean => isPilotCampus(value),
+    {
+      message: "Campus must be Main Campus, MV Campus, or Bulacan Campus",
+    }
+  ),
   status: z.enum(accountStatuses),
 }
 

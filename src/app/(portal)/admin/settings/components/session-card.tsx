@@ -29,7 +29,9 @@ function DetailRow({
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 py-2">
       <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium break-all">{children}</dd>
+      <dd className="min-w-0 max-w-full text-right text-sm font-medium break-words text-pretty">
+        {children}
+      </dd>
     </div>
   )
 }
@@ -45,7 +47,7 @@ export function SessionCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Session details</CardTitle>
+        <CardTitle className="text-balance">Session details</CardTitle>
         <CardDescription className="text-pretty">
           The account this browser is signed in with. Role and status are
           managed by the system, not from this page.
