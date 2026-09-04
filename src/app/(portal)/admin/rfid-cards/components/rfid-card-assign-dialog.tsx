@@ -26,7 +26,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+import { DatePicker, toDateKey } from "@/components/ui/date-picker"
 import {
   Select,
   SelectContent,
@@ -71,6 +71,8 @@ export function RfidCardAssignDialog({
     if (card) form.reset(defaultValues(card))
   }, [card, form])
 
+  // Dates are recorded, never scheduled, so tomorrow is out of range.
+  const today = toDateKey(new Date())
   const isSubmitting = form.formState.isSubmitting
   const selectedId = useWatch({ control: form.control, name: "studentId" })
   const cardStatus = useWatch({ control: form.control, name: "cardStatus" })
@@ -195,7 +197,14 @@ export function RfidCardAssignDialog({
                   <FormItem>
                     <FormLabel>Assigned on</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        max={today}
+                        clearable={false}
+                        placeholder="Select the issue date"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

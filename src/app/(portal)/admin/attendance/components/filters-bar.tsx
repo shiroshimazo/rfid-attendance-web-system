@@ -6,6 +6,7 @@ import { RotateCcw, Search } from "lucide-react"
 
 import { ProgramCombobox } from "@/components/program-combobox"
 import { Button } from "@/components/ui/button"
+import { DatePicker, toDateKey } from "@/components/ui/date-picker"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -106,12 +107,14 @@ export function FiltersBar({
         <Label htmlFor="attendance-date" className="sr-only">
           Attendance date
         </Label>
-        <Input
+        <DatePicker
           id="attendance-date"
-          type="date"
           value={query.date}
           className="h-9"
-          onChange={(event) => applyParams({ date: event.target.value })}
+          max={toDateKey(new Date())}
+          clearable={false}
+          placeholder="Pick a date"
+          onChange={(date) => applyParams({ date })}
         />
       </div>
 

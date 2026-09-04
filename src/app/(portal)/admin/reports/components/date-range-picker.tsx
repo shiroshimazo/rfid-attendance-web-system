@@ -2,42 +2,52 @@
 
 import * as React from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { format, isValid, parseISO } from "date-fns"
+import type { DateRange } from "react-day-picker"
 
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { DateRangePicker as DateRangePickerField } from "@/components/ui/date-range-picker"
 
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
+function toDate(value: string) {
+  if (!DATE_KEY_PATTERN.test(value)) return undefined
+
+  const parsed = parseISO(value)
+
+  return isValid(parsed) ? parsed : undefined
+}
+
+function toDateKey(value: Date) {
+  return format(value, "yyyy-MM-dd")
+}
+
+/**
+ * Report range control. The popover keeps its own draft range; only Apply
+ * writes `from` and `to` to the URL, so the panel refetches once per change.
+ */
 export function DateRangePicker({ from, to }: { from: string; to: string }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = React.useTransition()
-  const [draft, setDraft] = React.useState({ from, to })
+  const [range, setRange] = React.useState<DateRange | undefined>({
+    from: toDate(from),
+    to: toDate(to),
+  })
 
   React.useEffect(() => {
-    setDraft({ from, to })
+    setRange({ from: toDate(from), to: toDate(to) })
   }, [from, to])
 
-  const isValid =
-    DATE_KEY_PATTERN.test(draft.from) &&
-    DATE_KEY_PATTERN.test(draft.to) &&
-    draft.to >= draft.from
+  function apply(next: DateRange | undefined) {
+    if (!next?.from || !next.to) return
 
-  function commit(next: { from: string; to: string }) {
-    setDraft(next)
-
-    if (
-      !DATE_KEY_PATTERN.test(next.from) ||
-      !DATE_KEY_PATTERN.test(next.to) ||
-      next.to < next.from
-    ) {
-      return
-    }
+    const start = next.from <= next.to ? next.from : next.to
+    const end = next.from <= next.to ? next.to : next.from
 
     const params = new URLSearchParams(searchParams.toString())
-    params.set("from", next.from)
-    params.set("to", next.to)
+    params.set("from", toDateKey(start))
+    params.set("to", toDateKey(end))
 
     startTransition(() => {
       router.replace(`${pathname}?${params.toString()}`, { scroll: false })
@@ -45,48 +55,12 @@ export function DateRangePicker({ from, to }: { from: string; to: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-1" data-print="hide">
-      <div className="flex flex-wrap items-end gap-2" aria-busy={isPending}>
-        <div className="space-y-1">
-          <Label htmlFor="reports-from" className="text-xs">
-            From
-          </Label>
-          <Input
-            id="reports-from"
-            type="date"
-            className="h-9 w-40"
-            value={draft.from}
-            max={draft.to}
-            aria-invalid={!isValid}
-            onChange={(event) =>
-              commit({ from: event.target.value, to: draft.to })
-            }
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="reports-to" className="text-xs">
-            To
-          </Label>
-          <Input
-            id="reports-to"
-            type="date"
-            className="h-9 w-40"
-            value={draft.to}
-            min={draft.from}
-            aria-invalid={!isValid}
-            aria-describedby={isValid ? undefined : "reports-range-error"}
-            onChange={(event) =>
-              commit({ from: draft.from, to: event.target.value })
-            }
-          />
-        </div>
-      </div>
-
-      {isValid ? null : (
-        <p id="reports-range-error" role="alert" className="text-xs text-destructive">
-          The end date must fall on or after the start date.
-        </p>
-      )}
+    <div
+      className="w-full sm:w-[19rem]"
+      data-print="hide"
+      aria-busy={isPending}
+    >
+      <DateRangePickerField value={range} onChange={setRange} onApply={apply} />
     </div>
   )
 }

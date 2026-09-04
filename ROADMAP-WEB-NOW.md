@@ -10,7 +10,7 @@ Status legend: DONE = coded, OPEN = still to build, PENDING = coded, needs deplo
 |---|--------|------------------|----------|----------|--------|
 | 1 | All dashboards + panels | Must update live with no manual refresh (FR Real-Time Updates) | Was zero `channel.subscribe`, only `refresh-button.tsx` + `force-dynamic` | High | DONE (code) / PENDING (migration deploy) — new `src/components/live-refresh.tsx` wired into 11 pages, new `supabase/migrations/202609040001_enable_realtime.sql` |
 | 2 | RefreshButton removal | Buttons no longer needed once live | Was mounted in 11 pages under `src/app/(portal)` | High | DONE — zero mounts left in `src/app`; unused `src/components/refresh-button.tsx` remains, safe to delete |
-| 3 | Admin Dashboard | Bar chart missing Program grouping (only Year/Section) | `src/app/(portal)/admin/dashboard/page.tsx` passes `byYearLevel`/`bySection` only | Med | OPEN |
+| 3 | Admin Dashboard | Bar chart missing Program grouping (only Year/Section) | `src/app/(portal)/admin/dashboard/page.tsx` passes `byYearLevel`/`bySection` only | Med | DONE |
 | 4 | Reports Admin/Teacher | No RFID logs table, no SMS columns; recent logs lack RFID/SMS detail | `src/services/reports/snapshot.ts` never fetches `sms_notifications`; `src/features/reports/panel.ts` `AttendanceLog` has no smsStatus | High | OPEN |
 | 5 | Reports export | Fake PDF, just `window.print()` | `export-pdf-button.tsx:13` | Med | OPEN — use jsPDF/react-pdf with BestLink header, date range, summary |
 | 6 | Academic catalog | No Programs/Courses CRUD pages, dropdowns only | No `admin/programs/page.tsx`, no `admin/courses/page.tsx` | High | OPEN |

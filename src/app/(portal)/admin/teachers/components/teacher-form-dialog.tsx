@@ -24,6 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { DatePicker, toDateKey } from "@/components/ui/date-picker"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -189,6 +190,8 @@ export function TeacherFormDialog({
     control: form.control,
     name: "assignments",
   })
+  // Dates are recorded, never scheduled, so tomorrow is out of range.
+  const today = toDateKey(new Date())
   const isSubmitting = form.formState.isSubmitting
 
   async function onSubmit(values: TeacherDialogValues) {
@@ -339,7 +342,13 @@ export function TeacherFormDialog({
                     <FormItem>
                       <FormLabel>Date of birth</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DatePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          max={today}
+                          placeholder="Select date of birth"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -440,7 +449,13 @@ export function TeacherFormDialog({
                     <FormItem>
                       <FormLabel>Date hired</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DatePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          max={today}
+                          placeholder="Select the hire date"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

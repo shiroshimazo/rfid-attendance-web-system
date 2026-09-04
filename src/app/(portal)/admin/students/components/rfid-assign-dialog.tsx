@@ -25,6 +25,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { DatePicker, toDateKey } from "@/components/ui/date-picker"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -72,6 +73,8 @@ export function RfidAssignDialog({
     if (student) form.reset(defaultValues(student))
   }, [student, form])
 
+  // Dates are recorded, never scheduled, so tomorrow is out of range.
+  const today = toDateKey(new Date())
   const isSubmitting = form.formState.isSubmitting
 
   async function onSubmit(values: RfidAssignmentValues) {
@@ -195,7 +198,14 @@ export function RfidAssignDialog({
                   <FormItem>
                     <FormLabel>Assigned on</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        max={today}
+                        clearable={false}
+                        placeholder="Select the issue date"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
