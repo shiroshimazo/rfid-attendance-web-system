@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { format, parseISO } from "date-fns"
 
 import { DataErrorCard } from "@/components/data-error-card"
-import { RefreshButton } from "@/components/refresh-button"
+import { LiveRefresh } from "@/components/live-refresh"
 import { getAdminDashboardData } from "@/features/attendance/dashboard"
 
 import { AttendanceBreakdownChart } from "./components/attendance-breakdown-chart"
@@ -51,7 +51,6 @@ async function DashboardContent() {
             Institution-wide RFID attendance for {readableDate}.
           </p>
         </div>
-        <RefreshButton />
       </div>
 
       <KpiCards data={data} />
@@ -82,6 +81,7 @@ async function DashboardContent() {
 export default function AdminDashboardPage() {
   return (
     <div className="@container/main flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
+      <LiveRefresh channel="live-admin-dashboard" />
       <Suspense fallback={<DashboardSkeleton />}>
         <DashboardContent />
       </Suspense>

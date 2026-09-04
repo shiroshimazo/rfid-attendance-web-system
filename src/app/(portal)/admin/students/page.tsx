@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import type { Metadata } from "next"
 
 import { DataErrorCard } from "@/components/data-error-card"
-import { RefreshButton } from "@/components/refresh-button"
+import { LiveRefresh } from "@/components/live-refresh"
 import { getStudentDirectory } from "@/features/students/directory"
 
 import { StudentsDirectory } from "./components/students-directory"
@@ -39,6 +39,7 @@ async function StudentsContent() {
 export default function AdminStudentsPage() {
   return (
     <div className="@container/main flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
+      <LiveRefresh channel="live-admin-students" />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-balance">
@@ -49,7 +50,6 @@ export default function AdminStudentsPage() {
             academic placement and RFID cards current.
           </p>
         </div>
-        <RefreshButton />
       </div>
 
       <Suspense fallback={<StudentsSkeleton />}>

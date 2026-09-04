@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import type { Metadata } from "next"
 
 import { DataErrorCard } from "@/components/data-error-card"
+import { LiveRefresh } from "@/components/live-refresh"
 import { getStudentAttendanceData } from "@/features/attendance/student-attendance"
 
 import { AttendanceHistoryTable } from "./components/attendance-history-table"
@@ -44,6 +45,7 @@ async function AttendanceContent() {
 export default function StudentAttendancePage() {
   return (
     <div className="@container/main flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
+      <LiveRefresh channel="live-student-attendance" />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-balance">
