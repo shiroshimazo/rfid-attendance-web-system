@@ -35,6 +35,7 @@ type SortColumn =
   | "section"
   | "total"
   | "present"
+  | "late"
   | "absent"
   | "rate"
 
@@ -59,6 +60,8 @@ function compareRows(
       return (a.total - b.total) * factor
     case "present":
       return (a.present - b.present) * factor
+    case "late":
+      return (a.late - b.late) * factor
     case "absent":
       return (a.absent - b.absent) * factor
     case "rate":
@@ -105,7 +108,8 @@ export function AttendanceBySectionTable({
       <CardHeader>
         <CardTitle>Attendance by Section</CardTitle>
         <CardDescription>
-          Section totals and attendance rate for {rangeLabel}.
+          Section totals and attendance rate for {rangeLabel}. Late arrivals
+          are counted inside Present.
         </CardDescription>
       </CardHeader>
 
@@ -157,6 +161,13 @@ export function AttendanceBySectionTable({
                     className="hidden px-3 lg:table-cell"
                   />
                   <SortableHeader
+                    column="late"
+                    label="Late"
+                    sort={sort}
+                    onSort={toggleSort}
+                    className="hidden px-3 lg:table-cell"
+                  />
+                  <SortableHeader
                     column="absent"
                     label="Absent"
                     sort={sort}
@@ -190,6 +201,9 @@ export function AttendanceBySectionTable({
                     </TableCell>
                     <TableCell className="hidden px-3 tabular-nums lg:table-cell">
                       {formatNumber(row.present)}
+                    </TableCell>
+                    <TableCell className="hidden px-3 tabular-nums lg:table-cell">
+                      {formatNumber(row.late)}
                     </TableCell>
                     <TableCell className="hidden px-3 tabular-nums lg:table-cell">
                       {formatNumber(row.absent)}

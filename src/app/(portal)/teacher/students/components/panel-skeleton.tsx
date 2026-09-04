@@ -10,8 +10,8 @@ export function PanelSkeleton() {
         <Skeleton className="mt-2 h-4 w-72" />
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }, (_, index) => (
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          {Array.from({ length: 5 }, (_, index) => (
             <Skeleton key={index} className="h-9 w-full" />
           ))}
         </div>

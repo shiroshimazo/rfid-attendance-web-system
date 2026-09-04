@@ -38,8 +38,8 @@ export function DashboardSkeleton() {
       aria-label="Loading dashboard"
       className="flex flex-col gap-4 md:gap-6"
     >
-      <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-        {Array.from({ length: 4 }, (_, index) => (
+      <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-5">
+        {Array.from({ length: 5 }, (_, index) => (
           <KpiCardSkeleton key={index} />
         ))}
       </div>

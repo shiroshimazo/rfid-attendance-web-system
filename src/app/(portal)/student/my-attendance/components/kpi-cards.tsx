@@ -1,4 +1,5 @@
 import {
+  Clock4,
   Percent,
   UserRoundCheck,
   UserRoundX,
@@ -57,7 +58,7 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
   return (
     <section
       aria-label="Personal attendance summary"
-      className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6"
+      className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4"
     >
       <KpiCard
         label="Total Present"
@@ -69,6 +70,17 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
             : undefined
         }
         detail="Days tapped in, late arrivals included."
+      />
+      <KpiCard
+        label="Total Late"
+        value={formatNumber(kpis.totalLate)}
+        icon={Clock4}
+        share={
+          kpis.totalPresent > 0
+            ? formatPercent((kpis.totalLate / kpis.totalPresent) * 100)
+            : undefined
+        }
+        detail="Days tapped in after the cutoff, already inside Total Present."
       />
       <KpiCard
         label="Total Absent"

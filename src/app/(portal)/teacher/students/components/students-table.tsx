@@ -129,6 +129,9 @@ export function StudentsTable({
         if (filters.section !== "all" && student.section !== filters.section) {
           return false
         }
+        if (filters.status !== "all" && student.status !== filters.status) {
+          return false
+        }
 
         return matchesQuery(student, needle)
       })

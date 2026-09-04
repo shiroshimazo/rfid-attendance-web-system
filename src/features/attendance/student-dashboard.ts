@@ -54,7 +54,9 @@ export interface ParentSmsInfo {
 }
 
 export interface StudentDashboardKpis {
+  /** Present includes late arrivals; both mean the student tapped in. */
   totalPresent: number
+  totalLate: number
   totalAbsent: number
   /** Time-in taps plus time-out taps across all personal records. */
   totalRfidTaps: number
@@ -187,6 +189,9 @@ function buildKpis(
   return {
     totalPresent: history.filter((record) =>
       isAttended(record.attendance_status)
+    ).length,
+    totalLate: history.filter(
+      (record) => record.attendance_status === "Late"
     ).length,
     totalAbsent: countPersonalAbsentDays(history, today),
     totalRfidTaps:

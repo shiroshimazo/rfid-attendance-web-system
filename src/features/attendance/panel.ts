@@ -11,7 +11,9 @@ export type { AttendancePanelSnapshot, ProgramOption }
 
 export interface AttendancePanelKpis {
   totalStudents: number
+  /** Present includes late arrivals; both mean the student tapped in. */
   present: number
+  late: number
   absent: number
 }
 
@@ -85,6 +87,7 @@ export function buildAttendancePanelData(
 
   const totalStudents = cohort.length
   const present = cohort.filter((row) => isAttended(row.status)).length
+  const late = cohort.filter((row) => row.status === "Late").length
   const excused = cohort.filter((row) => row.status === "Excused").length
 
   return {
@@ -93,6 +96,7 @@ export function buildAttendancePanelData(
     kpis: {
       totalStudents,
       present,
+      late,
       absent: Math.max(0, totalStudents - present - excused),
     },
     rows:

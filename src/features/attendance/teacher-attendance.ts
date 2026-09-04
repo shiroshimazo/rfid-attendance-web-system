@@ -19,7 +19,9 @@ import type { StudentRfidStatus } from "@/features/attendance/dashboard"
 
 export interface TeacherAttendancePanelKpis {
   totalAssigned: number
+  /** Present includes late arrivals; both mean the student tapped in. */
   present: number
+  late: number
   absent: number
 }
 
@@ -134,6 +136,7 @@ export function buildTeacherAttendancePanelData(
 
   const totalAssigned = cohort.length
   const present = cohort.filter((row) => isAttended(row.status)).length
+  const late = cohort.filter((row) => row.status === "Late").length
   const excused = cohort.filter((row) => row.status === "Excused").length
 
   return {
@@ -142,6 +145,7 @@ export function buildTeacherAttendancePanelData(
     kpis: {
       totalAssigned,
       present,
+      late,
       absent: Math.max(0, totalAssigned - present - excused),
     },
     rows:

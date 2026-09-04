@@ -54,7 +54,9 @@ export interface SectionBreakdown {
   yearLevel: string
   section: string
   total: number
+  /** Present includes late arrivals; both mean the student tapped in. */
   present: number
+  late: number
   absent: number
   rate: number
 }
@@ -150,11 +152,12 @@ function rateOf(present: number, expected: number) {
 
 interface Tally {
   present: number
+  late: number
   excused: number
 }
 
 function emptyTally(): Tally {
-  return { present: 0, excused: 0 }
+  return { present: 0, late: 0, excused: 0 }
 }
 
 function compareGroupLabels(a: string, b: string) {
@@ -243,6 +246,10 @@ export function buildReportsData(
       studentTally.present += 1
       dateTally.present += 1
     }
+    if (record.attendance_status === "Late") {
+      studentTally.late += 1
+      dateTally.late += 1
+    }
     if (excused) {
       studentTally.excused += 1
       dateTally.excused += 1
@@ -277,6 +284,7 @@ export function buildReportsData(
       section: string
       total: number
       present: number
+      late: number
       excused: number
     }
   >()
@@ -292,12 +300,14 @@ export function buildReportsData(
       section,
       total: 0,
       present: 0,
+      late: 0,
       excused: 0,
     }
     const tally = talliesByStudent.get(student.id) ?? emptyTally()
 
     bucket.total += 1
     bucket.present += tally.present
+    bucket.late += tally.late
     bucket.excused += tally.excused
 
     sectionGroups.set(key, bucket)
@@ -314,6 +324,7 @@ export function buildReportsData(
         section: bucket.section,
         total: bucket.total,
         present: bucket.present,
+        late: bucket.late,
         absent: Math.max(0, groupExpected - bucket.present - bucket.excused),
         rate: rateOf(bucket.present, groupExpected),
       }

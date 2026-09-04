@@ -23,8 +23,8 @@ export function PanelSkeleton() {
       aria-label="Loading attendance history"
       className="flex flex-col gap-4 md:gap-6"
     >
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
-        {Array.from({ length: 3 }, (_, index) => (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, index) => (
           <KpiCardSkeleton key={index} />
         ))}
       </div>

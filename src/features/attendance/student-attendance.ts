@@ -14,7 +14,9 @@ import {
 export type { SmsStatus, StudentCardStatus }
 
 export interface StudentAttendanceKpis {
+  /** Present includes late arrivals; both mean the student tapped in. */
   totalPresent: number
+  totalLate: number
   totalAbsent: number
   /** Percentage in the 0-100 range: present / (present + absent). */
   attendanceRate: number
@@ -92,6 +94,7 @@ export function buildStudentAttendanceData(
   })
 
   const totalPresent = rows.filter((row) => isAttended(row.status)).length
+  const totalLate = rows.filter((row) => row.status === "Late").length
   const totalAbsent = countPersonalAbsentDays(snapshot.records, today)
   const denominator = totalPresent + totalAbsent
 
@@ -99,6 +102,7 @@ export function buildStudentAttendanceData(
     today,
     kpis: {
       totalPresent,
+      totalLate,
       totalAbsent,
       attendanceRate: denominator > 0 ? (totalPresent / denominator) * 100 : 0,
     },

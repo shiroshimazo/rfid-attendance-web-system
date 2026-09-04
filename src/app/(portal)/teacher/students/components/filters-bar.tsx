@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { attendanceStatuses } from "@/features/attendance/schema"
 import type { TeacherStudentsOptions } from "@/features/students/teacher-directory"
 
 export interface StudentsFilters {
@@ -19,6 +20,8 @@ export interface StudentsFilters {
   program: string
   yearLevel: string
   section: string
+  /** Today's attendance status, including Late. */
+  status: string
 }
 
 export const emptyStudentsFilters: StudentsFilters = {
@@ -26,6 +29,7 @@ export const emptyStudentsFilters: StudentsFilters = {
   program: "all",
   yearLevel: "all",
   section: "all",
+  status: "all",
 }
 
 export function isStudentsFiltered(filters: StudentsFilters) {
@@ -33,7 +37,8 @@ export function isStudentsFiltered(filters: StudentsFilters) {
     filters.search.trim() !== "" ||
     filters.program !== "all" ||
     filters.yearLevel !== "all" ||
-    filters.section !== "all"
+    filters.section !== "all" ||
+    filters.status !== "all"
   )
 }
 
@@ -55,7 +60,7 @@ export function FiltersBar({
         )?.code ?? "All programs")
 
   return (
-    <div role="search" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+    <div role="search" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
       <div className="relative">
         <Label htmlFor="students-search" className="sr-only">
           Search students
@@ -106,6 +111,25 @@ export function FiltersBar({
           {options.yearLevels.map((yearLevel) => (
             <SelectItem key={yearLevel} value={yearLevel}>
               {yearLevel}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.status}
+        onValueChange={(value) => onChange({ ...filters, status: value })}
+      >
+        <SelectTrigger aria-label="Filter by attendance status" className="w-full">
+          <SelectValue>
+            {filters.status === "all" ? "All statuses" : filters.status}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All statuses</SelectItem>
+          {attendanceStatuses.map((status) => (
+            <SelectItem key={status} value={status}>
+              {status}
             </SelectItem>
           ))}
         </SelectContent>

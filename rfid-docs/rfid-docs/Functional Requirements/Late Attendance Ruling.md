@@ -113,7 +113,10 @@ aliases, not one row per alias.
    Panel in [[Admin User Interaction]].
 2. Tap-route enforcement: schedule lookup + Late assignment at write time.
 3. Backfill SQL recomputing old rows against the seeded schedules.
-4. Late filter option, Late styling in badges, Late slices in reports.
+4. Done: Late KPI cards, Late status filters, amber Late badges, and Late
+   slices/columns are displayed across the admin, teacher, and student
+   portals. Display only: status is still written at tap time, and Late
+   always counts as attended in every rate.
 5. Per-subject periods (timetable) building on the subject catalog above.
 6. Holiday/exam-day overrides and administrator Excused flow.
 7. Onboarding more programs/year levels by adding schedule rows only.

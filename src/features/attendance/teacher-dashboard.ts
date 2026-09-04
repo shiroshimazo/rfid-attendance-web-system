@@ -32,6 +32,7 @@ export interface TeacherDashboardKpis {
   totalAssigned: number
   /** Present includes late arrivals; both mean the student tapped in. */
   presentToday: number
+  lateToday: number
   absentToday: number
   /** Percentage in the 0-100 range. */
   attendanceRate: number
@@ -252,6 +253,7 @@ export function buildTeacherDashboardData(
     kpis: {
       totalAssigned,
       presentToday,
+      lateToday,
       absentToday,
       attendanceRate: rateOf(presentToday, totalAssigned),
     },

@@ -1,4 +1,5 @@
 import {
+  Clock4,
   UserRoundCheck,
   UserRoundX,
   UsersRound,
@@ -65,7 +66,7 @@ export function KpiCards({
   return (
     <section
       aria-label="Attendance summary"
-      className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-3"
+      className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4"
     >
       <KpiCard
         label="Total Students"
@@ -79,6 +80,13 @@ export function KpiCards({
         icon={UserRoundCheck}
         share={shareOf(kpis.present, kpis.totalStudents)}
         detail={`Students who tapped in on ${readableDate}, late arrivals included.`}
+      />
+      <KpiCard
+        label="Late"
+        value={formatNumber(kpis.late)}
+        icon={Clock4}
+        share={shareOf(kpis.late, kpis.totalStudents)}
+        detail={`Tapped in after the section cutoff on ${readableDate}. Late still counts as present.`}
       />
       <KpiCard
         label="Absent"

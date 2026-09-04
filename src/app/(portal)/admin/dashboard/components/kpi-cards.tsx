@@ -1,4 +1,5 @@
 import {
+  Clock4,
   ScanLine,
   TrendingDown,
   TrendingUp,
@@ -91,7 +92,7 @@ export function KpiCards({ data }: { data: AdminDashboardData }) {
   return (
     <section
       aria-label="Attendance key performance indicators"
-      className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-3 @7xl/main:grid-cols-5"
+      className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-3 @7xl/main:grid-cols-6"
     >
       <KpiCard
         label="Total Students"
@@ -106,6 +107,13 @@ export function KpiCards({ data }: { data: AdminDashboardData }) {
         icon={UserRoundCheck}
         headline={`${formatNumber(kpis.lateToday)} arrived late`}
         detail="Students who tapped in at least once today."
+      />
+      <KpiCard
+        label="Late Today"
+        value={formatNumber(kpis.lateToday)}
+        icon={Clock4}
+        headline="Tapped in after the cutoff"
+        detail="Counted as attended, so the rate is unaffected."
       />
       <KpiCard
         label="Absent Today"
