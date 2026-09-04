@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import {
   ScanLine,
   UserRoundCheck,
@@ -14,11 +16,12 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { ReportsKpis } from "@/features/reports/panel"
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
 import { formatNumber } from "@/lib/format"
 
 interface KpiCardProps {
   label: string
-  value: string
+  value: ReactNode
   icon: LucideIcon
   detail: string
 }
@@ -58,25 +61,25 @@ export function KpiCards({
     >
       <KpiCard
         label="Total Students"
-        value={formatNumber(kpis.totalStudents)}
+        value={<SlidingNumber value={kpis.totalStudents} />}
         icon={UsersRound}
         detail="Active students counted in this report."
       />
       <KpiCard
         label="Total Present"
-        value={formatNumber(kpis.totalPresent)}
+        value={<SlidingNumber value={kpis.totalPresent} />}
         icon={UserRoundCheck}
         detail={`Time-ins recorded across ${dayLabel}, late arrivals included.`}
       />
       <KpiCard
         label="Total Absent"
-        value={formatNumber(kpis.totalAbsent)}
+        value={<SlidingNumber value={kpis.totalAbsent} />}
         icon={UserRoundX}
         detail={`Missed sessions across ${dayLabel}, excluding excused students.`}
       />
       <KpiCard
         label="RFID Scans"
-        value={formatNumber(kpis.rfidScans)}
+        value={<SlidingNumber value={kpis.rfidScans} />}
         icon={ScanLine}
         detail="Attendance records created by reader taps in this range."
       />

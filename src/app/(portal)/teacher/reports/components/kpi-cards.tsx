@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import {
   TrendingUp,
   UserRoundCheck,
@@ -14,11 +16,12 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { TeacherReportsKpis } from "@/features/reports/teacher-panel"
-import { formatNumber, formatPercent } from "@/lib/format"
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
+import { formatNumber } from "@/lib/format"
 
 interface KpiCardProps {
   label: string
-  value: string
+  value: ReactNode
   icon: LucideIcon
   detail: string
 }
@@ -58,25 +61,25 @@ export function KpiCards({
     >
       <KpiCard
         label="Total Assigned"
-        value={formatNumber(kpis.totalAssigned)}
+        value={<SlidingNumber value={kpis.totalAssigned} />}
         icon={UsersRound}
         detail="Assigned students counted in this report."
       />
       <KpiCard
         label="Total Present"
-        value={formatNumber(kpis.totalPresent)}
+        value={<SlidingNumber value={kpis.totalPresent} />}
         icon={UserRoundCheck}
         detail={`Time-ins recorded across ${dayLabel}, late arrivals included.`}
       />
       <KpiCard
         label="Total Absent"
-        value={formatNumber(kpis.totalAbsent)}
+        value={<SlidingNumber value={kpis.totalAbsent} />}
         icon={UserRoundX}
         detail={`Missed sessions across ${dayLabel}, excluding excused students.`}
       />
       <KpiCard
         label="Attendance Rate"
-        value={formatPercent(kpis.attendanceRate)}
+        value={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={TrendingUp}
         detail={`Share of assigned sessions attended across ${dayLabel}.`}
       />

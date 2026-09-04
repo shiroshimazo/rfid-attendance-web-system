@@ -4,6 +4,7 @@ import * as React from "react"
 import { PieChartIcon } from "lucide-react"
 import { Label, Pie, PieChart } from "recharts"
 
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
 import { EmptyState } from "@/components/empty-state"
 import {
   Card,
@@ -102,27 +103,22 @@ export function StatusChart({ distribution }: { distribution: StatusSlice[] }) {
                     const cy = viewBox.cy
 
                     return (
-                      <text
-                        x={cx}
-                        y={cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
+                      <foreignObject
+                        x={cx - 70}
+                        y={cy - 34}
+                        width={140}
+                        height={68}
                       >
-                        <tspan
-                          x={cx}
-                          y={cy - 22}
-                          className="fill-foreground text-2xl font-semibold tabular-nums"
-                        >
-                          {formatNumber(total)}
-                        </tspan>
-                        <tspan
-                          x={cx}
-                          y={cy + 2}
-                          className="fill-muted-foreground text-xs"
-                        >
-                          sessions
-                        </tspan>
-                      </text>
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-0.5">
+                          <SlidingNumber
+                            value={total}
+                            className="text-2xl font-semibold text-foreground"
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            sessions
+                          </span>
+                        </div>
+                      </foreignObject>
                     )
                   }}
                 />

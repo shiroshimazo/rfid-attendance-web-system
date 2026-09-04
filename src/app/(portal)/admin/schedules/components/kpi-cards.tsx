@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import {
   CalendarClock,
   Sunrise,
@@ -15,6 +17,7 @@ import {
 } from "@/components/ui/card"
 import { PILOT_SECTIONS } from "@/features/academic/pilot"
 import type { ScheduleKpis } from "@/features/schedules/schema"
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
 import { formatNumber } from "@/lib/format"
 
 function KpiCard({
@@ -24,7 +27,7 @@ function KpiCard({
   detail,
 }: {
   label: string
-  value: string
+  value: ReactNode
   icon: LucideIcon
   detail: string
 }) {
@@ -54,25 +57,31 @@ export function KpiCards({ kpis }: { kpis: ScheduleKpis }) {
     >
       <KpiCard
         label="Sections Scheduled"
-        value={formatNumber(kpis.sectionsScheduled)}
+        value={<SlidingNumber value={kpis.sectionsScheduled} />}
         icon={CalendarClock}
         detail={`Of ${formatNumber(PILOT_SECTIONS.length)} pilot sections. A section with no row is never flagged Late.`}
       />
       <KpiCard
         label="Morning Sections"
-        value={formatNumber(kpis.morningSections)}
+        value={<SlidingNumber value={kpis.morningSections} />}
         icon={Sunrise}
         detail="Classes starting before 12:00 PM, Philippines Time."
       />
       <KpiCard
         label="Afternoon Sections"
-        value={formatNumber(kpis.afternoonSections)}
+        value={<SlidingNumber value={kpis.afternoonSections} />}
         icon={Sunset}
         detail="Classes starting from 12:00 PM onwards, Philippines Time."
       />
       <KpiCard
         label="Average Grace"
-        value={`${formatNumber(kpis.averageGrace)} min`}
+        value={
+          <SlidingNumber
+            value={kpis.averageGrace}
+            decimalPlaces={Number.isInteger(kpis.averageGrace) ? 0 : 1}
+            suffix=" min"
+          />
+        }
         icon={Timer}
         detail="Mean grace window across scheduled sections. The pilot default is 15."
       />

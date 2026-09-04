@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import {
   Clock4,
   UserRoundCheck,
@@ -16,11 +18,12 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { TeacherAttendancePanelKpis } from "@/features/attendance/teacher-attendance"
-import { formatNumber, formatPercent } from "@/lib/format"
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
+import { formatPercent } from "@/lib/format"
 
 interface KpiCardProps {
   label: string
-  value: string
+  value: ReactNode
   icon: LucideIcon
   detail: string
   share?: string
@@ -70,27 +73,27 @@ export function KpiCards({
     >
       <KpiCard
         label="Total Assigned"
-        value={formatNumber(kpis.totalAssigned)}
+        value={<SlidingNumber value={kpis.totalAssigned} />}
         icon={UsersRound}
         detail="Assigned students matching the current filters."
       />
       <KpiCard
         label="Present"
-        value={formatNumber(kpis.present)}
+        value={<SlidingNumber value={kpis.present} />}
         icon={UserRoundCheck}
         share={shareOf(kpis.present, kpis.totalAssigned)}
         detail={`Assigned students who tapped in on ${readableDate}, late arrivals included.`}
       />
       <KpiCard
         label="Late"
-        value={formatNumber(kpis.late)}
+        value={<SlidingNumber value={kpis.late} />}
         icon={Clock4}
         share={shareOf(kpis.late, kpis.totalAssigned)}
         detail={`Assigned students who tapped in after the cutoff on ${readableDate}.`}
       />
       <KpiCard
         label="Absent"
-        value={formatNumber(kpis.absent)}
+        value={<SlidingNumber value={kpis.absent} />}
         icon={UserRoundX}
         share={shareOf(kpis.absent, kpis.totalAssigned)}
         detail="No time-in recorded. Excused students are counted separately."

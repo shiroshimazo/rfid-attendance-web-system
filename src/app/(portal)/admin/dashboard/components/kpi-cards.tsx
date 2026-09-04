@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import {
   Clock4,
   ScanLine,
@@ -19,11 +21,12 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { AdminDashboardData } from "@/features/attendance/dashboard"
-import { formatNumber, formatPercent } from "@/lib/format"
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
+import { formatNumber } from "@/lib/format"
 
 interface KpiCardProps {
   label: string
-  value: string
+  value: ReactNode
   icon: LucideIcon
   headline: string
   detail: string
@@ -96,35 +99,35 @@ export function KpiCards({ data }: { data: AdminDashboardData }) {
     >
       <KpiCard
         label="Total Students"
-        value={formatNumber(kpis.totalStudents)}
+        value={<SlidingNumber value={kpis.totalStudents} />}
         icon={UsersRound}
         headline="Active enrollment"
         detail="Students with an active account record."
       />
       <KpiCard
         label="Present Today"
-        value={formatNumber(kpis.presentToday)}
+        value={<SlidingNumber value={kpis.presentToday} />}
         icon={UserRoundCheck}
         headline={`${formatNumber(kpis.lateToday)} arrived late`}
         detail="Students who tapped in at least once today."
       />
       <KpiCard
         label="Late Today"
-        value={formatNumber(kpis.lateToday)}
+        value={<SlidingNumber value={kpis.lateToday} />}
         icon={Clock4}
         headline="Tapped in after the cutoff"
         detail="Counted as attended, so the rate is unaffected."
       />
       <KpiCard
         label="Absent Today"
-        value={formatNumber(kpis.absentToday)}
+        value={<SlidingNumber value={kpis.absentToday} />}
         icon={UserRoundX}
         headline={`${formatNumber(kpis.excusedToday)} excused`}
         detail="Active students with no time-in recorded today."
       />
       <KpiCard
         label="Attendance Rate"
-        value={formatPercent(kpis.attendanceRate)}
+        value={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={TrendingUp}
         headline="Share of students present"
         detail="Compared with the previous session day."
@@ -132,7 +135,7 @@ export function KpiCards({ data }: { data: AdminDashboardData }) {
       />
       <KpiCard
         label="RFID Taps Today"
-        value={formatNumber(kpis.rfidTapsToday)}
+        value={<SlidingNumber value={kpis.rfidTapsToday} />}
         icon={ScanLine}
         headline="Reader activity"
         detail="Time-in and time-out taps combined."

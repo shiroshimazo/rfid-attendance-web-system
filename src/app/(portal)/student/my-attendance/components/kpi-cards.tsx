@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import {
   Clock4,
   Percent,
@@ -16,11 +18,12 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { StudentAttendanceKpis } from "@/features/attendance/student-attendance"
-import { formatNumber, formatPercent } from "@/lib/format"
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
+import { formatPercent } from "@/lib/format"
 
 interface KpiCardProps {
   label: string
-  value: string
+  value: ReactNode
   icon: LucideIcon
   detail: string
   share?: string
@@ -62,7 +65,7 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
     >
       <KpiCard
         label="Total Present"
-        value={formatNumber(kpis.totalPresent)}
+        value={<SlidingNumber value={kpis.totalPresent} />}
         icon={UserRoundCheck}
         share={
           denominator > 0
@@ -73,7 +76,7 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
       />
       <KpiCard
         label="Total Late"
-        value={formatNumber(kpis.totalLate)}
+        value={<SlidingNumber value={kpis.totalLate} />}
         icon={Clock4}
         share={
           kpis.totalPresent > 0
@@ -84,7 +87,7 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
       />
       <KpiCard
         label="Total Absent"
-        value={formatNumber(kpis.totalAbsent)}
+        value={<SlidingNumber value={kpis.totalAbsent} />}
         icon={UserRoundX}
         share={
           denominator > 0
@@ -95,7 +98,7 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
       />
       <KpiCard
         label="Attendance Rate"
-        value={formatPercent(kpis.attendanceRate)}
+        value={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={Percent}
         detail="Present days over present plus absent days."
       />

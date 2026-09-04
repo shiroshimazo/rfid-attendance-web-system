@@ -4,6 +4,7 @@ import * as React from "react"
 import { PieChartIcon } from "lucide-react"
 import { Label, Pie, PieChart } from "recharts"
 
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
 import { EmptyState } from "@/components/empty-state"
 import {
   Card,
@@ -21,7 +22,6 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 import type { StatusSlice } from "@/features/attendance/teacher-dashboard"
-import { formatNumber, formatPercent } from "@/lib/format"
 
 const chartConfig = {
   count: { label: "Students" },
@@ -96,27 +96,24 @@ export function AttendanceDistributionChart({
                     const cy = viewBox.cy
 
                     return (
-                      <text
-                        x={cx}
-                        y={cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
+                      <foreignObject
+                        x={cx - 70}
+                        y={cy - 34}
+                        width={140}
+                        height={68}
                       >
-                        <tspan
-                          x={cx}
-                          y={cy - 22}
-                          className="fill-foreground text-2xl font-semibold tabular-nums"
-                        >
-                          {formatPercent(attendanceRate)}
-                        </tspan>
-                        <tspan
-                          x={cx}
-                          y={cy + 2}
-                          className="fill-muted-foreground text-xs"
-                        >
-                          {formatNumber(total)} students
-                        </tspan>
-                      </text>
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-0.5">
+                          <SlidingNumber
+                            value={attendanceRate}
+                            decimalPlaces={1}
+                            suffix="%"
+                            className="text-2xl font-semibold text-foreground"
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            <SlidingNumber value={total} /> students
+                          </span>
+                        </div>
+                      </foreignObject>
                     )
                   }}
                 />

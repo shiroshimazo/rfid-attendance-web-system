@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import {
   Clock4,
   TrendingDown,
@@ -18,11 +20,11 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { TeacherDashboardData } from "@/features/attendance/teacher-dashboard"
-import { formatNumber, formatPercent } from "@/lib/format"
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
 
 interface KpiCardProps {
   label: string
-  value: string
+  value: ReactNode
   icon: LucideIcon
   headline: string
   detail: string
@@ -95,35 +97,35 @@ export function KpiCards({ data }: { data: TeacherDashboardData }) {
     >
       <KpiCard
         label="Total Assigned"
-        value={formatNumber(kpis.totalAssigned)}
+        value={<SlidingNumber value={kpis.totalAssigned} />}
         icon={UsersRound}
         headline="Assigned students"
         detail="Active students in your class assignments."
       />
       <KpiCard
         label="Present Today"
-        value={formatNumber(kpis.presentToday)}
+        value={<SlidingNumber value={kpis.presentToday} />}
         icon={UserRoundCheck}
         headline="Tapped in today"
         detail="Assigned students with a time-in recorded today."
       />
       <KpiCard
         label="Late Today"
-        value={formatNumber(kpis.lateToday)}
+        value={<SlidingNumber value={kpis.lateToday} />}
         icon={Clock4}
         headline="Tapped in after the cutoff"
         detail="Assigned students only. Late still counts as present."
       />
       <KpiCard
         label="Absent Today"
-        value={formatNumber(kpis.absentToday)}
+        value={<SlidingNumber value={kpis.absentToday} />}
         icon={UserRoundX}
         headline="No time-in recorded"
         detail="Assigned students missing a tap today."
       />
       <KpiCard
         label="Attendance Rate"
-        value={formatPercent(kpis.attendanceRate)}
+        value={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={TrendingUp}
         headline="Share of assigned present"
         detail="Compared with the previous session day."

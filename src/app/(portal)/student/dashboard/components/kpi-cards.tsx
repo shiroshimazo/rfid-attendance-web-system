@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import {
   Clock4,
   ScanLine,
@@ -14,11 +16,11 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { StudentDashboardKpis } from "@/features/attendance/student-dashboard"
-import { formatNumber } from "@/lib/format"
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
 
 interface KpiCardProps {
   label: string
-  value: string
+  value: ReactNode
   icon: LucideIcon
   headline: string
   detail: string
@@ -52,28 +54,28 @@ export function KpiCards({ kpis }: { kpis: StudentDashboardKpis }) {
     >
       <KpiCard
         label="Total Present"
-        value={formatNumber(kpis.totalPresent)}
+        value={<SlidingNumber value={kpis.totalPresent} />}
         icon={UserRoundCheck}
         headline="Days tapped in"
         detail="Present and late arrivals combined."
       />
       <KpiCard
         label="Total Late"
-        value={formatNumber(kpis.totalLate)}
+        value={<SlidingNumber value={kpis.totalLate} />}
         icon={Clock4}
         headline="Days tapped in after the cutoff"
         detail="Already counted inside Total Present."
       />
       <KpiCard
         label="Total Absent"
-        value={formatNumber(kpis.totalAbsent)}
+        value={<SlidingNumber value={kpis.totalAbsent} />}
         icon={UserRoundX}
         headline="School days missed"
         detail="Weekdays with no tap; excused days excluded."
       />
       <KpiCard
         label="Total RFID Taps"
-        value={formatNumber(kpis.totalRfidTaps)}
+        value={<SlidingNumber value={kpis.totalRfidTaps} />}
         icon={ScanLine}
         headline="Reader activity"
         detail="Time-in and time-out taps combined."
