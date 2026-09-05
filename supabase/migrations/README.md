@@ -1,5 +1,148 @@
 # Database migrations
 
+## P01 active-account access rollout
+
+`202609090001_enforce_active_account_access.sql` is implemented and locally tested.
+**The user confirmed executing this migration in hosted Supabase on 2026-09-06.**
+The user reported the expected access-denied page after the application
+deactivation test and confirmed access returned after reactivation on 2026-09-06.
+**P01 is DONE:** the user also confirmed all nine hosted SQL verification rows
+are PASS on 2026-09-06. These checks simulate authenticated claims; they do not
+claim a separate HTTP request using a retained JWT. For new environments, apply it
+after all earlier migrations, including `202609080001_restrict_attendance_status.sql`,
+in the Supabase SQL editor or through your existing migration workflow.
+
+The migration makes `current_user_role()` consult the current account status in
+`public.users`. The student and teacher helpers also require the appropriate
+active account role. Restrictive policies on all nine business tables combine
+with existing owner/role policies, so an inactive or archived account cannot
+read or write business data using a retained authenticated session. Existing
+teacher assignment scoping, student ownership, and admin access to historical
+records remain in place. See [PostgreSQL policy combination rules](https://www.postgresql.org/docs/current/sql-createpolicy.html).
+
+`public.users` intentionally still permits reading one's own account row for
+login/status feedback. This grants no account-write permission. Disabled admins
+cannot reactivate themselves or change roles. Active admins can still manage
+other accounts. Supabase Auth password recovery and privileged service-role
+operations are not revoked by this migration.
+
+No rows, roles, profile statuses, cards, or historical records are rewritten.
+Existing application versions already read account status, so no coordinated
+frontend deployment is required. The transaction is atomic and can be reapplied.
+Revocation takes effect for subsequent database statements that observe the
+committed status change; it cannot retract data already downloaded or cancel
+statements running on an earlier transaction snapshot.
+
+Before rollout, confirm that the administering account is active in `public.users`.
+Existing profile/account mismatches are not silently repaired; reconcile them
+through the documented lifecycle actions. After applying, this read-only query
+should return nine restrictive policies with status checks:
+
+```sql
+select tablename, policyname, permissive, cmd, qual, with_check
+from pg_policies
+where schemaname = 'public' and policyname = 'active_account_required'
+order by tablename;
+```
+
+Run local proof with:
+
+```sh
+node --test tests/account-access.test.mjs tests/profile-lifecycle.test.mjs tests/attendance-status-migration.test.mjs
+```
+
+The access suite reproduces the old authorization gap before applying P01,
+then tests retained inactive/archived identities for all three roles, active
+role boundaries, self-reactivation denial, archive/restore, row preservation,
+reapplication, and rollback. It executes real SQL/RLS in isolated PGlite with an
+Auth identity stub; it does not use live credentials or change hosted accounts.
+
+For hosted verification, use designated test accounts: retain a signed-in
+session, deactivate/archive it from an active administrator, and repeat a direct
+business-table request using that retained session. Reads should return no rows;
+updates/deletes should affect none and inserts should be rejected. The own-account
+status row remains readable. Check active admin, assigned-teacher, and personal
+student access too. Supabase SQL editor queries run with elevated privileges;
+an unrestricted editor read alone does not verify authenticated-user RLS.
+
+For a SQL-level check, run the entire
+[verify_active_account_access.sql](../verify_active_account_access.sql) file in
+Supabase SQL Editor as `postgres`. It selects one existing active account of each
+role, requiring active profiles for Teacher and Student. It assumes authenticated
+identities, tests active/inactive/archived permissions and access restoration,
+and should return nine rows marked `PASS`. No email, password, or token is needed.
+If a required account is missing, it stops with a clear error.
+
+The script deliberately rolls back all status changes and write probes inside a
+subtransaction before returning results; its final `ROLLBACK` removes the temporary
+results table. Run the whole file, keeping both rollback mechanisms intact.
+On an error, run `ROLLBACK;` if the editor reports an open/aborted transaction and
+share the error text. Do not remove a failing check to force a PASS. The script
+was tested both with P01 and with the old policies, including data preservation.
+It verifies hosted PostgreSQL RLS using simulated Auth claims; it does not test
+HTTP/JWT transport or impersonate a real browser session.
+
+### P01 rollback
+
+Use this only to revert this migration, as a reviewed follow-up migration. It
+restores the previous authorization gap for disabled accounts; prefer fixing
+forward. It changes policies/functions only, preserving all records. Do not
+replay the original schema migrations or reset the database.
+
+<!-- p01-rollback:start -->
+```sql
+begin;
+
+do $$
+declare
+  business_table text;
+begin
+  foreach business_table in array array[
+    'students', 'teachers', 'programs', 'courses', 'teacher_assignments',
+    'rfid_cards', 'attendance_records', 'sms_notifications', 'class_schedules'
+  ] loop
+    execute format('drop policy if exists active_account_required on public.%I', business_table);
+  end loop;
+end;
+$$;
+
+create or replace function public.current_user_role()
+returns public.user_role language sql stable security definer
+set search_path = public
+as $$ select role from public.users where id = auth.uid() $$;
+
+create or replace function public.current_student_id()
+returns bigint language sql stable security definer
+set search_path = public
+as $$ select id from public.students where user_id = auth.uid() $$;
+
+create or replace function public.teacher_can_access_student(target_student_id bigint)
+returns boolean language sql stable security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.students as student
+    join public.teacher_assignments as assignment
+      on assignment.program_id = student.program_id
+     and (assignment.year_level is null or assignment.year_level = student.year_level)
+     and (assignment.section is null or assignment.section = student.section)
+     and (assignment.campus is null or assignment.campus = student.campus)
+    join public.teachers as teacher on teacher.id = assignment.teacher_id
+    where student.id = target_student_id
+      and teacher.user_id = auth.uid()
+      and student.status = 'active'
+      and teacher.status = 'active'
+      and assignment.status = 'active'
+  )
+$$;
+
+commit;
+```
+<!-- p01-rollback:end -->
+
+Existing helper execution grants are retained by `create or replace function`.
+
 ## R01 attendance status rollout
 
 `202609080001_restrict_attendance_status.sql` allows new attendance decisions only
@@ -81,8 +224,8 @@ Lifecycle rules:
 - The migration does not rewrite existing profiles or infer which side of an
   existing account/profile mismatch is correct. Review old mismatches and save
   the intended profile status to reconcile them.
-- W01 database access revocation and W03 atomic profile/email/assignment saves
-  remain separate tasks. This migration synchronizes lifecycle state; it does not
+- Database access revocation is implemented separately under P01 above; atomic
+  profile/email/assignment saves remain P02. This migration synchronizes lifecycle state; it does not
   ban Supabase Auth users or make external Auth API calls transactional.
 
 Run the regression suite with `pnpm test:lifecycle`. It uses an isolated PGlite

@@ -9,7 +9,10 @@ This document began as an analysis and implementation plan. **R01 is complete in
 **R02 is also complete:** unsupported tasks have been removed from the active
 release instructions. This audit is the single active scope checklist; module
 READMEs and the supporting UI review must follow it. Required work in P01–P11
-remains open; documenting an exclusion does not complete those implementations.
+follows the individual status below; documenting an exclusion does not complete
+those implementations. P01 is DONE: local tests passed, and the user confirmed
+hosted migration execution, application deactivation/reactivation, and all nine
+hosted SQL verification results as PASS on 2026-09-06.
 
 ## 1. Which documents control the scope?
 
@@ -53,7 +56,7 @@ Your instruction resolves the current-release decision: remove this business sta
 
 | Area | Implementation evidence | Decision |
 | --- | --- | --- |
-| Authentication and role routing | `src/features/auth/`, `src/proxy.ts`, role layouts, sign-in form | KEEP. Finish database-level disabled-account enforcement; see P01. |
+| Authentication and role routing | `src/features/auth/`, `src/proxy.ts`, role layouts, sign-in form | KEEP. P01 DONE: migration applied, application checks passed, and nine hosted SQL checks passed according to the user. |
 | Admin dashboard | `src/features/attendance/dashboard.ts`, `src/app/(portal)/admin/dashboard/` | KEEP. Excused removed under R01; the documented Program field and remaining calculation work stay separate. |
 | Manage teachers | `src/features/teachers/`, `src/services/teachers/`, admin teacher forms | KEEP add/edit/archive/view and multiple assignments. Repair save integrity and pilot validation. |
 | Manage students | `src/features/students/`, `src/services/students/`, admin student forms | KEEP identity, academics, guardian information, accounts, archive, and RFID assignment. |
@@ -161,11 +164,15 @@ The login link to `/forgot-password` is preserved. Its former placeholder form n
 
 **SMTP resolution guidance:** the screenshot showed `smtp.gmail.com` with port **463**. The user was instructed to use **465** and a Gmail App Password without formatting spaces, then save and retest. Supabase's [Google SMTP guide](https://supabase.com/docs/guides/troubleshooting/using-google-smtp-with-supabase-custom-smtp-ZZzU4Y) supports **465 or 587**. Recovery is now working according to the user; hosted settings were managed by the user.
 
-### R04 — Retire destructive pilot cleanup scripts from normal setup instructions
+### R04 — Retire destructive pilot cleanup scripts from normal setup instructions — DONE
 
-`supabase/cleanup_bshm.sql` and `supabase/cleanup_old_sections.sql` delete students and assignments. Student deletion cascades into RFID cards, attendance, and SMS; the comments also acknowledge surviving login accounts.
+- [x] **Completed on 2026-09-05.** Labeled `supabase/cleanup_bshm.sql` and `supabase/cleanup_old_sections.sql` as retired historical maintenance scripts, excluded from normal setup, deployment, and pilot cleanup.
+- [x] Replaced execution instructions and advice to remove surviving Auth accounts with historical descriptions and the documented archive/preservation rule. Retained the original SQL as reference; it remains executable and destructive.
+- [x] Updated [Supabase setup guidance](supabase/README.md) to use versioned migration rollout instructions and explicitly exclude these scripts. Clarified that local demo reset discards local data and is not an existing-data cleanup step.
+- [x] Kept demo seed alignment under P10. No database records were deleted, converted, or archived by this task; neither retired script was executed.
+- [x] **Verification:** compared both scripts against HEAD with comments removed; executable SQL is unchanged. Confirmed retirement labels, resolved setup-document links, reviewed script references, and passed `git diff --check`. No application tests were rerun because this change affects documentation and SQL comments only.
 
-The docs require archive actions and say non-pilot taps remain Present until onboarding. They do not instruct deleting all non-pilot history. Remove these scripts from the routine deployment/cleanup path. If retained as historical maintenance artifacts, label them accordingly. Align demo seed data through P10; do not execute broad deletes to force existing data into the pilot.
+**Basis:** documented teacher/student archive actions and LATE's preservation of non-pilot attendance behavior. Pilot scope does not authorize deleting historical records. Future setup instructions must preserve this exclusion.
 
 ### R05 — Small, optional source cleanup after business alignment
 
@@ -194,15 +201,26 @@ Do not mass-delete shadcn components or libraries because a business document do
 
 Priorities: **P0** = security/correctness prerequisite; **P1** = required before calling the pilot complete; **P2** = smaller requirement or maintenance correction. These priorities describe the source findings, not a tested production deployment.
 
-### P01 — Enforce disabled-account access in the database (P0)
+### P01 — Enforce disabled-account access in the database (P0) — DONE
 
 **Basis:** FR Security; ARCH role-based security; documented archive actions.
 
-**Evidence:** `requireCurrentAccount` checks active status in `src/features/auth/server.ts`, but SQL `current_user_role()` and `current_student_id()` in migration `202609010001` do not. Owner policies still match by identity. The `202609030001` teacher helper checks teacher/assignment status; migration `202609070001` synchronizes lifecycle status but does not replace the authorization helpers.
+**Reproduced before the change:** the original role and student helpers ignored account status. With retained inactive identities, local database requests still returned business records for Admin, Teacher, and Student. Owner and catalog policies allowed additional reads. Application redirects alone did not protect direct database requests.
 
-**Proceed:** make business-table authorization enforce the intended active-account restriction, preserving authorized role access. Do not treat additional proxy redirects as a substitute for RLS.
+- [x] Added [202609090001_enforce_active_account_access.sql](supabase/migrations/202609090001_enforce_active_account_access.sql). Authorization helpers read current account status; student/teacher helper access also requires the appropriate active role.
+- [x] Added restrictive policies to all nine business tables, preventing owner/catalog policies from bypassing the active-account requirement. Existing active-admin, assigned-teacher, and personal-student permissions remain intact.
+- [x] Preserved read-only access to the caller's own `public.users` row for login/status feedback. Disabled accounts cannot reactivate themselves, change roles, or read other users. Auth recovery and privileged service-role operations retain their existing behavior.
+- [x] Preserved all records, account statuses, card states, historical links, and lifecycle triggers. The migration contains no data updates/deletes and can be reapplied atomically.
+- [x] **Verification completed on 2026-09-06:** 42 database tests pass: 19 access tests, 14 profile-lifecycle tests, and 9 attendance-status migration tests. Coverage includes the original leak, active access boundaries, all six disabled-role/status combinations, self-elevation denial, archive/restore, reapplication, row preservation, and the actual documented rollback SQL.
+- [x] Added [rollout, hosted verification, and rollback instructions](supabase/migrations/README.md#p01-active-account-access-rollout). No frontend changes were needed.
+- [x] **Hosted migration execution confirmed by the user on 2026-09-06:** `202609090001_enforce_active_account_access.sql` has been run in Supabase.
+- [x] **Application deactivation check reported on 2026-09-06:** following the test steps, the user reported an "Error 401 / Sign-in required" page. This confirms the application denied access in that test; it does not independently prove direct database enforcement. The tested role was not specified.
+- [x] **Application reactivation check confirmed on 2026-09-06:** the user reactivated the test account and confirmed access returned.
+- [x] Prepared [verify_active_account_access.sql](supabase/verify_active_account_access.sql) for a hosted SQL-level check. It tests one existing active account per role with simulated authenticated claims, rolls back temporary status changes/write probes, and returns nine PASS rows. All 21 access tests pass locally, including successful script execution, rejection of the old policies, and preservation of every stored row. This is a verification script, not a migration or cleanup operation.
+- [x] **Hosted SQL verification confirmed by the user on 2026-09-06:** all nine rows from `verify_active_account_access.sql` are marked PASS. This covers active, inactive, and archived states for Admin, Teacher, and Student, blocked business-table reads/updates, rejected inserts/self-reactivation, and restored access after reactivation. Temporary writes are rolled back by the script.
+- [x] **P01 completion:** passing local regression tests, user-confirmed migration execution and application checks, and user-confirmed hosted RLS checks establish the implemented database boundary. The SQL checks use simulated authenticated claims; a separate real HTTP request with a retained JWT was not tested or claimed.
 
-**Done when:** direct database requests using retained inactive/archived sessions cannot access protected business data or restore their own privileges; active admin/teacher/student permissions still work. Existing lifecycle tests are useful but do not prove this complete authorization matrix.
+**Current status: DONE on 2026-09-06.** The user confirmed all nine hosted SQL checks passed after migration execution and successful application deactivation/reactivation checks. No hosted migration or account mutation was performed by this assistant. Local tests use PGlite with an Auth identity stub; hosted SQL checks simulate authenticated claims. Revocation applies to subsequent statements observing the committed status change and cannot retract already downloaded data or cancel earlier transaction snapshots.
 
 ### P02 — Finish safe management writes and pilot validation (P1)
 
