@@ -1,16 +1,16 @@
-import { addDays, format, parseISO } from "date-fns"
-
 import { requireRole } from "@/features/auth/server"
+import { schoolDateKey } from "@/lib/school-time"
 import {
   fetchStudentDashboardSnapshot,
+  type AttendanceStatus,
   type SmsStatus,
   type StudentDashboardSnapshot,
 } from "@/services/attendance/student-dashboard"
 
 export type { SmsStatus }
 
-/** Dashboard shows a binary tap state: tapped in or not yet. */
-export type TodayAttendanceStatus = "Present" | "Absent"
+/** NoRecord is provisional; recorded statuses match attendance history. */
+export type TodayAttendanceStatus = AttendanceStatus | "NoRecord"
 
 /**
  * `Active` means an active card is assigned. `Registered` means at least one
@@ -63,7 +63,7 @@ export interface StudentDashboardKpis {
 }
 
 export interface StudentDashboardData {
-  /** The yyyy-MM-dd date this snapshot was built for. */
+  /** The Asia/Manila yyyy-MM-dd date this snapshot was built for. */
   today: string
   student: StudentIdentity
   attendance: TodayAttendance
@@ -72,11 +72,7 @@ export interface StudentDashboardData {
   kpis: StudentDashboardKpis
 }
 
-function toDateKey(value: Date) {
-  return format(value, "yyyy-MM-dd")
-}
-
-/** Present and Late both mean the student tapped in today. */
+/** Preserve the recorded first-tap classification; never infer an absence. */
 function resolveTodayStatus(
   attendance: StudentDashboardSnapshot["attendance"]
 ): TodayAttendance {
@@ -86,13 +82,17 @@ function resolveTodayStatus(
       attendance.attendance_status === "Late")
   ) {
     return {
-      status: "Present",
+      status: attendance.attendance_status,
       timeIn: attendance.time_in,
       timeOut: attendance.time_out,
     }
   }
 
-  return { status: "Absent", timeIn: null, timeOut: null }
+  return {
+    status: attendance?.attendance_status ?? "NoRecord",
+    timeIn: null,
+    timeOut: null,
+  }
 }
 
 function resolveRfidInfo(
@@ -141,45 +141,24 @@ export interface PersonalHistoryDay {
 }
 
 /**
- * Absent school days = weekdays (Mon-Fri) since the first recorded tap that
- * have neither a tap-in nor an excused record. Taps only exist for days the
- * student attended, so the gap days are the absences.
+ * An absence is final here only when an Absent status is stored for a date
+ * on or before today in Asia/Manila. Missing days, including past weekdays,
+ * remain provisional: W08/W09 do not yet define an absence finalization
+ * policy or a complete expected-attendance calendar. Excused is not absent.
  */
 export function countPersonalAbsentDays(
   history: PersonalHistoryDay[],
   today: string
 ): number {
-  const present = new Set<string>()
-  const excused = new Set<string>()
-
-  for (const record of history) {
-    if (isAttended(record.attendance_status)) present.add(record.attendance_date)
-    if (record.attendance_status === "Excused") excused.add(record.attendance_date)
-  }
-
-  const start =
-    history.length > 0
-      ? history.reduce((a, b) =>
-          a.attendance_date < b.attendance_date ? a : b
-        ).attendance_date
-      : today
-
-  let absent = 0
-  let cursor = parseISO(start)
-  const end = parseISO(today)
-
-  while (cursor <= end) {
-    const day = cursor.getDay()
-
-    if (day !== 0 && day !== 6) {
-      const key = format(cursor, "yyyy-MM-dd")
-      if (!present.has(key) && !excused.has(key)) absent += 1
-    }
-
-    cursor = addDays(cursor, 1)
-  }
-
-  return absent
+  return new Set(
+    history
+      .filter(
+        (record) =>
+          record.attendance_status === "Absent" &&
+          record.attendance_date <= today
+      )
+      .map((record) => record.attendance_date)
+  ).size
 }
 
 function buildKpis(
@@ -229,7 +208,7 @@ export async function getStudentDashboardData(
   now: Date = new Date()
 ): Promise<StudentDashboardData> {
   const account = await requireRole("student")
-  const today = toDateKey(now)
+  const today = schoolDateKey(now)
   const snapshot = await fetchStudentDashboardSnapshot({
     authUserId: account.id,
     date: today,

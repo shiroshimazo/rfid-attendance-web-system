@@ -136,6 +136,7 @@ export async function createStudentAction(
   }
 
   revalidatePath(STUDENTS_PATH)
+  revalidatePath("/admin/rfid-cards")
 
   return success(`${values.fullName} was added.`)
 }
@@ -170,9 +171,11 @@ export async function updateStudentAction(
 
   if (updateError) return failure(describeError(updateError))
 
+  // Lifecycle status and card retirement are synchronized by the profile
+  // trigger in the same transaction as the student update above.
   const { error: accountError } = await supabase
     .from("users")
-    .update({ email: values.email, status: values.status })
+    .update({ email: values.email })
     .eq("id", existing.user_id)
 
   if (accountError) return failure(describeError(accountError))
@@ -200,6 +203,7 @@ export async function updateStudentAction(
   }
 
   revalidatePath(STUDENTS_PATH)
+  revalidatePath("/admin/rfid-cards")
 
   return success(`${values.fullName} was updated.`)
 }
@@ -227,6 +231,8 @@ export async function setStudentStatusAction(
   if (readError) return failure(describeError(readError))
   if (!student) return failure("That student record no longer exists.")
 
+  // The database synchronizes account status and retires the active card
+  // atomically, just as it does when status changes through the edit dialog.
   const { error: studentError } = await supabase
     .from("students")
     .update({ status })
@@ -234,30 +240,15 @@ export async function setStudentStatusAction(
 
   if (studentError) return failure(describeError(studentError))
 
-  const { error: accountError } = await supabase
-    .from("users")
-    .update({ status })
-    .eq("id", student.user_id)
-
-  if (accountError) return failure(describeError(accountError))
-
-  // An archived student must not keep tapping in, so their card is retired.
-  if (status === "archived") {
-    const { error: cardError } = await supabase
-      .from("rfid_cards")
-      .update({ card_status: "Deactivated" })
-      .eq("student_id", student.id)
-      .eq("card_status", "Active")
-
-    if (cardError) return failure(describeCardError(cardError))
-  }
-
   revalidatePath(STUDENTS_PATH)
+  revalidatePath("/admin/rfid-cards")
 
   return success(
     status === "archived"
       ? `${student.full_name} was archived.`
-      : `${student.full_name} was restored.`
+      : status === "inactive"
+        ? `${student.full_name} was made inactive.`
+        : `${student.full_name} was restored.`
   )
 }
 

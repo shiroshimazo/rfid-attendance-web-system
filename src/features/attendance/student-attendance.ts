@@ -1,6 +1,5 @@
-import { format } from "date-fns"
-
 import { requireRole } from "@/features/auth/server"
+import { schoolDateKey } from "@/lib/school-time"
 import {
   countPersonalAbsentDays,
   type StudentCardStatus,
@@ -41,10 +40,6 @@ export interface StudentAttendanceData {
   today: string
   kpis: StudentAttendanceKpis
   rows: StudentAttendanceRow[]
-}
-
-function toDateKey(value: Date) {
-  return format(value, "yyyy-MM-dd")
 }
 
 /** Present and Late both mean the student physically tapped in. */
@@ -119,5 +114,5 @@ export async function getStudentAttendanceData(
     authUserId: account.id,
   })
 
-  return buildStudentAttendanceData(snapshot, toDateKey(now))
+  return buildStudentAttendanceData(snapshot, schoolDateKey(now))
 }

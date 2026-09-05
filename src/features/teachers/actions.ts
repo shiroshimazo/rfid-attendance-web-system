@@ -208,9 +208,10 @@ export async function updateTeacherAction(
 
   if (assignmentError) return failure(describeError(assignmentError))
 
+  // Profile and assignment status are synchronized by database triggers.
   const { error: accountError } = await supabase
     .from("users")
-    .update({ email: values.email, status: values.status })
+    .update({ email: values.email })
     .eq("id", existing.user_id)
 
   if (accountError) return failure(describeError(accountError))
@@ -265,6 +266,7 @@ export async function setTeacherStatusAction(
   if (readError) return failure(describeError(readError))
   if (!teacher) return failure("That teacher record no longer exists.")
 
+  // Account and assignment status follow this profile write atomically.
   const { error: teacherError } = await supabase
     .from("teachers")
     .update({ status })
@@ -272,27 +274,13 @@ export async function setTeacherStatusAction(
 
   if (teacherError) return failure(describeError(teacherError))
 
-  // Assignments follow the profile so an archived teacher stops matching the
-  // teacher_can_access_student policy.
-  const { error: assignmentError } = await supabase
-    .from("teacher_assignments")
-    .update({ status })
-    .eq("teacher_id", teacher.id)
-
-  if (assignmentError) return failure(describeError(assignmentError))
-
-  const { error: accountError } = await supabase
-    .from("users")
-    .update({ status })
-    .eq("id", teacher.user_id)
-
-  if (accountError) return failure(describeError(accountError))
-
   revalidatePath(TEACHERS_PATH)
 
   return success(
     status === "archived"
       ? `${teacher.full_name} was archived.`
-      : `${teacher.full_name} was restored.`
+      : status === "inactive"
+        ? `${teacher.full_name} was made inactive.`
+        : `${teacher.full_name} was restored.`
   )
 }

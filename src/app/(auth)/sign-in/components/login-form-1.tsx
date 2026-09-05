@@ -115,13 +115,13 @@ export function LoginForm1({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Mail
-                              aria-hidden="true"
-                              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-                              strokeWidth={1.5}
-                            />
+                        <div className="relative">
+                          <Mail
+                            aria-hidden="true"
+                            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+                            strokeWidth={1.5}
+                          />
+                          <FormControl>
                             <Input
                               type="email"
                               autoComplete="email"
@@ -129,8 +129,8 @@ export function LoginForm1({
                               className="h-10 pl-10"
                               {...field}
                             />
-                          </div>
-                        </FormControl>
+                          </FormControl>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -149,49 +149,49 @@ export function LoginForm1({
                             Forgot your password?
                           </a>
                         </div>
-                        <FormControl>
-                          <div className="relative">
-                            <LockKeyhole
-                              aria-hidden="true"
-                              className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-                              strokeWidth={1.5}
-                            />
+                        <div className="relative">
+                          <LockKeyhole
+                            aria-hidden="true"
+                            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+                            strokeWidth={1.5}
+                          />
+                          <FormControl>
                             <Input
                               type={showPassword ? "text" : "password"}
                               autoComplete="current-password"
                               className="h-10 pr-11 pl-10"
                               {...field}
                             />
-                            <button
-                              type="button"
-                              aria-label={showPassword ? "Hide password" : "Show password"}
-                              aria-pressed={showPassword}
-                              onClick={() => setShowPassword((visible) => !visible)}
-                              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring absolute top-1/2 right-0 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2"
-                            >
-                              <Eye
-                                aria-hidden="true"
-                                strokeWidth={1.5}
-                                className={cn(
-                                  "absolute size-4 transition-[opacity,scale,filter] duration-150 [transition-timing-function:cubic-bezier(0.2,0,0,1)]",
-                                  showPassword
-                                    ? "scale-25 opacity-0 blur-[4px]"
-                                    : "scale-100 opacity-100 blur-none"
-                                )}
-                              />
-                              <EyeOff
-                                aria-hidden="true"
-                                strokeWidth={1.5}
-                                className={cn(
-                                  "absolute size-4 transition-[opacity,scale,filter] duration-150 [transition-timing-function:cubic-bezier(0.2,0,0,1)]",
-                                  showPassword
-                                    ? "scale-100 opacity-100 blur-none"
-                                    : "scale-25 opacity-0 blur-[4px]"
-                                )}
-                              />
-                            </button>
-                          </div>
-                        </FormControl>
+                          </FormControl>
+                          <button
+                            type="button"
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                            aria-pressed={showPassword}
+                            onClick={() => setShowPassword((visible) => !visible)}
+                            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring absolute top-1/2 right-0 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md outline-none transition-colors focus-visible:ring-2"
+                          >
+                            <Eye
+                              aria-hidden="true"
+                              strokeWidth={1.5}
+                              className={cn(
+                                "absolute size-4 transition-[opacity,scale,filter] duration-150 [transition-timing-function:cubic-bezier(0.2,0,0,1)]",
+                                showPassword
+                                  ? "scale-25 opacity-0 blur-[4px]"
+                                  : "scale-100 opacity-100 blur-none"
+                              )}
+                            />
+                            <EyeOff
+                              aria-hidden="true"
+                              strokeWidth={1.5}
+                              className={cn(
+                                "absolute size-4 transition-[opacity,scale,filter] duration-150 [transition-timing-function:cubic-bezier(0.2,0,0,1)]",
+                                showPassword
+                                  ? "scale-100 opacity-100 blur-none"
+                                  : "scale-25 opacity-0 blur-[4px]"
+                              )}
+                            />
+                          </button>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}

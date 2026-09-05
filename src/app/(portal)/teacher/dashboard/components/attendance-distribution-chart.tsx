@@ -98,7 +98,7 @@ export function AttendanceDistributionChart({
                     return (
                       <foreignObject
                         x={cx - 70}
-                        y={cy - 34}
+                        y={cy - 50}
                         width={140}
                         height={68}
                       >
