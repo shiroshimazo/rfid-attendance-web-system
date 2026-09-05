@@ -1,5 +1,9 @@
 import { format, isValid, parseISO } from "date-fns"
 
+import { schoolDateKey } from "@/lib/school-time"
+import type { AttendanceRecordStatus } from "@/features/attendance/status"
+export { isAttendanceStatus, recordStatus } from "@/features/attendance/status"
+export type { AttendanceRecordStatus } from "@/features/attendance/status"
 import type {
   AttendanceFilterStatus,
   AttendancePanelQuery,
@@ -8,12 +12,37 @@ import type {
 
 export type { AttendanceFilterStatus, AttendancePanelQuery, AttendanceStatus }
 
+/**
+ * The statuses allowed for new attendance decisions. A student with
+ * no record at all is not one of these; see {@link AttendanceRowStatus}.
+ */
 export const attendanceStatuses = [
   "Present",
   "Late",
-  "Excused",
   "Absent",
 ] as const satisfies readonly AttendanceStatus[]
+
+/**
+ * What a roster row can show. A missing record stays provisional as
+ * "NoRecord": the student may still tap in, so only a stored Absent is final.
+ */
+export type AttendanceRowStatus = AttendanceRecordStatus | "NoRecord"
+
+export const attendanceRowStatuses = [
+  ...attendanceStatuses,
+  "NoRecord",
+] as const satisfies readonly AttendanceRowStatus[]
+
+export const NO_RECORD_LABEL = "No tap recorded yet"
+
+/**
+ * Spells "NoRecord" out for people; every other status reads as itself. Takes a
+ * plain string so filter values read straight off a select can be labelled.
+ */
+export function attendanceStatusLabel(status: string) {
+  if (status === "LegacyRecord") return "Historical record"
+  return status === "NoRecord" ? NO_RECORD_LABEL : status
+}
 
 export type AttendanceSearchParams = Record<
   string,
@@ -39,13 +68,13 @@ function readDate(value: string, now: Date) {
     return candidate
   }
 
-  return toDateKey(now)
+  return schoolDateKey(now)
 }
 
 function readStatus(value: string): AttendanceFilterStatus {
   const candidate = value.trim()
 
-  return attendanceStatuses.find((status) => status === candidate) ?? "all"
+  return attendanceRowStatuses.find((status) => status === candidate) ?? "all"
 }
 
 function readProgramId(value: string) {

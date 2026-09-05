@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/select"
 import type { TeacherAttendancePanelOptions } from "@/features/attendance/teacher-attendance"
 import {
-  attendanceStatuses,
+  attendanceRowStatuses,
+  attendanceStatusLabel,
   isAttendancePanelFiltered,
   type AttendancePanelQuery,
 } from "@/features/attendance/schema"
@@ -126,14 +127,16 @@ export function FiltersBar({
       >
         <SelectTrigger aria-label="Filter by attendance status" className="w-full">
           <SelectValue>
-            {query.status === "all" ? "All statuses" : query.status}
+            {query.status === "all"
+              ? "All statuses"
+              : attendanceStatusLabel(query.status)}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All statuses</SelectItem>
-          {attendanceStatuses.map((status) => (
+          {attendanceRowStatuses.map((status) => (
             <SelectItem key={status} value={status}>
-              {status}
+              {attendanceStatusLabel(status)}
             </SelectItem>
           ))}
         </SelectContent>

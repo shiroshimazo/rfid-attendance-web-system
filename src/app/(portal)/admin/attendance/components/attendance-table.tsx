@@ -27,10 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type {
-  AttendancePanelRow,
-  AttendanceStatus,
-} from "@/features/attendance/panel"
+import type { AttendancePanelRow } from "@/features/attendance/panel"
 import { formatClockTime, formatNumber } from "@/lib/format"
 
 type SortColumn =
@@ -44,11 +41,12 @@ type SortColumn =
 
 const PAGE_SIZE = 10
 
-const statusOrder: Record<AttendanceStatus, number> = {
+const statusOrder: Record<AttendancePanelRow["status"], number> = {
   Present: 0,
   Late: 1,
-  Excused: 2,
+  LegacyRecord: 4,
   Absent: 3,
+  NoRecord: 4,
 }
 
 const collator = new Intl.Collator(undefined, { numeric: true })

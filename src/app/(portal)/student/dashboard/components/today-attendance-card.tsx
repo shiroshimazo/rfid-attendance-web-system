@@ -1,7 +1,6 @@
 import { ScanLine } from "lucide-react"
 
 import { AttendanceStatusBadge } from "@/components/attendance-status-badge"
-import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardContent,
@@ -36,13 +35,7 @@ export function TodayAttendanceCard({
           Today&apos;s Attendance
         </CardDescription>
         <CardTitle>
-          {attendance.status === "NoRecord" ? (
-            <Badge variant="outline" className="border-border bg-muted text-foreground">
-              No tap recorded yet
-            </Badge>
-          ) : (
-            <AttendanceStatusBadge status={attendance.status} />
-          )}
+          <AttendanceStatusBadge status={attendance.status} />
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -54,7 +47,8 @@ export function TodayAttendanceCard({
           <p className="mt-3 text-xs text-muted-foreground text-pretty">
             Absence is finalized by school policy, not by a missing tap.
           </p>
-        ) : attendance.timeIn && !attendance.timeOut ? (
+        ) : (attendance.status === "Present" || attendance.status === "Late") &&
+          attendance.timeIn && !attendance.timeOut ? (
           <p className="mt-3 text-xs text-muted-foreground text-pretty">
             Time out stays empty until the second tap of the day.
           </p>

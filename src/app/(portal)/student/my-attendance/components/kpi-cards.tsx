@@ -94,7 +94,7 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
             ? formatPercent((kpis.totalAbsent / denominator) * 100)
             : undefined
         }
-        detail="Recorded absences; excused and unrecorded days excluded."
+        detail="Recorded absences; unrecorded days excluded."
       />
       <KpiCard
         label="Attendance Rate"

@@ -4,7 +4,11 @@ import { createServerSupabaseClient } from "@/services/supabase/server"
 
 export type { AttendanceStatus }
 
-export type AttendanceFilterStatus = AttendanceStatus | "all"
+/**
+ * Roster filters, not database statuses: "NoRecord" selects students with no
+ * stored row for the date, so it is applied after the rows are read.
+ */
+export type AttendanceFilterStatus = AttendanceStatus | "NoRecord" | "all"
 
 export interface AttendancePanelFilters {
   date: string
@@ -44,7 +48,7 @@ export interface AttendancePanelAttendanceRow {
   attendance_date: string
   time_in: string
   time_out: string | null
-  attendance_status: AttendanceStatus
+  attendance_status: string
 }
 
 export interface AttendanceProgramRow {

@@ -1,5 +1,6 @@
-import { toDateKey } from "@/features/attendance/schema"
+import { recordStatus, type AttendanceRowStatus } from "@/features/attendance/schema"
 import { requireRole } from "@/features/auth/server"
+import { schoolDateKey } from "@/lib/school-time"
 import type { ProgramOption } from "@/features/teachers/directory"
 import {
   fetchTeacherStudentsSnapshot,
@@ -8,6 +9,7 @@ import {
 } from "@/services/students/teacher-directory"
 
 export type {
+  AttendanceRowStatus,
   AttendanceStatus,
   ProgramOption,
   TeacherStudentsSnapshot,
@@ -24,8 +26,8 @@ export interface TeacherStudentRow {
   yearLevel: string
   section: string
   campus: string
-  /** Today's tap state; a missing record means the student has not tapped in. */
-  status: AttendanceStatus
+  /** Today's tap state; NoRecord means the student has not tapped in yet. */
+  status: AttendanceRowStatus
   timeIn: string | null
   timeOut: string | null
 }
@@ -78,7 +80,7 @@ export function buildTeacherStudentsData(
         yearLevel: student.year_level,
         section: student.section,
         campus: student.campus,
-        status: record?.attendance_status ?? "Absent",
+        status: record ? recordStatus(record.attendance_status) : "NoRecord",
         timeIn: record?.time_in ?? null,
         timeOut: record?.time_out ?? null,
       }
@@ -106,7 +108,7 @@ export async function getTeacherStudentsData(
   const account = await requireRole("teacher")
   const snapshot = await fetchTeacherStudentsSnapshot({
     authUserId: account.id,
-    date: toDateKey(now),
+    date: schoolDateKey(now),
   })
 
   return buildTeacherStudentsData(snapshot)

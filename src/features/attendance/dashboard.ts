@@ -7,6 +7,8 @@ import {
   subWeeks,
 } from "date-fns"
 
+import { isAttendanceStatus, recordStatus, type AttendanceRowStatus } from "@/features/attendance/schema"
+import { schoolDateKey } from "@/lib/school-time"
 import {
   fetchAdminDashboardSnapshot,
   type AttendanceRow,
@@ -16,7 +18,7 @@ import {
   type StudentRow,
 } from "@/services/attendance/dashboard"
 
-export type { AttendanceStatus, RfidCardStatus }
+export type { AttendanceRowStatus, AttendanceStatus, RfidCardStatus }
 
 /** A student with no card row at all, as opposed to one with an inactive card. */
 export type StudentRfidStatus = RfidCardStatus | "Unassigned"
@@ -28,9 +30,8 @@ export interface DashboardKpis {
   /** Present includes late arrivals; both mean the student tapped in. */
   presentToday: number
   lateToday: number
-  excusedToday: number
   absentToday: number
-  /** Percentage in the 0-100 range. */
+  /** Present (including Late) / (Present + Absent), as a percentage. */
   attendanceRate: number
   /** Time-in taps plus time-out taps recorded today. */
   rfidTapsToday: number
@@ -55,7 +56,7 @@ export interface GroupBreakdown {
 }
 
 export interface StatusSlice {
-  status: AttendanceStatus
+  status: AttendanceRowStatus
   count: number
 }
 
@@ -65,7 +66,7 @@ export interface StudentAttendanceRow {
   name: string
   yearLevel: string
   section: string
-  status: AttendanceStatus
+  status: AttendanceRowStatus
   timeIn: string | null
   timeOut: string | null
   rfidStatus: StudentRfidStatus
@@ -90,7 +91,7 @@ const MONTHLY_POINTS = 6
 const WEEK_OPTIONS = { weekStartsOn: 1 } as const
 
 /** Present and Late both mean the student physically tapped in. */
-function isAttended(status: AttendanceStatus) {
+function isAttended(status: string) {
   return status === "Present" || status === "Late"
 }
 
@@ -107,7 +108,7 @@ function historyStart(now: Date) {
 
 interface DayTally {
   present: number
-  excused: number
+  absent: number
 }
 
 function rateOf(present: number, expected: number) {
@@ -116,37 +117,34 @@ function rateOf(present: number, expected: number) {
 
 /**
  * Builds one trend point from the session dates that fall inside a bucket.
- * A session date is a date that produced at least one attendance record, so
- * weekends and holidays never dilute the rate. Today always counts as a
- * session date, which keeps the chart consistent with the KPI cards.
+ * Only recorded Absent statuses count as final absences. Missing records
+ * and historical records do not enter the rate denominator. Today has a bucket even
+ * before any records arrive, keeping the trend consistent with the KPIs.
  */
 function buildTrendPoint(
   key: string,
   label: string,
   dates: string[],
-  tallies: Map<string, DayTally>,
-  totalStudents: number
+  tallies: Map<string, DayTally>
 ): TrendPoint {
   let present = 0
-  let excused = 0
+  let absent = 0
 
   for (const date of dates) {
     const tally = tallies.get(date)
     if (!tally) continue
     present += tally.present
-    excused += tally.excused
+    absent += tally.absent
   }
 
-  const expected = totalStudents * dates.length
-  const absent = Math.max(0, expected - present - excused)
+  const expected = present + absent
 
   return { key, label, present, absent, rate: rateOf(present, expected) }
 }
 
 function buildTrendSeries(
   tallies: Map<string, DayTally>,
-  sessionDates: string[],
-  totalStudents: number
+  sessionDates: string[]
 ): TrendSeries {
   const daily = sessionDates
     .slice(-DAILY_POINTS)
@@ -155,8 +153,7 @@ function buildTrendSeries(
         date,
         format(parseISO(date), "MMM d"),
         [date],
-        tallies,
-        totalStudents
+        tallies
       )
     )
 
@@ -180,8 +177,7 @@ function buildTrendSeries(
         weekKey,
         `Wk ${format(parseISO(weekKey), "MMM d")}`,
         dates,
-        tallies,
-        totalStudents
+        tallies
       )
     )
 
@@ -193,8 +189,7 @@ function buildTrendSeries(
         monthKey,
         format(parseISO(`${monthKey}-01`), "MMM yyyy"),
         dates,
-        tallies,
-        totalStudents
+        tallies
       )
     )
 
@@ -221,17 +216,17 @@ function buildBreakdown(
 ): GroupBreakdown[] {
   const groups = new Map<
     string,
-    { present: number; excused: number; total: number }
+    { present: number; absent: number; total: number }
   >()
 
   for (const student of students) {
     const key = groupOf(student).trim() || "Unassigned"
-    const bucket = groups.get(key) ?? { present: 0, excused: 0, total: 0 }
+    const bucket = groups.get(key) ?? { present: 0, absent: 0, total: 0 }
     const record = todayByStudent.get(student.id)
 
     bucket.total += 1
     if (record && isAttended(record.attendance_status)) bucket.present += 1
-    if (record?.attendance_status === "Excused") bucket.excused += 1
+    if (record?.attendance_status === "Absent") bucket.absent += 1
 
     groups.set(key, bucket)
   }
@@ -240,9 +235,9 @@ function buildBreakdown(
     .map(([group, bucket]) => ({
       group,
       present: bucket.present,
-      absent: Math.max(0, bucket.total - bucket.present - bucket.excused),
+      absent: bucket.absent,
       total: bucket.total,
-      rate: rateOf(bucket.present, bucket.total),
+      rate: rateOf(bucket.present, bucket.present + bucket.absent),
     }))
     .sort((a, b) => compareGroupLabels(a.group, b.group))
 }
@@ -267,7 +262,7 @@ export function buildAdminDashboardData(
   const { students, attendance, cards } = snapshot
   const activeStudentIds = new Set(students.map((student) => student.id))
   const scopedAttendance = attendance.filter((record) =>
-    activeStudentIds.has(record.student_id)
+    activeStudentIds.has(record.student_id) && record.attendance_date <= today
   )
 
   const todayRecords = scopedAttendance.filter(
@@ -284,22 +279,25 @@ export function buildAdminDashboardData(
   const lateToday = todayRecords.filter(
     (record) => record.attendance_status === "Late"
   ).length
-  const excusedToday = todayRecords.filter(
-    (record) => record.attendance_status === "Excused"
+  const absentToday = todayRecords.filter(
+    (record) => record.attendance_status === "Absent"
   ).length
-  const absentToday = Math.max(0, totalStudents - presentToday - excusedToday)
-  const timeOutTaps = todayRecords.filter((record) => record.time_out).length
+  const currentRecords = todayRecords.filter((record) =>
+    isAttendanceStatus(record.attendance_status)
+  )
+  const timeOutTaps = currentRecords.filter((record) => record.time_out).length
 
   const tallies = new Map<string, DayTally>()
 
   for (const record of scopedAttendance) {
+    if (!isAttendanceStatus(record.attendance_status)) continue
     const tally = tallies.get(record.attendance_date) ?? {
       present: 0,
-      excused: 0,
+      absent: 0,
     }
 
     if (isAttended(record.attendance_status)) tally.present += 1
-    if (record.attendance_status === "Excused") tally.excused += 1
+    if (record.attendance_status === "Absent") tally.absent += 1
 
     tallies.set(record.attendance_date, tally)
   }
@@ -311,8 +309,8 @@ export function buildAdminDashboardData(
     [
       { status: "Present", count: presentToday - lateToday },
       { status: "Late", count: lateToday },
-      { status: "Excused", count: excusedToday },
       { status: "Absent", count: absentToday },
+      { status: "NoRecord", count: students.length - todayByStudent.size },
     ] as StatusSlice[]
   ).filter(
     (slice) =>
@@ -325,12 +323,11 @@ export function buildAdminDashboardData(
       totalStudents,
       presentToday,
       lateToday,
-      excusedToday,
       absentToday,
-      attendanceRate: rateOf(presentToday, totalStudents),
-      rfidTapsToday: todayRecords.length + timeOutTaps,
+      attendanceRate: rateOf(presentToday, presentToday + absentToday),
+      rfidTapsToday: currentRecords.length + timeOutTaps,
     },
-    trend: buildTrendSeries(tallies, sessionDates, totalStudents),
+    trend: buildTrendSeries(tallies, sessionDates),
     byProgram: buildBreakdown(
       students,
       todayByStudent,
@@ -356,7 +353,7 @@ export function buildAdminDashboardData(
         name: student.full_name,
         yearLevel: student.year_level,
         section: student.section,
-        status: record?.attendance_status ?? "Absent",
+        status: record ? recordStatus(record.attendance_status) : "NoRecord",
         timeIn: record?.time_in ?? null,
         timeOut: record?.time_out ?? null,
         rfidStatus: rfidStatusByStudent.get(student.id) ?? "Unassigned",
@@ -370,9 +367,9 @@ export function buildAdminDashboardData(
 export async function getAdminDashboardData(
   now: Date = new Date()
 ): Promise<AdminDashboardData> {
-  const today = toDateKey(now)
+  const today = schoolDateKey(now)
   const snapshot = await fetchAdminDashboardSnapshot({
-    fromDate: toDateKey(historyStart(now)),
+    fromDate: toDateKey(historyStart(parseISO(today))),
     toDate: today,
   })
 

@@ -75,13 +75,13 @@ export function KpiCards({
         label="Total Absent"
         value={<SlidingNumber value={kpis.totalAbsent} />}
         icon={UserRoundX}
-        detail={`Missed sessions across ${dayLabel}, excluding excused students.`}
+        detail={`Recorded absences across ${dayLabel}.`}
       />
       <KpiCard
         label="Attendance Rate"
         value={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={TrendingUp}
-        detail={`Share of assigned sessions attended across ${dayLabel}.`}
+        detail="Present and Late over attended plus recorded absent sessions."
       />
     </section>
   )

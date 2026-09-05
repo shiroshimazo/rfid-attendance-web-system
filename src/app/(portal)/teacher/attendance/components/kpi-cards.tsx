@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/card"
 import type { TeacherAttendancePanelKpis } from "@/features/attendance/teacher-attendance"
 import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
-import { formatPercent } from "@/lib/format"
+import { formatNumber, formatPercent } from "@/lib/format"
 
 interface KpiCardProps {
   label: string
@@ -96,7 +96,7 @@ export function KpiCards({
         value={<SlidingNumber value={kpis.absent} />}
         icon={UserRoundX}
         share={shareOf(kpis.absent, kpis.totalAssigned)}
-        detail="No time-in recorded. Excused students are counted separately."
+        detail={`Recorded absences only; ${formatNumber(kpis.noRecord)} students have no tap yet.`}
       />
     </section>
   )

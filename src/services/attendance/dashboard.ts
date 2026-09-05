@@ -1,7 +1,7 @@
 import { fetchAllRows } from "@/services/supabase/pagination"
 import { createServerSupabaseClient } from "@/services/supabase/server"
 
-export type AttendanceStatus = "Present" | "Late" | "Absent" | "Excused"
+export type { AttendanceStatus } from "@/features/attendance/status"
 
 export type RfidCardStatus = "Active" | "Inactive" | "Lost" | "Deactivated"
 
@@ -25,7 +25,8 @@ export interface AttendanceRow {
   attendance_date: string
   time_in: string
   time_out: string | null
-  attendance_status: AttendanceStatus
+  /** Raw stored value; readers map retired values without changing the database. */
+  attendance_status: string
 }
 
 export interface RfidCardRow {

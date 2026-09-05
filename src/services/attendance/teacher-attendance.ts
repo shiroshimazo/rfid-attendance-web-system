@@ -36,7 +36,7 @@ export interface TeacherAttendanceRecordRow {
   attendance_date: string
   time_in: string
   time_out: string | null
-  attendance_status: AttendanceStatus
+  attendance_status: string
 }
 
 export interface TeacherAttendanceCardRow {

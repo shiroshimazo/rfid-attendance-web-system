@@ -71,7 +71,7 @@ export function KpiCards({ kpis }: { kpis: StudentDashboardKpis }) {
         value={<SlidingNumber value={kpis.totalAbsent} />}
         icon={UserRoundX}
         headline="School days missed"
-        detail="Recorded absences; excused and unrecorded days excluded."
+        detail="Recorded absences; unrecorded days excluded."
       />
       <KpiCard
         label="Total RFID Taps"

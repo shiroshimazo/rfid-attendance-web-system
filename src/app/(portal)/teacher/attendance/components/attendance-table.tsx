@@ -31,7 +31,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type {
-  AttendanceStatus,
   StudentRfidStatus,
   TeacherAttendancePanelRow,
 } from "@/features/attendance/teacher-attendance"
@@ -50,11 +49,12 @@ type SortColumn =
 
 const PAGE_SIZE = 10
 
-const statusOrder: Record<AttendanceStatus, number> = {
+const statusOrder: Record<TeacherAttendancePanelRow["status"], number> = {
   Present: 0,
   Late: 1,
-  Excused: 2,
+  LegacyRecord: 4,
   Absent: 3,
+  NoRecord: 4,
 }
 
 const rfidOrder: Record<StudentRfidStatus, number> = {

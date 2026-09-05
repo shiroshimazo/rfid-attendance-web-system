@@ -1,3 +1,4 @@
+import { recordStatus, type AttendanceRowStatus } from "@/features/attendance/schema"
 import { requireRole } from "@/features/auth/server"
 import type { ProgramOption } from "@/features/teachers/directory"
 import {
@@ -22,7 +23,10 @@ export interface TeacherAttendancePanelKpis {
   /** Present includes late arrivals; both mean the student tapped in. */
   present: number
   late: number
+  /** Stored absences only; a student with no record yet is not one. */
   absent: number
+  /** Students with no record for the date, who may still tap in. */
+  noRecord: number
 }
 
 export interface TeacherAttendancePanelRow {
@@ -33,7 +37,7 @@ export interface TeacherAttendancePanelRow {
   programName: string
   yearLevel: string
   section: string
-  status: AttendanceStatus
+  status: AttendanceRowStatus
   timeIn: string | null
   timeOut: string | null
   rfidStatus: StudentRfidStatus
@@ -56,7 +60,7 @@ export interface TeacherAttendancePanelData {
 }
 
 /** Present and Late both mean the student physically tapped in. */
-function isAttended(status: AttendanceStatus) {
+function isAttended(status: AttendanceRowStatus) {
   return status === "Present" || status === "Late"
 }
 
@@ -127,7 +131,7 @@ export function buildTeacherAttendancePanelData(
         programName: student.program?.program_name ?? "Unknown program",
         yearLevel: student.year_level,
         section: student.section,
-        status: record?.attendance_status ?? "Absent",
+        status: record ? recordStatus(record.attendance_status) : "NoRecord",
         timeIn: record?.time_in ?? null,
         timeOut: record?.time_out ?? null,
         rfidStatus: rfidByStudent.get(student.id) ?? "Unassigned",
@@ -137,7 +141,8 @@ export function buildTeacherAttendancePanelData(
   const totalAssigned = cohort.length
   const present = cohort.filter((row) => isAttended(row.status)).length
   const late = cohort.filter((row) => row.status === "Late").length
-  const excused = cohort.filter((row) => row.status === "Excused").length
+  const absent = cohort.filter((row) => row.status === "Absent").length
+  const noRecord = cohort.filter((row) => row.status === "NoRecord").length
 
   return {
     date,
@@ -146,7 +151,8 @@ export function buildTeacherAttendancePanelData(
       totalAssigned,
       present,
       late,
-      absent: Math.max(0, totalAssigned - present - excused),
+      absent,
+      noRecord,
     },
     rows:
       query.status === "all"

@@ -40,7 +40,7 @@ import { formatClockTime, formatNumber } from "@/lib/format"
 
 const PAGE_SIZE = 10
 
-const statusFilters = ["All", "Present", "Late", "Excused", "Absent"] as const
+const statusFilters = ["All", "Present", "Late", "Absent", "NoRecord"] as const
 
 type StatusFilter = (typeof statusFilters)[number]
 
@@ -109,14 +109,14 @@ export function StudentAttendanceTable({
             <SelectTrigger
               size="sm"
               aria-label="Filter by attendance status"
-              className="w-full sm:w-36"
+              className="w-full sm:w-48"
             >
               <SelectValue />
             </SelectTrigger>
             <SelectContent align="end">
               {statusFilters.map((option) => (
                 <SelectItem key={option} value={option}>
-                  {option === "All" ? "All statuses" : option}
+                  {option === "All" ? "All statuses" : option === "NoRecord" ? "No tap recorded yet" : option}
                 </SelectItem>
               ))}
             </SelectContent>

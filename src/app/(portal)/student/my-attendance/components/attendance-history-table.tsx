@@ -50,7 +50,7 @@ const PAGE_SIZE = 10
 const statusOrder: Record<StudentAttendanceRow["status"], number> = {
   Present: 0,
   Late: 1,
-  Excused: 2,
+  LegacyRecord: 4,
   Absent: 3,
 }
 

@@ -1,5 +1,47 @@
 # Database migrations
 
+## R01 attendance status rollout
+
+`202609080001_restrict_attendance_status.sql` allows new attendance decisions only
+as Present, Late, or Absent. It leaves the original enum and all existing records
+intact. Historical unsupported values are displayed as "Historical record" by
+the application, excluded from current attendance totals, and never offered as
+filter choices. This is display compatibility, not an additional business status.
+
+Deploy the compatible application and apply this migration after the previous
+migrations. Either order preserves reads; older clients attempting a new retired
+status after the migration receive a validation error. Existing historical rows
+may retain their original status during an update, but cannot move that status to
+another student/day/card. No data conversion or deletion is performed.
+
+Before and after rollout, inventory retained values with this read-only query:
+
+```sql
+select attendance_status, count(*)
+from public.attendance_records
+group by attendance_status;
+```
+
+The local attempt to inventory the configured hosted project failed to connect;
+neither this migration nor any data mutation was executed there for R01. Hosted
+deployment and the inventory remain pending. Run the local preservation and write
+guard tests with `node --test tests/attendance-status-migration.test.mjs`.
+
+Rollback, if required, is a follow-up migration containing only:
+
+```sql
+begin;
+drop trigger if exists attendance_enforce_current_status on public.attendance_records;
+drop function if exists public.enforce_current_attendance_status();
+commit;
+```
+
+This removes write enforcement without rewriting attendance or SMS data. The
+compatible application can stay deployed. Do not drop/recreate the enum or
+reclassify historical records as part of either rollout or rollback.
+
+## Migration history
+
 `202609010001_create_rfid_attendance_schema.sql` creates the original RFID attendance schema, relationships, constraints, indexes, authentication synchronization, and role-based Row Level Security.
 
 `202609030001_correct_academic_structure.sql` separates degree programs from courses/subjects, adds multi-class teacher assignments, migrates the original ambiguous columns, and limits teacher access to assigned students.

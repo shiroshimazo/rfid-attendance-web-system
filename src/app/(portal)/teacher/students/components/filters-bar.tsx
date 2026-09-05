@@ -12,7 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { attendanceStatuses } from "@/features/attendance/schema"
+import {
+  attendanceRowStatuses,
+  attendanceStatusLabel,
+} from "@/features/attendance/schema"
 import type { TeacherStudentsOptions } from "@/features/students/teacher-directory"
 
 export interface StudentsFilters {
@@ -122,14 +125,16 @@ export function FiltersBar({
       >
         <SelectTrigger aria-label="Filter by attendance status" className="w-full">
           <SelectValue>
-            {filters.status === "all" ? "All statuses" : filters.status}
+            {filters.status === "all"
+              ? "All statuses"
+              : attendanceStatusLabel(filters.status)}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All statuses</SelectItem>
-          {attendanceStatuses.map((status) => (
+          {attendanceRowStatuses.map((status) => (
             <SelectItem key={status} value={status}>
-              {status}
+              {attendanceStatusLabel(status)}
             </SelectItem>
           ))}
         </SelectContent>

@@ -1,16 +1,13 @@
+import { isAttendanceStatus, recordStatus, type AttendanceRowStatus } from "@/features/attendance/schema"
 import { requireRole } from "@/features/auth/server"
 import { schoolDateKey } from "@/lib/school-time"
 import {
   fetchStudentDashboardSnapshot,
-  type AttendanceStatus,
   type SmsStatus,
   type StudentDashboardSnapshot,
 } from "@/services/attendance/student-dashboard"
 
-export type { SmsStatus }
-
-/** NoRecord is provisional; recorded statuses match attendance history. */
-export type TodayAttendanceStatus = AttendanceStatus | "NoRecord"
+export type { AttendanceRowStatus, SmsStatus }
 
 /**
  * `Active` means an active card is assigned. `Registered` means at least one
@@ -36,7 +33,7 @@ export interface StudentIdentity {
 }
 
 export interface TodayAttendance {
-  status: TodayAttendanceStatus
+  status: AttendanceRowStatus
   timeIn: string | null
   timeOut: string | null
 }
@@ -88,10 +85,12 @@ function resolveTodayStatus(
     }
   }
 
+  const historical = attendance && !isAttendanceStatus(attendance.attendance_status)
+
   return {
-    status: attendance?.attendance_status ?? "NoRecord",
-    timeIn: null,
-    timeOut: null,
+    status: attendance ? recordStatus(attendance.attendance_status) : "NoRecord",
+    timeIn: historical ? attendance.time_in : null,
+    timeOut: historical ? attendance.time_out : null,
   }
 }
 
@@ -144,7 +143,7 @@ export interface PersonalHistoryDay {
  * An absence is final here only when an Absent status is stored for a date
  * on or before today in Asia/Manila. Missing days, including past weekdays,
  * remain provisional: W08/W09 do not yet define an absence finalization
- * policy or a complete expected-attendance calendar. Excused is not absent.
+ * policy or a complete expected-attendance calendar. Historical values are excluded.
  */
 export function countPersonalAbsentDays(
   history: PersonalHistoryDay[],
@@ -165,16 +164,20 @@ function buildKpis(
   history: StudentDashboardSnapshot["history"],
   today: string
 ): StudentDashboardKpis {
+  const currentHistory = history.filter((record) =>
+    isAttendanceStatus(record.attendance_status)
+  )
+
   return {
-    totalPresent: history.filter((record) =>
+    totalPresent: currentHistory.filter((record) =>
       isAttended(record.attendance_status)
     ).length,
-    totalLate: history.filter(
+    totalLate: currentHistory.filter(
       (record) => record.attendance_status === "Late"
     ).length,
     totalAbsent: countPersonalAbsentDays(history, today),
     totalRfidTaps:
-      history.length + history.filter((record) => record.time_out).length,
+      currentHistory.length + currentHistory.filter((record) => record.time_out).length,
   }
 }
 

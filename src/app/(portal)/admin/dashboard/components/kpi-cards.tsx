@@ -122,14 +122,14 @@ export function KpiCards({ data }: { data: AdminDashboardData }) {
         label="Absent Today"
         value={<SlidingNumber value={kpis.absentToday} />}
         icon={UserRoundX}
-        headline={`${formatNumber(kpis.excusedToday)} excused`}
-        detail="Active students with no time-in recorded today."
+        headline="Recorded absences"
+        detail="Recorded absences only; missing taps remain provisional."
       />
       <KpiCard
         label="Attendance Rate"
         value={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={TrendingUp}
-        headline="Share of students present"
+        headline="Present over present plus absent"
         detail="Compared with the previous session day."
         trend={trend}
       />

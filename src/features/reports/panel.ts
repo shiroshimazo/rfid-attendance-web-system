@@ -2,6 +2,11 @@ import { format, isValid, parseISO, subDays } from "date-fns"
 
 import type { StudentRfidStatus } from "@/features/attendance/dashboard"
 import {
+  isAttendanceStatus,
+  recordStatus,
+  type AttendanceRecordStatus,
+} from "@/features/attendance/status"
+import {
   fetchReportsSnapshot,
   type AttendanceStatus,
   type ReportStudentRow,
@@ -72,7 +77,7 @@ export interface AttendanceLog {
   program: string
   yearLevel: string
   section: string
-  status: AttendanceStatus
+  status: AttendanceRecordStatus
   rfidStatus: StudentRfidStatus
 }
 
@@ -142,7 +147,7 @@ export function formatRangeLabel(from: string, to: string) {
   return `${format(start, sameYear ? "d MMM" : "d MMM yyyy")} to ${format(end, "d MMM yyyy")}`
 }
 
-function isAttended(status: AttendanceStatus) {
+function isAttended(status: string) {
   return status === "Present" || status === "Late"
 }
 
@@ -153,11 +158,11 @@ function rateOf(present: number, expected: number) {
 interface Tally {
   present: number
   late: number
-  excused: number
+  absent: number
 }
 
 function emptyTally(): Tally {
-  return { present: 0, late: 0, excused: 0 }
+  return { present: 0, late: 0, absent: 0 }
 }
 
 function compareGroupLabels(a: string, b: string) {
@@ -167,31 +172,30 @@ function compareGroupLabels(a: string, b: string) {
 function buildGroups(
   students: ReportStudentRow[],
   tallies: Map<number, Tally>,
-  sessionDays: number,
   groupOf: (student: ReportStudentRow) => string
 ): GroupBreakdown[] {
-  const groups = new Map<string, { present: number; excused: number; total: number }>()
+  const groups = new Map<string, { present: number; absent: number; total: number }>()
 
   for (const student of students) {
     const key = groupOf(student).trim() || "Unassigned"
-    const bucket = groups.get(key) ?? { present: 0, excused: 0, total: 0 }
+    const bucket = groups.get(key) ?? { present: 0, absent: 0, total: 0 }
     const tally = tallies.get(student.id) ?? emptyTally()
 
     bucket.total += 1
     bucket.present += tally.present
-    bucket.excused += tally.excused
+    bucket.absent += tally.absent
 
     groups.set(key, bucket)
   }
 
   return [...groups.entries()]
     .map(([group, bucket]) => {
-      const expected = bucket.total * sessionDays
+      const expected = bucket.present + bucket.absent
 
       return {
         group,
         present: bucket.present,
-        absent: Math.max(0, expected - bucket.present - bucket.excused),
+        absent: bucket.absent,
         total: bucket.total,
         rate: rateOf(bucket.present, expected),
       }
@@ -217,27 +221,31 @@ export function buildReportsData(
     rfidStatusByStudent.set(card.student_id, card.card_status)
   }
 
+  // Historical values stay in the logs, but cannot create session days or totals.
+  const currentRecords = scoped.filter((record) =>
+    isAttendanceStatus(record.attendance_status)
+  )
+
   const sessionDates = [
-    ...new Set(scoped.map((record) => record.attendance_date)),
+    ...new Set(currentRecords.map((record) => record.attendance_date)),
   ].sort()
   const sessionDays = sessionDates.length
   const totalStudents = students.length
-  const expected = totalStudents * sessionDays
 
   const talliesByStudent = new Map<number, Tally>()
   const talliesByDate = new Map<string, Tally>()
 
   let presentCount = 0
   let lateCount = 0
-  let excusedCount = 0
+  let absentCount = 0
 
-  for (const record of scoped) {
+  for (const record of currentRecords) {
     const attended = isAttended(record.attendance_status)
-    const excused = record.attendance_status === "Excused"
+    const absent = record.attendance_status === "Absent"
 
     if (record.attendance_status === "Present") presentCount += 1
     if (record.attendance_status === "Late") lateCount += 1
-    if (excused) excusedCount += 1
+    if (absent) absentCount += 1
 
     const studentTally = talliesByStudent.get(record.student_id) ?? emptyTally()
     const dateTally = talliesByDate.get(record.attendance_date) ?? emptyTally()
@@ -250,9 +258,9 @@ export function buildReportsData(
       studentTally.late += 1
       dateTally.late += 1
     }
-    if (excused) {
-      studentTally.excused += 1
-      dateTally.excused += 1
+    if (absent) {
+      studentTally.absent += 1
+      dateTally.absent += 1
     }
 
     talliesByStudent.set(record.student_id, studentTally)
@@ -260,7 +268,8 @@ export function buildReportsData(
   }
 
   const totalPresent = presentCount + lateCount
-  const totalAbsent = Math.max(0, expected - totalPresent - excusedCount)
+  // Match current dashboards: only an explicit Absent record is a final absence.
+  const totalAbsent = absentCount
 
   const summary: SummaryPoint[] = sessionDates.map((date) => {
     const tally = talliesByDate.get(date) ?? emptyTally()
@@ -269,7 +278,7 @@ export function buildReportsData(
       date,
       label: format(parseISO(date), "MMM d"),
       present: tally.present,
-      absent: Math.max(0, totalStudents - tally.present - tally.excused),
+      absent: tally.absent,
     }
   })
 
@@ -285,7 +294,7 @@ export function buildReportsData(
       total: number
       present: number
       late: number
-      excused: number
+      absent: number
     }
   >()
 
@@ -301,21 +310,21 @@ export function buildReportsData(
       total: 0,
       present: 0,
       late: 0,
-      excused: 0,
+      absent: 0,
     }
     const tally = talliesByStudent.get(student.id) ?? emptyTally()
 
     bucket.total += 1
     bucket.present += tally.present
     bucket.late += tally.late
-    bucket.excused += tally.excused
+    bucket.absent += tally.absent
 
     sectionGroups.set(key, bucket)
   }
 
   const bySection: SectionBreakdown[] = [...sectionGroups.entries()]
     .map(([key, bucket]) => {
-      const groupExpected = bucket.total * sessionDays
+      const groupExpected = bucket.present + bucket.absent
 
       return {
         key,
@@ -325,7 +334,7 @@ export function buildReportsData(
         total: bucket.total,
         present: bucket.present,
         late: bucket.late,
-        absent: Math.max(0, groupExpected - bucket.present - bucket.excused),
+        absent: bucket.absent,
         rate: rateOf(bucket.present, groupExpected),
       }
     })
@@ -357,7 +366,7 @@ export function buildReportsData(
         program: student ? programCodeOf(student) : "—",
         yearLevel: student?.year_level ?? "—",
         section: student?.section ?? "—",
-        status: record.attendance_status,
+        status: recordStatus(record.attendance_status),
         rfidStatus:
           rfidStatusByStudent.get(record.student_id) ?? "Unassigned",
       }
@@ -366,7 +375,6 @@ export function buildReportsData(
   const byProgramYear = buildGroups(
     students,
     talliesByStudent,
-    sessionDays,
     (student) => `${programCodeOf(student)} ${student.year_level}`.trim()
   ).slice(0, MAX_GROUPS)
 
@@ -379,26 +387,23 @@ export function buildReportsData(
       totalStudents,
       totalPresent,
       totalAbsent,
-      rfidScans: scoped.length,
+      rfidScans: currentRecords.length,
     },
     summary,
     byProgram: buildGroups(
       students,
       talliesByStudent,
-      sessionDays,
       programCodeOf
     ),
     byYearLevel: buildGroups(
       students,
       talliesByStudent,
-      sessionDays,
       (student) => student.year_level
     ),
     byProgramYear,
     distribution: [
       { status: "Present", count: presentCount },
       { status: "Late", count: lateCount },
-      { status: "Excused", count: excusedCount },
       { status: "Absent", count: totalAbsent },
     ],
     bySection,

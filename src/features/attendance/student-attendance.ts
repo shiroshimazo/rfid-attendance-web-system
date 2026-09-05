@@ -1,3 +1,4 @@
+import { recordStatus, type AttendanceRecordStatus } from "@/features/attendance/schema"
 import { requireRole } from "@/features/auth/server"
 import { schoolDateKey } from "@/lib/school-time"
 import {
@@ -25,7 +26,7 @@ export interface StudentAttendanceRow {
   id: number
   /** Stored `yyyy-MM-dd` date. */
   date: string
-  status: "Present" | "Late" | "Absent" | "Excused"
+  status: AttendanceRecordStatus
   timeIn: string | null
   timeOut: string | null
   campus: string
@@ -77,7 +78,7 @@ export function buildStudentAttendanceData(
     return {
       id: record.id,
       date: record.attendance_date,
-      status: record.attendance_status,
+      status: recordStatus(record.attendance_status),
       timeIn: record.time_in,
       timeOut: record.time_out,
       campus: record.campus,

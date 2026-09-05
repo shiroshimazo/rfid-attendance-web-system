@@ -27,8 +27,8 @@ const chartConfig = {
   count: { label: "Students" },
   present: { label: "Present", color: "var(--chart-2)" },
   late: { label: "Late", color: "var(--chart-4)" },
-  excused: { label: "Excused", color: "var(--chart-3)" },
   absent: { label: "Absent", color: "var(--destructive)" },
+  norecord: { label: "No tap recorded yet", color: "var(--muted-foreground)" },
 } satisfies ChartConfig
 
 export function AttendanceDistributionChart({
@@ -59,7 +59,7 @@ export function AttendanceDistributionChart({
     <Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Attendance Status Distribution</CardTitle>
-        <CardDescription>Present against absent students today</CardDescription>
+        <CardDescription>Recorded statuses and students with no tap yet today</CardDescription>
       </CardHeader>
       <CardContent className="flex-1">
         {total > 0 ? (
@@ -116,14 +116,14 @@ export function AttendanceDistributionChart({
                   }}
                 />
               </Pie>
-              <ChartLegend content={<ChartLegendContent nameKey="key" />} />
+              <ChartLegend content={<ChartLegendContent nameKey="key" className="flex-wrap gap-y-2" />} />
             </PieChart>
           </ChartContainer>
         ) : (
           <EmptyState
             icon={PieChartIcon}
             title="No students to chart"
-            description="Add active students to see today's present and absent split."
+            description="Add active students to see today's attendance statuses."
           />
         )}
       </CardContent>

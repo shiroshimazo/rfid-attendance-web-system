@@ -29,7 +29,7 @@ const { buildStudentAttendanceData } = load("src/features/attendance/student-att
 const { schoolDateKey } = load("src/lib/school-time.ts")
 const { TodayAttendanceCard } = load("src/app/(portal)/student/dashboard/components/today-attendance-card.tsx")
 
-for (const status of ["Present", "Late", "Excused", "Absent"]) {
+for (const status of ["Present", "Late", "Absent"]) {
   test(`${status}: today's card and history preserve the recorded status`, () => {
     const snapshot = makeSnapshot(status)
     const data = buildStudentDashboardData(snapshot, today)
@@ -85,10 +85,10 @@ test("empty history has no absences, and loading still renders", () => {
   assert.match(renderToStaticMarkup(createElement(DashboardSkeleton)), /aria-busy="true"/)
 })
 
-test("only stored absences through today count; gaps, Excused and future records do not", () => {
+test("only stored absences through today count; gaps and future records do not", () => {
   const history = [
     ["2026-08-28", "Present"], ["2026-08-29", "Absent"],
-    ["2026-09-01", "Excused"], ["2026-09-02", "Late"],
+    ["2026-09-02", "Late"],
     [today, "Absent"], [today, "Absent"], ["2026-09-07", "Absent"],
   ].map(([attendance_date, attendance_status]) => ({ attendance_date, attendance_status }))
   assert.equal(countPersonalAbsentDays(history, today), 2)

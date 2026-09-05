@@ -118,8 +118,11 @@ aliases, not one row per alias.
    portals. Display only: status is still written at tap time, and Late
    always counts as attended in every rate.
 5. Per-subject periods (timetable) building on the subject catalog above.
-6. Holiday/exam-day overrides and administrator Excused flow.
+6. Holiday/exam-day overrides.
 7. Onboarding more programs/year levels by adding schedule rows only.
+
+Administrator Excused flow is excluded from the active project scope by R01
+(2026-09-05); it must not be implemented from this future-improvements list.
 
 Related Documents:
 [[Functional Requirement]]

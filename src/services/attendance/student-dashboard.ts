@@ -22,7 +22,7 @@ export interface StudentDashboardAttendanceRow {
   id: number
   time_in: string
   time_out: string | null
-  attendance_status: AttendanceStatus
+  attendance_status: string
 }
 
 export interface StudentDashboardCardRow {
@@ -38,7 +38,7 @@ export interface StudentDashboardSmsRow {
 
 export interface StudentDashboardHistoryRow {
   attendance_date: string
-  attendance_status: AttendanceStatus
+  attendance_status: string
   time_out: string | null
 }
 

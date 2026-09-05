@@ -28,7 +28,6 @@ const chartConfig = {
   count: { label: "Records" },
   present: { label: "Present", color: "var(--chart-2)" },
   late: { label: "Late", color: "var(--chart-4)" },
-  excused: { label: "Excused", color: "var(--chart-3)" },
   absent: { label: "Absent", color: "var(--destructive)" },
 } satisfies ChartConfig
 
@@ -57,7 +56,7 @@ export function StatusChart({ distribution }: { distribution: StatusSlice[] }) {
       <CardHeader>
         <CardTitle>Attendance Status</CardTitle>
         <CardDescription>
-          Share of present, late, excused, and absent sessions
+          Share of present, late, and absent sessions
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1">

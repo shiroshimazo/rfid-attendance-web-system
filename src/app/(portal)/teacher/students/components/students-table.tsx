@@ -30,7 +30,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type {
-  AttendanceStatus,
   TeacherStudentRow,
   TeacherStudentsOptions,
 } from "@/features/students/teacher-directory"
@@ -53,11 +52,12 @@ type SortColumn =
 
 const PAGE_SIZE = 10
 
-const statusOrder: Record<AttendanceStatus, number> = {
+const statusOrder: Record<TeacherStudentRow["status"], number> = {
   Present: 0,
   Late: 1,
-  Excused: 2,
+  LegacyRecord: 4,
   Absent: 3,
+  NoRecord: 4,
 }
 
 const collator = new Intl.Collator(undefined, { numeric: true })
