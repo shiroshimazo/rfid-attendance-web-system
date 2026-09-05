@@ -107,22 +107,31 @@ aliases, not one row per alias.
   Status toggle switches a section off, so rule 5 stays a deliberate choice
   (`src/features/schedules/`, `src/services/schedules/`).
 
-## Future Improvements (based on this ruling)
+## Current pilot completion
 
-1. Teacher read-only schedule view. The admin UI is built; see the Schedules
-   Panel in [[Admin User Interaction]].
-2. Tap-route enforcement: schedule lookup + Late assignment at write time.
-3. Backfill SQL recomputing old rows against the seeded schedules.
-4. Done: Late KPI cards, Late status filters, amber Late badges, and Late
-   slices/columns are displayed across the admin, teacher, and student
-   portals. Display only: status is still written at tap time, and Late
-   always counts as attended in every rate.
-5. Per-subject periods (timetable) building on the subject catalog above.
-6. Holiday/exam-day overrides.
-7. Onboarding more programs/year levels by adding schedule rows only.
+- Implement schedule lookup and Late assignment in the tap route at write time.
+  This completes the existing v1 rule; it is not a new feature.
+- Verify the existing one-off backfill against reviewed historical rows and the
+  intended schedules. Do not automatically reclassify history after schedule edits.
+- Keep the existing admin schedules panel, Late KPI cards, filters, amber badges,
+  and chart/table displays. Display support does not establish that live tap
+  classification is implemented. Late continues to count as attended.
+
+## Deferred ideas — outside the current release (R02)
+
+The following ideas are retained as future context only. They are not active
+release tasks and must not be implemented without a new scope decision:
+
+- Teacher read-only schedule page. Keep the existing admin schedules panel.
+- Per-subject timetable/period attendance. Keep the eight-subject catalog only.
+- Holiday/exam-day override management.
+- Additional program/year-level onboarding. Preserve historical records and
+  the current BSIT 2nd Year pilot restrictions.
+
+Early-departure classification remains excluded: class end is informational in v1.
 
 Administrator Excused flow is excluded from the active project scope by R01
-(2026-09-05); it must not be implemented from this future-improvements list.
+(2026-09-05); it must not be implemented from the deferred ideas above.
 
 Related Documents:
 [[Functional Requirement]]

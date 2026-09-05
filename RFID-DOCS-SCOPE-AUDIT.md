@@ -4,7 +4,12 @@ Reviewed: 2026-09-05. Repository HEAD: `009b7d8`, including the existing uncommi
 
 **Project decision: preserve the documented RFID attendance system, remove Excused from the current feature scope, and finish the attendance capture, SMS, and reporting requirements before expanding anything.**
 
-This document began as an analysis and implementation plan. **R01 has now been implemented and verified locally; see its completion record below.** The other recommendations remain open unless explicitly stated otherwise. No hosted database records were changed.
+This document began as an analysis and implementation plan. **R01 is complete in the codebase, and the user has confirmed executing its database migration.** The cleanup list supplied in `C:/Users/Jeremy/Downloads/table.md` was rechecked against HEAD `05cd3d8` on 2026-09-05. The other recommendations remain open unless explicitly stated otherwise. No hosted records were converted or deleted by this assistant.
+
+**R02 is also complete:** unsupported tasks have been removed from the active
+release instructions. This audit is the single active scope checklist; module
+READMEs and the supporting UI review must follow it. Required work in P01–P11
+remains open; documenting an exclusion does not complete those implementations.
 
 ## 1. Which documents control the scope?
 
@@ -24,7 +29,7 @@ Use your instruction for this audit first: **no Excused workflow and no addition
 
 ### Important conflict: Excused is mentioned, but only as future work
 
-`LATE`, line 121, says: "Holiday/exam-day overrides and administrator Excused flow." This is under **Future Improvements**, not the v1 late rules. The main functional requirements and role screen specifications do not define how anyone requests, approves, or assigns Excused.
+At the original audit, `LATE`, line 121, listed "Holiday/exam-day overrides and administrator Excused flow" under **Future Improvements**, not the v1 late rules. R01 has since replaced that future-work instruction with an explicit scope exclusion. The main functional requirements and role screen specifications do not define how anyone requests, approves, or assigns Excused.
 
 At the original audit, the code supported Excused in its database enum, shared types, filters, charts, aggregate calculations, and tests. No implemented Excused request/approval action or dedicated screen was found. **R01 now removes the active support while retaining compatibility with historical database values.** This audit cannot establish who introduced it or whether AI authored it.
 
@@ -37,7 +42,7 @@ Your instruction resolves the current-release decision: remove this business sta
 | Present | KEEP | Explicit throughout FR and the role docs. |
 | Absent | KEEP, FINISH ITS RULE | Explicitly required, but the docs do not define when an untapped day becomes a final absence. |
 | Late | KEEP | LATE v1 explicitly defines it. It counts as attended together with Present. |
-| Excused | REMOVE FROM CURRENT SCOPE | Future-only workflow, explicitly rejected by you for this task. |
+| Excused | REMOVED FROM CURRENT SCOPE | R01 complete. Historical database values remain preserved; new unsupported decisions are blocked by the migration the user confirmed executing. |
 | `NoRecord` / "No tap recorded yet" | KEEP AS AN EMPTY-DATA DISPLAY ONLY | Current code uses it when no attendance row exists. It is not a database enum or an approved new attendance decision. Do not store it as an attendance result or use it to invent an absence policy. |
 | RFID Active / Inactive / Lost / Deactivated | KEEP | Explicit DB card statuses; these are different from attendance statuses. |
 | SMS Pending / Sent / Failed | KEEP | Explicit FR, DB, and STUDENT requirements. |
@@ -49,11 +54,11 @@ Your instruction resolves the current-release decision: remove this business sta
 | Area | Implementation evidence | Decision |
 | --- | --- | --- |
 | Authentication and role routing | `src/features/auth/`, `src/proxy.ts`, role layouts, sign-in form | KEEP. Finish database-level disabled-account enforcement; see P01. |
-| Admin dashboard | `src/features/attendance/dashboard.ts`, `src/app/(portal)/admin/dashboard/` | KEEP. Remove Excused, add the documented Program field, and reconcile calculations. |
+| Admin dashboard | `src/features/attendance/dashboard.ts`, `src/app/(portal)/admin/dashboard/` | KEEP. Excused removed under R01; the documented Program field and remaining calculation work stay separate. |
 | Manage teachers | `src/features/teachers/`, `src/services/teachers/`, admin teacher forms | KEEP add/edit/archive/view and multiple assignments. Repair save integrity and pilot validation. |
 | Manage students | `src/features/students/`, `src/services/students/`, admin student forms | KEEP identity, academics, guardian information, accounts, archive, and RFID assignment. |
 | Manage RFID cards | `src/features/rfid/`, `src/services/rfid/cards.ts`, admin card screens | KEEP register/assign/status/view. Unify the two assignment implementations. |
-| Admin attendance | `src/features/attendance/panel.ts`, `src/services/attendance/panel.ts` | KEEP search, filters, times, and records. Remove Excused choices; finish absence consistency. |
+| Admin attendance | `src/features/attendance/panel.ts`, `src/services/attendance/panel.ts` | KEEP search, filters, times, and records. Excused choices removed under R01; finish the remaining absence-policy work. |
 | Admin schedules | `src/features/schedules/`, `src/services/schedules/`, `/admin/schedules` | KEEP. ADMIN and LATE explicitly document this module. Preserve status-based retirement. |
 | Admin reports | `src/features/reports/panel.ts`, `src/services/reports/snapshot.ts` | KEEP. Finish correct totals, required report records, and complete PDF output. |
 | Admin settings | `src/features/profiles/actions.ts`, `/admin/settings` | KEEP profile/photo reference, email, phone, and password changes. |
@@ -66,14 +71,14 @@ Your instruction resolves the current-release decision: remove this business sta
 | Firmware and physical feedback | No firmware/build files found in the source inventory | PROCEED for the complete system. Confirm separately if firmware is maintained in another repository. |
 | Database/migrations | Six migrations, seed, and maintenance SQL in `supabase/` | KEEP the schema foundations and migration history. Correct active scope through deliberate migrations. |
 | Shared UI and configuration | `src/components/`, `src/lib/`, styles, navigation, package/config files | KEEP supporting UI and infrastructure. These are not extra business features just because the docs do not name each helper. |
-| Existing tests | `tests/` | KEEP useful regression coverage; revise expectations that currently enforce Excused. |
+| Existing tests | `tests/` | KEEP useful regression coverage. R01 removed active Excused expectations; retained mentions test legacy compatibility or rejection only. |
 | Old implementation roadmaps | Root Markdown files | RECONCILE. They contain stale findings and additions that should not control this release. |
 
 The current navigation already matches ADMIN, TEACHER, and STUDENT: eight admin, five teacher, and three student destinations in `src/config/navigation.ts`. No new sidebar module is needed.
 
 ## 3. What to remove or stop pursuing
 
-### R01 — Remove Excused support from current business behavior — DONE locally
+### R01 — Remove Excused support from current business behavior — DONE
 
 - [x] **Completed in the codebase on 2026-09-05.** Removed Excused from the active status contract, filters/URL choices, badges, sort maps, dashboard fields, chart slices, report tallies, and user-facing copy.
 - [x] Preserved Present, Late, Absent, and the existing no-tap display. Shared `status.ts` maps unsupported stored values to a display-only `LegacyRecord` marker, shown as **Historical record**. It is not a selectable, writable, or charted business status. Existing rows, times, and linked SMS remain available without reclassification.
@@ -81,54 +86,55 @@ The current navigation already matches ADMIN, TEACHER, and STUDENT: eight admin,
 - [x] Added `supabase/migrations/202609080001_restrict_attendance_status.sql`. The new guard rejects unsupported inserts/status changes while preserving existing historical rows and unchanged-status updates for the same record/student/day/card. The original enum/migration remains intact; no history is deleted or converted.
 - [x] Updated current-contract tests and removed active/future Excused requirements from the related planning files and the LATE future list. Remaining mentions identify an exclusion, historical evidence, or compatibility/rejection tests.
 - [x] **Verification:** 50 local tests pass, including 7 application scope/compatibility tests and 9 database migration/preservation/rollback tests. TypeScript and the Next.js production build pass. ESLint reports 0 errors and the existing unused `children` warning in `src/components/ui/combobox.tsx:277`. A source search finds no Excused references under `src/`.
-- [ ] **Hosted rollout pending:** the read-only inventory query against the configured Supabase project failed. No hosted migration or data mutation was attempted. Apply the new migration and verify stored-value counts during deployment; see [migration rollout and rollback](supabase/migrations/README.md#r01-attendance-status-rollout). Do not drop the old enum or convert existing records merely to remove its retired value.
+- [x] **Migration execution confirmed by the user on 2026-09-05:** `supabase/migrations/202609080001_restrict_attendance_status.sql` has been executed. This confirmation supersedes the previous pending-rollout note. The assistant has not independently verified the hosted trigger or counted historical rows; the earlier inventory query failed. See [migration rollout and rollback](supabase/migrations/README.md#r01-attendance-status-rollout).
+- [x] **Downloaded cleanup table rechecked on 2026-09-05:** every active-code removal listed in `C:/Users/Jeremy/Downloads/table.md` is already implemented. The follow-up ran the four focused attendance/migration suites: **36 passed, 0 failed**. Searching `src/` and the two current-contract test files found no Excused references. No further product-code edits were needed.
 
-The implementation/removal checklist below is retained as the original R01 scope and evidence; its pre-change line numbers may have moved. Code completion does not claim hosted deployment is complete.
+The outdated pending-cleanup table is replaced below with its verified completion record. No supported attendance function or historical migration was deleted.
 
 **Basis:** your instruction; FR attendance/role requirements; LATE's distinction between v1 and future improvements.
 
-Remove the Excused-specific branches and fields, not the working attendance/report functions around them.
-
-| Layer | Exact locations and symbols | Required cleanup |
+| Layer from `table.md` | Result | Evidence |
 | --- | --- | --- |
-| Shared contract | `src/services/attendance/dashboard.ts:4` (`AttendanceStatus`); `src/features/attendance/schema.ts:16` (`attendanceStatuses`); `src/features/attendance/student-attendance.ts:24` (`StudentAttendanceRow`) | Remove Excused from the active status contract once compatibility with existing rows is resolved. |
-| Shared badge | `src/components/attendance-status-badge.tsx:13` | Remove the Excused visual mapping. Keep Present, Late, Absent, and truthful missing-data rendering. |
-| Admin dashboard | `src/features/attendance/dashboard.ts`: `DashboardKpis`, `buildAdminDashboardData` | Remove `excusedToday`, its count, and the distribution slice. |
-| Teacher dashboard | `src/features/attendance/teacher-dashboard.ts`: `buildTeacherDashboardData` | Remove the Excused count and distribution slice. |
-| Admin reports | `src/features/reports/panel.ts`: `Tally`, `emptyTally`, `buildGroups`, `buildReportsData` | Remove Excused tally fields, branches, and chart slices. Reconcile absence/rate logic under P05; deleting subtraction terms alone is insufficient. |
-| Teacher reports | `src/features/reports/teacher-panel.ts`: `Tally`, `emptyTally`, `buildTeacherReportsData` | Apply the same cleanup and calculation rule. |
-| Filters | Shared `attendanceStatuses` consumers; admin dashboard `components/student-attendance-table.tsx:43` | Remove Excused from shared and hard-coded selectable values. Check URL parsing as well as dropdowns. |
-| Sorting | Admin attendance table; teacher attendance table, dashboard assigned-attendance table, and students table; student attendance-history table | Remove Excused entries from status sort-order maps. |
-| Chart configuration | Admin and teacher dashboard `components/attendance-distribution-chart.tsx`; admin and teacher report `components/status-chart.tsx` | Remove Excused colors, labels, legend entries, and descriptions. |
-| User-facing copy | Admin/teacher dashboard, attendance, and report KPI components; student dashboard/history KPI components | Remove "excused" headlines and denominator explanations. |
-| Tests/comments | `tests/student-dashboard.test.mjs`, `tests/role-dashboards.test.mjs`, `src/features/attendance/student-dashboard.ts:144` | Replace current-feature Excused cases with the approved contract. Preserve coverage for Late, null times, date boundaries, role scoping, and empty data. A temporary legacy-data test is compatibility coverage only. |
-| Database compatibility | `supabase/migrations/202609010001_create_rfid_attendance_schema.sql:7`; `supabase/backfill_late_status.sql:4` | Review existing values and dependent objects before narrowing database support. Do not rewrite a migration already applied to a database. |
+| Shared contract | DONE — active decisions are Present, Late, and Absent. | `src/features/attendance/status.ts`; `schema.ts`; service re-export and student history model. |
+| Shared badge | DONE — removed the retired visual mapping. | `src/components/attendance-status-badge.tsx`; neutral historical display is compatibility only. |
+| Admin dashboard | DONE — removed retired KPI field, count, and slice. | `src/features/attendance/dashboard.ts`; dashboard regression tests. |
+| Teacher dashboard | DONE — removed retired count and slice. | `src/features/attendance/teacher-dashboard.ts`; dashboard regression tests. |
+| Admin reports | DONE — removed retired tallies/branches/slices; counts recorded absences. | `src/features/reports/panel.ts`; report regression tests. P05's finalization policy remains separate. |
+| Teacher reports | DONE — same approved counting behavior. | `src/features/reports/teacher-panel.ts`; report regression tests. |
+| Filters | DONE — removed shared and hard-coded choices; retired URL status falls back to All. | Shared schema, admin dashboard filter, and query regression test. |
+| Sorting | DONE — no retired-status entries remain. | Source search across admin, teacher, and student table components. |
+| Chart configuration | DONE — no retired labels, colors, legends, or descriptions remain. | Source search across dashboard/report charts. |
+| User-facing copy | DONE — no retired-status headlines or denominator explanations remain. | No Excused matches under `src/`. |
+| Tests/comments | DONE — current-contract tests use approved values. | Student and role dashboard suites pass; separate compatibility tests preserve/reject historical values deliberately. |
+| Database compatibility | DONE — additive guard prepared/tested; execution confirmed by user. | `202609080001_restrict_attendance_status.sql`; 9 local migration tests. Original enum/history preserved; hosted row inventory remains unverified. |
 
-**Safe completion sequence:**
+**Preservation boundary:** migration execution does not establish that historical rows are absent. Keep their original values and linked records. Do not drop the old enum, delete records, or convert them to Present/Absent without a separate record-disposition decision. Historical migrations, compatibility tests, and this audit may still mention the retired value intentionally.
 
-1. Inventory whether any actual attendance rows use Excused. This audit did not query the deployed database.
-2. If rows exist, preserve their original values and obtain a record-disposition decision. Do not automatically convert them to Present or Absent, and do not delete their attendance/SMS history.
-3. Coordinate the active TypeScript/UI contract, calculations, and database changes. A temporary compatibility reader may be necessary while old rows remain; that is not permission to create new Excused records or a new workflow.
-4. Remove the future Excused item from the active implementation backlog. Keep an explicit scope exclusion so a later assistant does not reintroduce it.
-5. Verify that no current screen offers Excused and no current calculation/test treats it as an approved attendance category. Historical migrations and this audit may still mention the word intentionally.
+### R02 — Remove unsupported tasks from the release backlog — DONE
 
-### R02 — Remove unsupported tasks from the release backlog
+- [x] **Completed on 2026-09-05.** Checked the current Markdown inventory and removed unsupported implementation mandates from the attendance, RFID, SMS, reports, and tap-endpoint READMEs.
+- [x] Confirmed `ROADMAP-WEB-NOW.md`, `ROADMAP-HARDWARE-LATER.md`, and `RFID-CODEBASE-TODO.md` are already absent. They were not recreated; their task references below record historical origins only.
+- [x] Split LATE's mixed future list into **Current pilot completion** and **Deferred ideas — outside the current release (R02)**. Preserved v1 rules, admin schedules, Late UI, the subject catalog, and required tap-route/backfill work.
+- [x] Made this audit the active backlog and the UI/UX plan a supporting review. Removed its dependency on the missing TODO file and its mandates for new recovery/reporting tooling; R03 remains separate.
+- [x] Preserved required RFID validation, secure first/second-tap handling, duplicate-request correctness, arrival SMS/status persistence, role restrictions, and complete PDF report output.
+- [x] **Verification:** reviewed all R02 categories against remaining Markdown instructions; checked edited-document links and whitespace; confirmed changes are documentation only. No application tests were rerun because no executable code, schema, or dependencies changed.
 
-These are **do-not-build-now decisions**, not claims that all these features already exist.
+The table below records **completed scope exclusions**, not future implementation
+tasks and not a claim that these features previously existed in application code.
 
 | Proposed task | Where it came from | Decision |
 | --- | --- | --- |
-| Standalone Programs and Courses CRUD screens | `ROADMAP-WEB-NOW.md`, item 6 | REMOVE from current deliverables. DB catalog tables are required; separate CRUD pages are not specified. Keep the existing catalog and form selections. |
-| Standalone teacher assignment matrix | `ROADMAP-WEB-NOW.md`, item 7 | REMOVE. ADMIN explicitly places repeatable assignments inside teacher management. |
-| Automatic nightly absence job | `ROADMAP-WEB-NOW.md`, item 8 | DO NOT IMPLEMENT from that roadmap. Absent is required, but a cron schedule and finalization rule are not supplied by the docs. Resolve P05 first. |
-| Teacher schedule page | LATE Future Improvements, item 1 | DEFER. Keep the documented admin schedules screen and existing access foundations. |
-| Per-subject timetable/period attendance | LATE Future Improvements, item 5 | DEFER. The eight pilot subjects are catalog data; v1 uses section start times. |
-| Holiday/exam override management | LATE Future Improvements, item 6 | DEFER. Do not create a calendar administration module to fill an undocumented policy gap. |
-| Additional program/year onboarding | LATE Future Improvements, item 7 | DEFER. Preserve historical records and catalogs, but retain current BSIT 2nd Year form restrictions. |
-| Early-departure classification | LATE Class Schedule | EXCLUDE. Class end is expressly informational in v1. |
-| Teacher access to guardian SMS records | `ROADMAP-HARDWARE-LATER.md`, S4 | DO NOT automatically broaden access. Teacher screens do not explicitly require guardian message/phone access, while current SMS RLS permits owner/admin reads. Resolve report visibility before changing it. |
-| Mandatory new PDF library | `ROADMAP-WEB-NOW.md`, item 5 | REMOVE the library mandate. Complete PDF content is required; a particular library is not. Browser Save as PDF can meet the output requirement if the printed document is complete and verified. |
-| Reader-assisted enrollment, general admin audit subsystem, offline device queue, provider retry console | Expanded recommendations in existing TODOs/READMEs | DO NOT make these separate release features without an explicit requirement. Keep only technical handling needed for correct registration, secure taps, and truthful SMS results. |
+| Standalone Programs and Courses CRUD screens | Removed web roadmap, item 6 | REMOVED from current deliverables. Keep required catalog tables and form selections. |
+| Standalone teacher assignment matrix | Removed web roadmap, item 7 | REMOVED. Keep repeatable assignments within teacher management as ADMIN specifies. |
+| Automatic nightly absence job | Removed web roadmap, item 8; attendance READMEs | REMOVED from the implementation instructions. Absent remains required; resolve P05 before selecting a finalization/storage/job mechanism. |
+| Teacher schedule page | LATE deferred ideas | DEFERRED outside this release. Keep the admin schedules screen and existing access foundations. |
+| Per-subject timetable/period attendance | LATE deferred ideas | DEFERRED outside this release. Keep the eight-subject catalog and section-based v1 start times. |
+| Holiday/exam override management | LATE deferred ideas | DEFERRED outside this release. Do not turn a missing policy into a new calendar module. |
+| Additional program/year onboarding | LATE deferred ideas | DEFERRED outside this release. Preserve historical data and current BSIT 2nd Year restrictions. |
+| Early-departure classification | LATE Class Schedule | EXCLUDED. Class end stays informational in v1. |
+| Teacher access to guardian SMS records | Removed hardware roadmap, S4 | REMOVED as an automatic access expansion. SMS/report READMEs preserve current permissions pending a defined report-visibility rule. |
+| Mandatory new PDF library | Removed web roadmap, item 5; reports service README | REMOVED, including the server-side-generation mandate. Complete PDF output is required; verified browser printing remains an available implementation. |
+| Reader-assisted enrollment, general admin audit subsystem, offline device queue, provider retry console | Former TODO and module READMEs | REMOVED as separate release tasks. The READMEs retain only required registration, transaction correctness, notifications, and report records. |
 
 A retry must not accidentally create a second attendance event, and a failed SMS send must have a truthful status. Those are correctness requirements for the existing flow; they do not require adding new management screens or choosing a large queue architecture in advance.
 
@@ -333,20 +339,22 @@ These are gaps to resolve before implementing dependent behavior, not invitation
 | Which roles receive SMS report details? | Generic report content includes SMS, but TEACHER does not specify guardian-message access. | Preserve owner/admin SMS policy until visibility is defined. |
 | What should happen to existing Excused records, if any? | Removing a type/UI option does not resolve historical data. | Preserve evidence; do not silently convert or delete. |
 
-## 7. Correct the existing planning documents
+## 7. Planning-document status after R01 and R02
 
-Keep one active scope checklist. The following files should be reconciled with this audit rather than executed literally:
+This audit is the active scope checklist. The following status prevents removed
+roadmaps or deferred suggestions from being treated as current release tasks:
 
-| File | Required correction |
+| File | Current status |
 | --- | --- |
-| [ROADMAP-WEB-NOW.md](ROADMAP-WEB-NOW.md) | Drop standalone catalog/assignment pages and the assumed nightly absence job. Correct "fake PDF" and "no print stylesheet": browser print and print CSS exist. Correct claims that Late/Excused are unused and that current absence logic is simply total-minus-present. |
-| [ROADMAP-HARDWARE-LATER.md](ROADMAP-HARDWARE-LATER.md) | Keep device/SMS completion. Remove automatic teacher SMS-access expansion and mandatory table/provider choices as business requirements. Backend receiver/SMS work can proceed before physical hardware is ready. |
-| [RFID-CODEBASE-TODO.md](RFID-CODEBASE-TODO.md) | Remove Excused from active acceptance criteria and W30 future candidates for this requested scope. Reassess W07–W09/W20 against current school-time, explicit-absence, and status-preserving code. Keep relevant integrity/report findings. Do not execute its optional enhancements as mandatory requirements. |
-| [UI-UX-IMPROVEMENT-PLAN.md](UI-UX-IMPROVEMENT-PLAN.md) | Remove Excused-based UX acceptance and references to an Excused policy. Treat optional redesign/navigation/filter additions separately from required task correctness. Do not make implementing self-service password recovery a mandatory RFID feature. |
-| RFID/service READMEs | Treat statements about future senders, retries, and scan-event storage as implementation notes, not evidence of completed features or authority for new user-facing modules. |
-| LATE Future Improvements | Retain the historical distinction between current rules and future ideas; mark Excused excluded from the active scope so it cannot be promoted accidentally. Do not rewrite the base RFID docs merely to justify existing unwanted code. |
+| `ROADMAP-WEB-NOW.md` | Already absent when R02 began. Its catalog/matrix/cron/PDF-library mandates are not active. |
+| `ROADMAP-HARDWARE-LATER.md` | Already absent when R02 began. P04/P06/P11 retain required receiver, SMS, and hardware completion without its extra access/tooling mandates. |
+| `RFID-CODEBASE-TODO.md` | Already absent when R02 began. Historical W-number references do not authorize work. Use the current P01–P11 acceptance conditions instead. |
+| [UI-UX-IMPROVEMENT-PLAN.md](UI-UX-IMPROVEMENT-PLAN.md) | Supporting review only; updated to follow this audit and reference current tasks. Optional proposals do not create release requirements. R03's recovery action remains unimplemented here. |
+| Feature/service and tap-endpoint READMEs | R02 removed absence-job, audit/retry-tooling, immutable-event-subsystem, and server-side-PDF mandates. Required transaction, notification, reporting, and permission behavior remains explicit. |
+| LATE planning sections | Required pilot completion is separate from deferred teacher schedules, timetables, overrides, and onboarding. The v1 rules remain unchanged; Excused stays excluded. |
 
-These files were not edited during the original audit. R01 has since corrected their Excused-related instructions; the broader corrections listed here remain separate work.
+R02 changes documentation only. It does not implement the required receiver/SMS
+flow, finalize the absence policy, alter permissions, or complete R03–R05.
 
 ## 8. Recommended implementation order and stop condition
 
@@ -363,8 +371,9 @@ These files were not edited during the original audit. R01 has since corrected t
 
 ### Acceptance checklist
 
+- [x] R02 unsupported tasks are removed from the active backlog; deferred ideas are explicitly outside this release. Required pilot work remains tracked under P01–P11.
 - [ ] Active attendance decisions are Present, Late, and Absent; missing data is displayed honestly and never stored as a made-up tap/status.
-- [x] Excused is absent from current feature controls, business calculations, and current-contract tests; legacy values are preserved through tested compatibility handling. Hosted write-guard rollout remains pending under R01.
+- [x] Excused is absent from current feature controls, business calculations, and current-contract tests; legacy values are preserved through tested compatibility handling. The user confirmed executing the write-guard migration under R01.
 - [ ] Existing admin/teacher/student menus and documented permissions remain intact.
 - [ ] Create/edit/archive/assign actions preserve valid state on failure and enforce the pilot on server inputs.
 - [ ] First/second RFID taps and Late boundary examples pass using Asia/Manila.

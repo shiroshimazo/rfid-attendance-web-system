@@ -2,6 +2,12 @@
 
 Reviewed: September 5, 2026. Source baseline: `d592923`, including the current working tree.
 
+**R02 scope update (2026-09-05):** this is a supporting review, not an independent
+release backlog. [RFID-DOCS-SCOPE-AUDIT.md](RFID-DOCS-SCOPE-AUDIT.md) controls active
+tasks. Its exclusions/deferred decisions override proposals here. In particular,
+do not add teacher SMS access, a retry console, or a new PDF library to satisfy
+this review. The R03 recovery decision remains a separate task.
+
 The main improvement is to make attendance information trustworthy and daily tasks easier to complete. Prioritize accurate status labels, accessible sign-in, reliable recovery, visible connection status, and complete reports. Then improve mobile controls and reduce interruptions during everyday work.
 
 This is a source-based professional assessment with 15 findings: **5 HIGH and 10 MEDIUM**. It proposes changes; it does not implement them.
@@ -136,17 +142,19 @@ Choose small implementation batches around shared components or one workflow. Re
 
 ### Dependencies and existing backlog
 
-This plan complements [RFID-CODEBASE-TODO.md](RFID-CODEBASE-TODO.md). Use the existing items for backend acceptance and this document for interface behavior:
+Use [RFID-DOCS-SCOPE-AUDIT.md](RFID-DOCS-SCOPE-AUDIT.md) for active requirements and
+acceptance. The old `RFID-CODEBASE-TODO.md` is no longer present. W-numbered
+references in the historical findings are provenance, not active tasks.
 
 | UI/UX work | Related codebase items | Dependency |
 | --- | --- | --- |
-| UX01 | W19 | Recovery needs a complete account-recovery flow, not only revised button copy. |
-| UX03 | W07–W09, W20 | Use Asia/Manila consistently. Agree when absence becomes final and how unscheduled days and preserved historical records behave before changing aggregate calculations. |
-| UX04, UX05 | W10, W26 | Visible freshness depends on correct subscriptions, refresh timing, and bounded data loading. |
-| UX06 | W12, W15, W18 | Define complete report data and scan-event meaning. UI pagination fixes cannot repair truncated source queries or an incomplete event model. |
-| UX07 | W21 | A teacher history view needs authorized retrieval across dates. |
-| UX08–UX10, UX14 | W29 | Validate actual browser behavior after implementation. |
-| UX12 | W13, W23 | Notification copy and staff recovery actions must match implemented delivery states and role permissions. |
+| UX01 | R03 | Handle the unfinished recovery promise within R03; do not make self-service recovery a new release requirement. |
+| UX03 | P05, P07, P09 | Preserve Asia/Manila dates and approved status meaning; resolve absence policy before adding finalization behavior. |
+| UX04, UX05 | P07, P08 | Verify required live updates and complete reads. Optional connection UI is not a separate release module. |
+| UX06 | P08 | Export complete, accurate reports; no specific PDF library or event-table design is mandated. |
+| UX07 | P09 | Verify authorized access to an assigned student's past attendance through the existing workflow. |
+| UX08–UX10, UX14 | Supporting review only | These proposals do not authorize new features or change current-release priorities. |
+| UX12 | P06, P08 | Match notification copy to actual delivery states and existing permissions; no retry console or automatic teacher SMS-access expansion. |
 
 The pilot's [Late Attendance Ruling](<rfid-docs/rfid-docs/Functional Requirements/Late Attendance Ruling.md>) remains the business reference. Do not expand this UI work into per-subject timetables, holiday management, or additional academic programs.
 

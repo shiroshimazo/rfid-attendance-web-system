@@ -22,10 +22,11 @@ from public.attendance_records
 group by attendance_status;
 ```
 
-The local attempt to inventory the configured hosted project failed to connect;
-neither this migration nor any data mutation was executed there for R01. Hosted
-deployment and the inventory remain pending. Run the local preservation and write
-guard tests with `node --test tests/attendance-status-migration.test.mjs`.
+The user confirmed executing this migration on 2026-09-05. The assistant's earlier
+hosted inventory query failed; hosted trigger behavior and historical row counts
+have not been independently verified. No records were converted or deleted by
+the assistant. Run the local preservation and write guard tests with
+`node --test tests/attendance-status-migration.test.mjs`.
 
 Rollback, if required, is a follow-up migration containing only:
 
