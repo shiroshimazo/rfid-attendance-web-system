@@ -6,7 +6,8 @@ Reviewed: September 5, 2026. Source baseline: `d592923`, including the current w
 release backlog. [RFID-DOCS-SCOPE-AUDIT.md](RFID-DOCS-SCOPE-AUDIT.md) controls active
 tasks. Its exclusions/deferred decisions override proposals here. In particular,
 do not add teacher SMS access, a retry console, or a new PDF library to satisfy
-this review. The R03 recovery decision remains a separate task.
+this review. Under R03, the user has now explicitly approved email-code password
+recovery for all three roles; keep the login link and follow its exact three-step flow.
 
 The main improvement is to make attendance information trustworthy and daily tasks easier to complete. Prioritize accurate status labels, accessible sign-in, reliable recovery, visible connection status, and complete reports. Then improve mobile controls and reduce interruptions during everyday work.
 
@@ -63,7 +64,7 @@ These strengths are visible in source. Their presence does not replace interacti
 
 | Severity | Location | Before | After | Why |
 | --- | --- | --- | --- | --- |
-| HIGH · UX01 | [src/app/(auth)/forgot-password/components/forgot-password-form-1.tsx:28](<src/app/(auth)/forgot-password/components/forgot-password-form-1.tsx#L28>), [same file:35](<src/app/(auth)/forgot-password/components/forgot-password-form-1.tsx#L35>) | **Confirmed:** The page promises a reset email. Submit only displays that Supabase recovery is not connected. | Complete the recovery request, reset form, and expired-link path. Until recovery is available, replace the form with truthful school-account assistance instructions using a verified contact route. | Match the action to its promise. A locked-out user currently reaches a dead end after entering information. |
+| HIGH · UX01 — DONE | [Recovery form](<src/app/(auth)/forgot-password/components/forgot-password-form-1.tsx>), [recovery workflow](src/features/auth/password-recovery.ts) | The former placeholder is replaced with the approved email → six-digit recovery code → new password and confirmation → login flow for all three roles. | 18 local recovery tests pass; user confirmed live recovery works on 2026-09-05. The login link stays available, with code validation and resend limits. | Closed under R03 based on implementation, local checks, and user acceptance. |
 | HIGH · UX02 | [src/app/(auth)/sign-in/components/login-form-1.tsx:118](<src/app/(auth)/sign-in/components/login-form-1.tsx#L118>), [same file:152](<src/app/(auth)/sign-in/components/login-form-1.tsx#L152>), [src/components/ui/form.tsx:107](<src/components/ui/form.tsx#L107>) | **Confirmed:** `FormControl` wraps a `div` around each sign-in input. The shared slot places its generated ID and error associations on that wrapper. | Put the decorative wrapper outside `FormControl`. Make the actual input its direct child, retaining password-toggle labels and autocomplete. | Preserve programmatic label and error relationships. The visible label currently targets a wrapper instead of the input. |
 | HIGH · UX03 | [src/features/attendance/student-dashboard.ts:79](<src/features/attendance/student-dashboard.ts#L79>), [src/app/(portal)/student/dashboard/components/today-attendance-card.tsx:38](<src/app/(portal)/student/dashboard/components/today-attendance-card.tsx#L38>) | **Updated by current status fixes and R01:** Present/Late/Absent are preserved; missing taps stay provisional and legacy values display neutrally. | Preserve recorded Present, Late, and Absent states; keep legacy rows available without promoting a retired status. Distinguish “No tap recorded yet” from a finalized absence. Keep Late included in attended totals. | Maintain consistent meaning between the dashboard and history. A missing record alone does not establish the school's final absence decision. |
 | HIGH · UX04 | [src/components/live-refresh.tsx:39](<src/components/live-refresh.tsx#L39>), [same file:55](<src/components/live-refresh.tsx#L55>), [src/components/refresh-button.tsx:9](<src/components/refresh-button.tsx#L9>) | **Confirmed:** Live refresh renders nothing and does not surface subscription status. Each event restarts its 800 ms trailing debounce. **Inferred:** Users cannot distinguish quiet attendance from disconnected or stale data; sustained events can delay refreshing. | Show connection state and the time of the last successful data refresh. Reuse the refresh button as a fallback. Bound refresh delay during sustained activity and refresh after reconnecting. | Make system status visible. “Connected” must describe the subscription; “Updated at” must describe successfully loaded data. Neither proves that a physical reader is healthy. |
@@ -104,9 +105,9 @@ For UX14, disabling nonessential interaction animation follows [W3C: Animation f
 
 ## 4. Acceptance checks
 
-All items below are **pending implementation and verification**. They are completion conditions, not tests claimed to have passed.
+Items below are release acceptance conditions. R03/UX01 is DONE based on implementation, passing local checks, and the user's confirmation on 2026-09-05 that live recovery works. Other findings retain their individually recorded status.
 
-- [ ] **UX01:** A real recovery request reaches the documented outcome. A valid link supports password replacement; expired links explain how to restart. Unavailable recovery does not request an email under a false promise. Request feedback does not reveal whether an account exists.
+- [x] **UX01 — DONE:** Approved three-step recovery is implemented for all three roles, with 18 passing local recovery tests. The user confirmed live recovery is working and accepted completion on 2026-09-05; separate hosted tests of every role and edge case are not claimed.
 - [ ] **UX02:** Clicking each sign-in label focuses its input. Inspect the rendered input's accessible name, `aria-describedby`, and invalid state. Complete both success and invalid-input paths with keyboard and screen reader.
 - [ ] **UX03:** Check Present, Late, preserved historical rows, explicit Absent, no record before class, and an unscheduled day. Dashboard and history agree on recorded status. A provisional no-tap state does not silently change the stored record or KPI policy.
 - [ ] **UX04:** Test initial connection, disconnect, reconnect, failed refresh, and sustained incoming events. The last-success timestamp changes only after fresh data loads. Connection errors remain visible. Manual refresh works without losing filters.
@@ -148,7 +149,7 @@ references in the historical findings are provenance, not active tasks.
 
 | UI/UX work | Related codebase items | Dependency |
 | --- | --- | --- |
-| UX01 | R03 | Handle the unfinished recovery promise within R03; do not make self-service recovery a new release requirement. |
+| UX01 | R03 | DONE — approved flow is implemented, locally tested, and confirmed working by the user. Preserve the login link. |
 | UX03 | P05, P07, P09 | Preserve Asia/Manila dates and approved status meaning; resolve absence policy before adding finalization behavior. |
 | UX04, UX05 | P07, P08 | Verify required live updates and complete reads. Optional connection UI is not a separate release module. |
 | UX06 | P08 | Export complete, accurate reports; no specific PDF library or event-table design is mandated. |

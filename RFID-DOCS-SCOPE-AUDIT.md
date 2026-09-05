@@ -138,11 +138,28 @@ tasks and not a claim that these features previously existed in application code
 
 A retry must not accidentally create a second attendance event, and a failed SMS send must have a truthful status. Those are correctness requirements for the existing flow; they do not require adding new management screens or choosing a large queue architecture in advance.
 
-### R03 — Remove the unfinished password-recovery promise from the current UI
+### R03 — Complete the user-approved email-code password recovery — DONE
 
-`src/app/(auth)/sign-in/components/login-form-1.tsx:146` links to `/forgot-password`. The form at `src/app/(auth)/forgot-password/components/forgot-password-form-1.tsx` promises a reset email but only sets a local "not connected" message.
+The login link to `/forgot-password` is preserved. Its former placeholder form now implements the three-step recovery flow using Supabase Auth.
 
-The docs explicitly require login and changing passwords while signed in. They do not explicitly require self-service recovery. For this strict scope, remove/hide the unfinished link and placeholder route from the delivered workflow. **Keep** all three working signed-in password-change actions. Do not turn this audit into an unrequested recovery-feature project.
+**Scope correction on 2026-09-05:** the user explicitly requested keeping the login link and completing recovery for Admin, Teacher, and Student. This instruction supersedes the earlier removal recommendation; recovery is now an approved requirement.
+
+- [x] Record the approved flow and provide the Supabase configuration checklist before completing the form. The separate setup document has since been removed from the workspace.
+- [x] User confirmed completing Supabase email configuration on 2026-09-05. Hosted delivery and exact setting values have not been independently verified.
+- [x] Keep **Forgot password?** on the login form and implement `/forgot-password`: **email → one six-digit email code → new password and confirm password → login form**.
+- [x] Support existing accounts across all three roles through the same recovery flow. Preserve roles, account statuses, and existing access restrictions; recovery does not create accounts or reactivate disabled accounts.
+- [x] Require successful Supabase recovery-code verification before updating the password. Reuse the existing password validation, handle invalid/expired codes and resend limits, and keep account-existence feedback neutral.
+- [x] After a successful password update, end the recovery session and return to `/sign-in`. Preserve all three existing signed-in password-change actions.
+- [x] **Local verification:** 18 recovery tests pass using the real Supabase SDK with a fake Auth transport, including all three roles, step guards, OTP formatting/rejection, password validation, resend limits, session isolation, cancellation, and sign-out retry without repeating the password update. All 14 existing profile-lifecycle tests also pass. TypeScript and the production build pass; lint has zero errors and one existing combobox warning.
+- [x] **User acceptance on 2026-09-05:** the user confirmed recovery is working and requested marking R03 done. Role coverage and failure cases are supported by the local tests above; this does not claim separate hosted tests for every role and edge case.
+
+**Implementation done on 2026-09-05:** [recovery form](<src/app/(auth)/forgot-password/components/forgot-password-form-1.tsx>), [recovery workflow](src/features/auth/password-recovery.ts), [isolated Supabase client](src/services/supabase/recovery.ts), and [regression tests](tests/password-recovery.test.mjs). Recovery credentials stay in memory and never enter portal cookies or browser storage. Returning to login closes only that recovery session. Reloading/leaving requires starting recovery again. No schema, role, or attendance changes were needed.
+
+**Completion basis:** implemented flow, passing local checks, and the user's confirmation that live recovery works after SMTP troubleshooting. R03 is closed. No real account password was changed by this assistant.
+
+**Resolved issue history (2026-09-05):** the supplied `supabase_logs.json` contained six `/recover` responses with HTTP 504, `request_timeout`, and `context deadline exceeded`, each after approximately 10 seconds. Investigation identified the SMTP port discrepancy below. The user's subsequent working-flow confirmation closes this issue.
+
+**SMTP resolution guidance:** the screenshot showed `smtp.gmail.com` with port **463**. The user was instructed to use **465** and a Gmail App Password without formatting spaces, then save and retest. Supabase's [Google SMTP guide](https://supabase.com/docs/guides/troubleshooting/using-google-smtp-with-supabase-custom-smtp-ZZzU4Y) supports **465 or 587**. Recovery is now working according to the user; hosted settings were managed by the user.
 
 ### R04 — Retire destructive pilot cleanup scripts from normal setup instructions
 
@@ -349,7 +366,7 @@ roadmaps or deferred suggestions from being treated as current release tasks:
 | `ROADMAP-WEB-NOW.md` | Already absent when R02 began. Its catalog/matrix/cron/PDF-library mandates are not active. |
 | `ROADMAP-HARDWARE-LATER.md` | Already absent when R02 began. P04/P06/P11 retain required receiver, SMS, and hardware completion without its extra access/tooling mandates. |
 | `RFID-CODEBASE-TODO.md` | Already absent when R02 began. Historical W-number references do not authorize work. Use the current P01–P11 acceptance conditions instead. |
-| [UI-UX-IMPROVEMENT-PLAN.md](UI-UX-IMPROVEMENT-PLAN.md) | Supporting review only; updated to follow this audit and reference current tasks. Optional proposals do not create release requirements. R03's recovery action remains unimplemented here. |
+| [UI-UX-IMPROVEMENT-PLAN.md](UI-UX-IMPROVEMENT-PLAN.md) | Supporting review only; follows this audit and references current tasks. Optional proposals do not create release requirements. R03 recovery is DONE, with passing local checks and user-confirmed live operation. |
 | Feature/service and tap-endpoint READMEs | R02 removed absence-job, audit/retry-tooling, immutable-event-subsystem, and server-side-PDF mandates. Required transaction, notification, reporting, and permission behavior remains explicit. |
 | LATE planning sections | Required pilot completion is separate from deferred teacher schedules, timetables, overrides, and onboarding. The v1 rules remain unchanged; Excused stays excluded. |
 
