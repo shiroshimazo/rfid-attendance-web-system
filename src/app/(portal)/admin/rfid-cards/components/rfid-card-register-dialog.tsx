@@ -110,7 +110,7 @@ export function RfidCardRegisterDialog({
         <DialogHeader>
           <DialogTitle>Register RFID card</DialogTitle>
           <DialogDescription className="text-pretty">
-            Record the number printed on the card and hand it to the student who
+            Record the UID reported by the reader and assign it to the student who
             will tap it. Only one card can stay active per student.
           </DialogDescription>
         </DialogHeader>
@@ -126,19 +126,19 @@ export function RfidCardRegisterDialog({
               name="rfidNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>RFID card number</FormLabel>
+                  <FormLabel>RFID card UID</FormLabel>
                   <FormControl>
                     <Input
                       autoComplete="off"
                       spellCheck={false}
-                      placeholder="04-A1-B2-C3-D4-E5-80"
+                      placeholder="00:00:00:11"
                       className="font-mono tabular-nums"
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    Tap the card on a connected reader, or type the printed
-                    number. Numbers are stored in upper case and must be unique.
+                    Enter the hexadecimal UID reported by your reader. Colons,
+                    hyphens, or spaces between bytes are accepted. Keep leading zeros.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

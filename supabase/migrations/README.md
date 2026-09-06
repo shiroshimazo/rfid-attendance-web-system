@@ -1,9 +1,124 @@
 # Database migrations
 
+## P03 UID registration and assignment rollout
+
+**P03 software is DONE:** the user confirmed migration execution, successful
+assignment, and completion of the requested duplicate/replacement/rejection
+checks on 2026-09-06 using temporary UIDs. Hosted results are user-reported.
+Standalone inventory output was not supplied; the migration includes a blocking
+collision check. Physical reader verification remains P11.
+P03 uses the existing card/student forms. The user's five temporary UIDs are test
+fixtures, not claims about the physical cards or automatic student assignments.
+
+### Apply in this order
+
+1. Run [verify_rfid_uid_inventory.sql](../verify_rfid_uid_inventory.sql) in the
+   Supabase SQL editor. It is read-only and works before the migration. No rows
+   means no normalization collisions or invalid legacy numbers were found.
+   `collision` rows mean stop and review the listed cards/owners/history before
+   migration. Do not delete, merge, or invent replacement UIDs. `legacy_invalid`
+   rows are preserved and do not block migration; obtain verified reader UIDs
+   before activating those cards again. This check is not physical verification.
+2. Apply [202609110001_atomic_rfid_assignment.sql](202609110001_atomic_rfid_assignment.sql)
+   after P02. It repeats the collision check under a table lock and aborts the
+   transaction if collisions exist. It adds an expression index, a guard trigger,
+   a UID normalizer, and one card management RPC. No existing data is rewritten,
+   no students/cards are removed, and attendance/SMS links remain intact.
+3. Deploy/use the updated application and reload both admin screens. Pause card
+   edits while switching versions: older actions still retire cards in a separate
+   request, so a later failure on an old client cannot restore that earlier write.
+   Database guards protect UID uniqueness and new activation eligibility for
+   direct writers, but atomic replacement requires the new RPC-based actions.
+4. Verify both forms using the temporary values below and designated active test
+   students. Registration and student UID entry now both save/reissue an existing
+   same-holder UID rather than duplicate it. Taking a UID from another holder is
+   rejected; use the existing explicit reassignment action, which permits a move
+   only when the card has no attendance history. New activation also requires an
+   active student profile and linked student account. Inactive/Lost/Deactivated
+   states remain usable for retirement and record keeping.
+
+| Temporary input | Normalized UID |
+| --- | --- |
+| `00:00:00:11` | `00000011` |
+| `00:00:00:22` | `00000022` |
+| `00:00:00:33` | `00000033` |
+| `00:00:00:44` | `00000044` |
+| `00:00:00:55` | `00000055` |
+
+Use **Admin → RFID Cards → Register**, select the intended test student, enter a
+UID, choose the card status and issue date, and save. The student screen's RFID
+assignment form uses the same operation. Choose **Inactive** when merely storing
+a test UID; selecting **Active** intentionally deactivates that student's prior
+active card. No hosted fixtures are inserted by this change.
+
+For acceptance, reopen both screens after saving; enter the same UID with colons,
+hyphens, spaces, or no separators and confirm it resolves to the same card. Test
+a replacement on a designated test student, confirm only one card stays active,
+and confirm a rejected other-holder or inactive-holder request changes nothing.
+Check Lost/Inactive/Deactivated status changes and explicit reassignment with and
+without attendance history. Restore intended test assignments after testing.
+
+### UID contract and preservation
+
+`src/lib/rfid-uid.ts` and `public.normalize_rfid_uid(text)` normalize complete
+4-, 7-, or 10-byte hexadecimal values to uppercase without separators, preserving
+byte order and leading zeros. Accept a single consistent separator between full
+bytes; reject incomplete bytes, mixed separators, non-hex characters, and other
+lengths. Printed decimal identifiers are not converted or assumed to be reader
+UIDs. UID byte sizes follow [NXP AN10927](https://www.nxp.com/docs/en/application-note/AN10927.pdf).
+This parser does not add support for different attendance hardware or prove a
+particular physical card's type. The pilot hardware scope is unchanged.
+
+Old valid separator/case variants stay stored as-is and resolve through the
+normalization index; new inserts/UID changes store canonical text. Old invalid
+values remain readable and can be deactivated, but cannot be newly activated.
+No automatic correction, history reassignment, or decimal/byte-order guessing
+occurs. Existing one-active-card and card/student history constraints remain.
+The existing demo seed uses its canonical UID for its insert and attendance lookup;
+its academic fixture alignment remains P10. Do not run the seed on hosted data.
+
+All card management RPC operations take one transaction-scoped advisory lock,
+then lock affected students before cards, coordinating with profile archival.
+Replacement retirement and the final insert/update commit together. An error
+rolls both back. Retrying the same UID reuses its card ID. A transport error may
+leave acceptance uncertain; reload before retrying. This is administration-only
+serialization for the pilot, not a lock design for the future attendance receiver.
+
+Local verification: `node --test tests/rfid-assignment.test.mjs` uses actual SQL,
+RLS, and both actual server action modules with a database-backed RPC adapter.
+It covers the five test UIDs, failures after retirement, migration preservation,
+collision rejection, rollback/reapplication, eligibility, and history protection.
+Hosted database deployment, multi-session concurrency, and real reader scans
+require separate verification. P04 must reuse the normalizer for tap input and
+SQL normalized lookup to include legacy valid formats; its route is not implemented
+by P03. Hardware testing remains P11.
+
+### P03 rollback only if needed
+
+Stop card edits and restore the preceding application before running this as a
+separate rollback migration. This removes P03 protections; prior split-save
+risks return. It retains every card, canonical UID already saved, card status,
+attendance/SMS link, and existing uniqueness/RLS/lifecycle constraint. Reapplying
+the forward migration restores protection after a fresh collision check.
+
+<!-- p03-rollback:start -->
+```sql
+begin;
+drop trigger if exists rfid_cards_guard_write on public.rfid_cards;
+drop function if exists public.save_rfid_card(text, public.rfid_card_status, bigint, text, bigint, date);
+drop function if exists public.guard_rfid_card_write();
+drop index if exists public.rfid_cards_normalized_uid_unique;
+drop function if exists public.normalize_rfid_uid(text);
+commit;
+```
+<!-- p03-rollback:end -->
+
 ## P02 safe management saves rollout
 
-**Code implemented; user confirmed hosted migration execution on 2026-09-06.
-Hosted form/Auth verification remains pending.** For new environments, apply
+**P02 is DONE:** the user confirmed hosted migration execution and successful
+student, teacher assignment, email, and schedule application checks on 2026-09-06.
+These hosted results are user-reported; the assistant's automated checks ran locally.
+For new environments, apply
 [202609100001_atomic_management_saves.sql](202609100001_atomic_management_saves.sql)
 after P01 and before using the updated student, teacher, and schedule actions.
 Run this one migration in the Supabase SQL editor. It adds functions/triggers;

@@ -58,6 +58,7 @@ import {
 import type { RfidCardDirectory, RfidCardView } from "@/features/rfid/cards"
 import { rfidCardStatuses } from "@/features/rfid/schema"
 import { formatDateValue, formatNumber } from "@/lib/format"
+import { normalizeRfidUid } from "@/lib/rfid-uid"
 
 import { RfidCardAssignDialog } from "./rfid-card-assign-dialog"
 import { RfidCardRegisterDialog } from "./rfid-card-register-dialog"
@@ -84,6 +85,8 @@ const collator = new Intl.Collator(undefined, { numeric: true })
 
 function matchesQuery(card: RfidCardView, needle: string) {
   if (!needle) return true
+  const uid = normalizeRfidUid(needle)
+  if (uid && normalizeRfidUid(card.rfidNumber) === uid) return true
 
   return [
     card.rfidNumber,

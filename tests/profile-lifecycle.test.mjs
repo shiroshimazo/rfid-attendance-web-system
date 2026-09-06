@@ -91,7 +91,7 @@ async function addCards(studentId) {
   for (const [index, status] of ["Active", "Lost", "Inactive", "Deactivated"].entries()) {
     await db.query(
       "insert into public.rfid_cards (student_id, rfid_number, card_status) values ($1, $2, $3)",
-      [studentId, `CARD-${index}`, status]
+      [studentId, `0000000${index}`, status]
     )
   }
 }

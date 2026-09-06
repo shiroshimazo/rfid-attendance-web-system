@@ -71,6 +71,7 @@ import {
 import { accountStatuses } from "@/features/shared/schema"
 import type { StudentDirectory, StudentView } from "@/features/students/directory"
 import { formatNumber, initialsOf } from "@/lib/format"
+import { normalizeRfidUid } from "@/lib/rfid-uid"
 
 import { RfidAssignDialog } from "./rfid-assign-dialog"
 import { StudentArchiveDialog } from "./student-archive-dialog"
@@ -98,6 +99,8 @@ const collator = new Intl.Collator(undefined, { numeric: true })
 
 function matchesQuery(student: StudentView, needle: string) {
   if (!needle) return true
+  const uid = normalizeRfidUid(needle)
+  if (uid && student.cards.some(card => normalizeRfidUid(card.rfidNumber) === uid)) return true
 
   return [
     student.fullName,

@@ -147,19 +147,19 @@ export function RfidAssignDialog({
               name="rfidNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>RFID card number</FormLabel>
+                  <FormLabel>RFID card UID</FormLabel>
                   <FormControl>
                     <Input
                       autoComplete="off"
                       spellCheck={false}
-                      placeholder="04-A1-B2-C3-D4-E5-80"
+                      placeholder="00:00:00:11"
                       className="font-mono tabular-nums"
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    Tap the card on a connected reader, or type the printed
-                    number.
+                    Enter the hexadecimal UID reported by your reader. Colons,
+                    hyphens, or spaces between bytes are accepted. Keep leading zeros.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

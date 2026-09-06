@@ -42,6 +42,12 @@ export function StudentCombobox({
   "aria-invalid"?: boolean
   "aria-describedby"?: string
 }) {
+  // Keep the popup inside its Radix dialog's pointer/focus boundary. Outside
+  // dialogs, a null container retains the normal body portal.
+  const [container, setContainer] = React.useState<HTMLElement | null>(null)
+  const attachInput = React.useCallback((node: HTMLInputElement | null) => {
+    setContainer(node?.closest<HTMLElement>('[data-slot="dialog-content"]') ?? null)
+  }, [])
   const items = React.useMemo<StudentItem[]>(
     () =>
       students.map((option) => ({
@@ -62,6 +68,7 @@ export function StudentCombobox({
       disabled={disabled}
     >
       <ComboboxInput
+        ref={attachInput}
         id={id}
         placeholder={placeholder}
         disabled={disabled}
@@ -69,7 +76,7 @@ export function StudentCombobox({
         aria-describedby={ariaDescribedBy}
         showClear={Boolean(selected)}
       />
-      <ComboboxContent>
+      <ComboboxContent container={container}>
         <ComboboxEmpty>No matching student.</ComboboxEmpty>
         <ComboboxList>
           {(item: StudentItem) => (

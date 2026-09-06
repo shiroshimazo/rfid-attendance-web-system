@@ -59,7 +59,7 @@ before(async () => {
     grant execute on function auth.uid() to authenticated;
     create publication supabase_realtime;
   `)
-  for (const file of (await readdir(directory)).filter(file => file.endsWith(".sql") && file !== migrationName).sort()) {
+  for (const file of (await readdir(directory)).filter(file => file.endsWith(".sql") && file < migrationName).sort()) {
     await db.exec(await readFile(new URL(file, directory), "utf8"))
   }
   for (const [name, id] of Object.entries(ids)) {
@@ -103,6 +103,11 @@ before(async () => {
   originalData = await snapshot()
   migration = await readFile(new URL(migrationName, directory), "utf8")
   await db.exec(migration)
+  // Later migrations must follow the legacy fixture/baseline setup, preserving
+  // this suite's explicit proof of access to pre-existing historical records.
+  for (const file of (await readdir(directory)).filter(file => file.endsWith(".sql") && file > migrationName).sort()) {
+    await db.exec(await readFile(new URL(file, directory), "utf8"))
+  }
 })
 
 beforeEach(async () => db.exec("begin"))

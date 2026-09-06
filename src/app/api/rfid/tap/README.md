@@ -12,3 +12,10 @@ and request-handling design that preserves transaction correctness. Resolve
 third-tap and cross-day behavior before inventing additional attendance rules.
 
 Do not expose a Supabase service-role key to ESP32 firmware.
+
+P03 provides `src/lib/rfid-uid.ts` for input normalization and
+`public.normalize_rfid_uid(text)` for matching stored cards, including valid
+legacy separator/case variants. Reuse that byte-order/leading-zero contract in
+P04. Do not query only raw `rfid_number` equality or treat printed decimal numbers
+as hexadecimal UIDs. The user's temporary `00:00:00:11` through `00:00:00:55`
+values test registration only; they do not demonstrate actual hardware taps.

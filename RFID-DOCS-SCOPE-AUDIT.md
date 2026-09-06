@@ -222,7 +222,7 @@ Priorities: **P0** = security/correctness prerequisite; **P1** = required before
 
 **Current status: DONE on 2026-09-06.** The user confirmed all nine hosted SQL checks passed after migration execution and successful application deactivation/reactivation checks. No hosted migration or account mutation was performed by this assistant. Local tests use PGlite with an Auth identity stub; hosted SQL checks simulate authenticated claims. Revocation applies to subsequent statements observing the committed status change and cannot retract already downloaded data or cancel earlier transaction snapshots.
 
-### P02 — Finish safe management writes and pilot validation (P1) — CODE DONE; HOSTED VERIFICATION PENDING
+### P02 — Finish safe management writes and pilot validation (P1) — DONE
 
 **Basis:** ADMIN management/assignments; LATE Scope and Form Locks; DEV validation.
 
@@ -248,19 +248,48 @@ Priorities: **P0** = security/correctness prerequisite; **P1** = required before
 - [x] Local regression verification: **104 passed, 0 failed** across management SQL/action tests, profile lifecycle, and active-account access. Includes injected failures, Auth rejection/uncertainty, safe cleanup, preservation on migration/reapplication, and documented rollback/reapplication.
 - [x] `npm run build` passed, including TypeScript checks. `npm run lint` passed with 0 errors and the existing unused `children` warning in `src/components/ui/combobox.tsx:277`. `git diff --check` passed.
 - [x] User confirmed executing [202609100001_atomic_management_saves.sql](supabase/migrations/202609100001_atomic_management_saves.sql) in hosted Supabase on 2026-09-06, following the previously applied P01 migration.
-- [ ] Complete the student/teacher/email/schedule checks in the [P02 rollout instructions](supabase/migrations/README.md#p02-safe-management-saves-rollout), including hosted Auth synchronization. Local PGlite tests use an Auth schema stub; mocked Auth requests do not prove hosted service privileges or multi-session concurrency.
+- [x] User confirmed on 2026-09-06 that the requested student, teacher assignment, email, and schedule application checks all function correctly after migration execution. See the [P02 rollout instructions](supabase/migrations/README.md#p02-safe-management-saves-rollout). This is user-reported hosted verification; the assistant did not independently run the hosted forms or concurrent-session tests.
 
-**Current status:** application code is complete and the user confirmed hosted migration execution on 2026-09-06; hosted form/Auth verification remains pending. No hosted migration or account mutation was performed by the assistant. RFID replacement/UID behavior remains P03; this change preserves the existing card lifecycle and adds no screens or business features.
+**Current status: DONE on 2026-09-06.** Local checks passed, and the user confirmed hosted migration execution and successful application verification. No hosted migration or account mutation was performed by the assistant. RFID replacement/UID behavior remains P03; this change preserves the existing card lifecycle and adds no screens or business features.
 
-### P03 — Unify RFID registration and assignment correctness (P1)
+### P03 — Unify RFID registration and assignment correctness (P1) — DONE (software; temporary UIDs)
 
 **Basis:** FR Manage RFID/RFID validation; DB one active card and card ownership; ARCH reader UID flow.
 
-**Evidence:** `assignRfidCardAction` in `src/features/students/actions.ts` reads only student ID/name, while RFID module actions use `readHolder`/`rejectInactiveHolder` to check status. Both paths can retire a previous active card before a later replacement write fails. `rfidNumberField` in `src/features/shared/schema.ts` uppercases text but accepts arbitrary A–Z characters and multiple separator styles.
+**Original evidence:** the student assignment action omitted holder status checks present in the RFID module. Both paths could retire an active card before a later replacement failed. The UID field uppercased text but accepted arbitrary A–Z characters and inconsistent separator styles.
 
 **Proceed:** reuse one assignment operation and one normalized UID contract across both admin screens and the device receiver. Validate holder/card eligibility and make replacement atomic. Check existing UID collisions before changing uniqueness behavior.
 
 **Done when:** both screens accept/reject the same assignments, one physical UID resolves consistently, one active card remains enforced, and failure preserves the old valid assignment. No reader-enrollment screen is required.
+
+**Implementation completed on 2026-09-06:**
+
+- [x] Both UID-entry actions share `src/features/rfid/write.ts` and the `save_rfid_card` RPC. Registration/reissue, explicit reassignment, and status activation use one transaction for old-card retirement and the final write. Repeated same-holder UID requests reuse the card ID.
+- [x] Student profile and linked account must be active before activation through either screen. Both UID-entry screens reject another holder's UID; the existing explicit reassignment action allows movement only without attendance history. Existing card statuses and one-active-card/history constraints remain.
+- [x] Shared TypeScript/SQL normalization accepts complete 4-, 7-, or 10-byte hexadecimal UIDs, preserves byte order and leading zeros, and normalizes case/separators. Existing valid stored variants resolve to the same identity; new writes are canonical. Both existing directory searches also recognize equivalent full UID formats. Form text now requests the reader UID instead of assuming a printed number is its UID.
+- [x] Added a read-only UID inventory and a migration collision check before creating normalized uniqueness. Existing invalid/legacy cards, valid formatted cards, attendance/SMS history, account status, and student ownership are preserved. Invalid legacy UIDs can be retired but not newly activated; no automatic decimal conversion or collision cleanup occurs.
+- [x] Used the user's temporary `00:00:00:11`, `00:00:00:22`, `00:00:00:33`, `00:00:00:44`, and `00:00:00:55` values in regression tests and documented manual registration. These normalize to `00000011` through `00000055`. No hosted fixtures or guessed student assignments were inserted.
+- [x] Local tests: **188 passed, 0 failed**, including **30 P03 tests** covering the actual SQL/RLS and both actual server action modules, injected failures after retirement, role/holder restrictions, equivalent UID lookup, inventory collision detection, and preservation through migration/reapplication and documented rollback.
+- [x] Production build and TypeScript checks passed. Full lint reported 0 errors and the existing unused `children` warning in `src/components/ui/combobox.tsx:277`; final focused lint passed without warnings. `git diff --check` passed.
+- Inventory evidence: the standalone [verify_rfid_uid_inventory.sql](supabase/verify_rfid_uid_inventory.sql) output was not supplied. Successful migration execution includes its blocking normalization-collision check. Legacy invalid values are preserved; no claim is made that the hosted legacy inventory is empty.
+- [x] User confirmed completing the migrations, including [202609110001_atomic_rfid_assignment.sql](supabase/migrations/202609110001_atomic_rfid_assignment.sql), on 2026-09-06. This migration includes a blocking collision check; the separate inventory output was not provided.
+- [x] User confirmed successful assignment after the student-picker fix, then confirmed completing the requested equivalent-UID, active-card replacement, other-holder rejection, and inactive-student rejection checks on 2026-09-06. These are user-reported hosted results using temporary UIDs; see the [P03 rollout instructions](supabase/migrations/README.md#p03-uid-registration-and-assignment-rollout).
+
+**P03 form fix on 2026-09-06:** the user reported that Register RFID Card could not
+select a student. A local Chromium reproduction showed the Base UI dropdown
+portaled outside the Radix modal and inheriting `pointer-events: none`. The
+student picker now portals its dropdown into the enclosing dialog; the shared
+combobox accepts an optional portal container. Modal focus protection remains
+enabled. `node tests/student-picker.browser.mjs` passed actual registration and
+reassignment form interactions with fixture students and mocked save boundaries:
+mouse selection/submitted student ID, search by student ID/program, keyboard
+selection, clear, Escape dismissal, scrolling at a 390px viewport, and background
+focus containment. Production build and TypeScript passed; focused lint reported 0 errors and the
+existing unused `children` warning in `src/components/ui/combobox.tsx:278`.
+No database migration is required for this form fix. The user subsequently
+confirmed successful assignment and completion of the requested P03 checks.
+
+**Current status: DONE for software on 2026-09-06.** Local checks passed, and the user confirmed hosted migration execution, assignment, and completion of the requested P03 tests with authorized temporary UIDs. Hosted results are user-reported; automated SQL tests use PGlite, and local browser tests use fixture students and mocked saves. Multi-session concurrency and physical UID/reader confirmation were not verified. Physical confirmation remains a P11 integration check. P04 will reuse the shared UID contract; no attendance receiver, enrollment screen, or hardware feature was added here.
 
 ### P04 — Implement the actual RFID time-in/time-out path (P1)
 

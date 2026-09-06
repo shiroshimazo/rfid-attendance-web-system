@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { assertPilotProgram } from "@/features/academic/validation"
 import { changeManagedLoginEmail, cleanupFailedProfileCreation } from "@/features/shared/management"
 import { requireRole } from "@/features/auth/server"
+import { writeRfidCard } from "@/features/rfid/write"
 import {
   describeError as describeDatabaseError,
   failure,
@@ -33,13 +34,6 @@ function describeError(error: { message: string; code?: string }) {
   return describeDatabaseError(
     error,
     "A student with that ID or email already exists."
-  )
-}
-
-function describeCardError(error: { message: string; code?: string }) {
-  return describeDatabaseError(
-    error,
-    "That RFID number is already registered to another student."
   )
 }
 
@@ -238,75 +232,10 @@ export async function setStudentStatusAction(
   )
 }
 
-/**
- * Registers or re-issues the RFID card behind a student. The schema allows
- * only one active card per student, so a replacement retires the previous one
- * before the new number becomes active.
- */
-export async function assignRfidCardAction(
-  input: RfidAssignmentInput
-): Promise<ActionResult> {
+/** Uses the same UID assignment operation as the RFID directory. */
+export async function assignRfidCardAction(input: RfidAssignmentInput): Promise<ActionResult> {
   await requireRole("admin")
-
   const parsed = rfidAssignmentSchema.safeParse(input)
-
-  if (!parsed.success) {
-    return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
-  }
-
-  const values = parsed.data
-  const supabase = await createServerSupabaseClient()
-
-  const { data: student, error: studentError } = await supabase
-    .from("students")
-    .select("id, full_name")
-    .eq("id", values.studentId)
-    .maybeSingle<{ id: number; full_name: string }>()
-
-  if (studentError) return failure(describeError(studentError))
-  if (!student) return failure("That student record no longer exists.")
-
-  const { data: owner, error: ownerError } = await supabase
-    .from("rfid_cards")
-    .select("id, student_id, card_status")
-    .eq("rfid_number", values.rfidNumber)
-    .maybeSingle<{ id: number; student_id: number; card_status: string }>()
-
-  if (ownerError) return failure(describeCardError(ownerError))
-
-  if (owner && owner.student_id !== student.id) {
-    return failure(
-      "That RFID number is already registered to another student."
-    )
-  }
-
-  if (values.cardStatus === "Active") {
-    const { error: retireError } = await supabase
-      .from("rfid_cards")
-      .update({ card_status: "Deactivated" })
-      .eq("student_id", student.id)
-      .eq("card_status", "Active")
-      .neq("rfid_number", values.rfidNumber)
-
-    if (retireError) return failure(describeCardError(retireError))
-  }
-
-  const cardValues = {
-    student_id: student.id,
-    rfid_number: values.rfidNumber,
-    card_status: values.cardStatus,
-    assigned_date: values.assignedDate,
-  }
-
-  const { error: writeError } = owner
-    ? await supabase.from("rfid_cards").update(cardValues).eq("id", owner.id)
-    : await supabase.from("rfid_cards").insert(cardValues)
-
-  if (writeError) return failure(describeCardError(writeError))
-
-  revalidatePath(STUDENTS_PATH)
-
-  return success(
-    `${values.rfidNumber} is now ${values.cardStatus.toLowerCase()} for ${student.full_name}.`
-  )
+  if (!parsed.success) return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
+  return writeRfidCard({ operation: "save", ...parsed.data })
 }

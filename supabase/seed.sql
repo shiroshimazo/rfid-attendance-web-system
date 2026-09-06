@@ -249,7 +249,7 @@ set
   status = excluded.status;
 
 insert into public.rfid_cards (student_id, rfid_number, card_status, assigned_date)
-select id, '04-A1-B2-C3-D4-E5-80', 'Active', '2026-08-01'
+select id, '04A1B2C3D4E580', 'Active', '2026-08-01'
 from public.students
 where student_id = '2026-001'
 on conflict (rfid_number) do update
@@ -278,7 +278,7 @@ select
 from public.students as student
 join public.rfid_cards as card on card.student_id = student.id
 where student.student_id = '2026-001'
-  and card.rfid_number = '04-A1-B2-C3-D4-E5-80'
+  and card.rfid_number = '04A1B2C3D4E580'
 on conflict (student_id, attendance_date) do update
 set
   rfid_card_id = excluded.rfid_card_id,
