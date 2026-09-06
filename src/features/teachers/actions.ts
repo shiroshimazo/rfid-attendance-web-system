@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 
+import { assertPilotAssignments } from "@/features/academic/validation"
+import { changeManagedLoginEmail, cleanupFailedProfileCreation } from "@/features/shared/management"
 import { requireRole } from "@/features/auth/server"
 import {
   describeError as describeDatabaseError,
@@ -40,18 +42,17 @@ type AssignmentValues = {
   campus: string
 }
 
-function assignmentRows(teacherId: number, assignments: AssignmentValues[]) {
+function assignmentRows(assignments: AssignmentValues[]) {
   // Identical rows would violate the uniqueness constraint, so collapse them.
   const seen = new Set<string>()
 
   return assignments.flatMap((assignment) => {
     const row = {
-      teacher_id: teacherId,
       program_id: assignment.programId,
       course_id: assignment.courseId,
-      year_level: nullable(assignment.yearLevel),
-      section: nullable(assignment.section),
-      campus: nullable(assignment.campus),
+      year_level: assignment.yearLevel,
+      section: assignment.section,
+      campus: assignment.campus,
     }
     const key = JSON.stringify(row)
 
@@ -75,6 +76,9 @@ export async function createTeacherAction(
 
   const values = parsed.data
   const supabase = await createServerSupabaseClient()
+
+  const assignmentValidation = await assertPilotAssignments(supabase, values.assignments)
+  if (assignmentValidation) return failure(assignmentValidation)
 
   let admin: ReturnType<typeof createAdminSupabaseClient>
 
@@ -107,10 +111,9 @@ export async function createTeacherAction(
 
   const userId = created.data.user.id
 
-  const { data: teacher, error: teacherError } = await supabase
-    .from("teachers")
-    .insert({
-      user_id: userId,
+  const { error: teacherError } = await supabase.rpc("save_teacher_profile", {
+    p_user_id: userId,
+    p_profile: {
       teacher_id: values.teacherId,
       full_name: values.fullName,
       gender: nullable(values.gender),
@@ -122,28 +125,13 @@ export async function createTeacherAction(
       department: values.department,
       date_hired: nullable(values.dateHired),
       status: values.status,
-    })
-    .select("id")
-    .single<{ id: number }>()
+    },
+    p_assignments: assignmentRows(values.assignments),
+  })
 
-  if (teacherError || !teacher) {
-    // Roll the orphaned login account back so the email can be reused.
-    await admin.auth.admin.deleteUser(userId)
-    return failure(
-      teacherError
-        ? describeError(teacherError)
-        : "The teacher profile could not be saved."
-    )
-  }
-
-  const { error: assignmentError } = await supabase
-    .from("teacher_assignments")
-    .insert(assignmentRows(teacher.id, values.assignments))
-
-  if (assignmentError) {
-    await supabase.from("teachers").delete().eq("id", teacher.id)
-    await admin.auth.admin.deleteUser(userId)
-    return failure(describeError(assignmentError))
+  if (teacherError) {
+    const cleanup = await cleanupFailedProfileCreation(admin, "teachers", userId, teacherError.code)
+    return failure(describeError(teacherError) + cleanup)
   }
 
   revalidatePath(TEACHERS_PATH)
@@ -165,6 +153,9 @@ export async function updateTeacherAction(
   const values = parsed.data
   const supabase = await createServerSupabaseClient()
 
+  const assignmentValidation = await assertPilotAssignments(supabase, values.assignments)
+  if (assignmentValidation) return failure(assignmentValidation)
+
   const { data: existing, error: existingError } = await supabase
     .from("teachers")
     .select("id, user_id, email")
@@ -174,9 +165,16 @@ export async function updateTeacherAction(
   if (existingError) return failure(describeError(existingError))
   if (!existing) return failure("That teacher record no longer exists.")
 
-  const { error: updateError } = await supabase
-    .from("teachers")
-    .update({
+  const emailChanged = existing.email.toLowerCase() !== values.email
+  let admin: ReturnType<typeof createAdminSupabaseClient> | undefined
+  if (emailChanged) {
+    try { admin = createAdminSupabaseClient() }
+    catch { return failure("Supabase administration is not configured. No changes were saved.") }
+  }
+
+  const { error: updateError } = await supabase.rpc("save_teacher_profile", {
+    p_id: values.id,
+    p_profile: {
       teacher_id: values.teacherId,
       full_name: values.fullName,
       gender: nullable(values.gender),
@@ -188,57 +186,14 @@ export async function updateTeacherAction(
       department: values.department,
       date_hired: nullable(values.dateHired),
       status: values.status,
-    })
-    .eq("id", values.id)
-
+    },
+    p_assignments: assignmentRows(values.assignments),
+  })
   if (updateError) return failure(describeError(updateError))
 
-  // Assignments are replaced wholesale, which keeps the repeatable form and
-  // the stored rows in step without diffing every field.
-  const { error: clearError } = await supabase
-    .from("teacher_assignments")
-    .delete()
-    .eq("teacher_id", values.id)
-
-  if (clearError) return failure(describeError(clearError))
-
-  const { error: assignmentError } = await supabase
-    .from("teacher_assignments")
-    .insert(assignmentRows(values.id, values.assignments))
-
-  if (assignmentError) return failure(describeError(assignmentError))
-
-  // Profile and assignment status are synchronized by database triggers.
-  const { error: accountError } = await supabase
-    .from("users")
-    .update({ email: values.email })
-    .eq("id", existing.user_id)
-
-  if (accountError) return failure(describeError(accountError))
-
-  if (existing.email.toLowerCase() !== values.email) {
-    try {
-      const admin = createAdminSupabaseClient()
-      const { error } = await admin.auth.admin.updateUserById(existing.user_id, {
-        email: values.email,
-        email_confirm: true,
-      })
-
-      if (error) {
-        return failure(
-          `The profile was saved, but the login email could not be changed: ${error.message}`
-        )
-      }
-    } catch (error) {
-      return failure(
-        error instanceof Error
-          ? error.message
-          : "The login email could not be changed."
-      )
-    }
-  }
-
+  const emailResult = admin ? await changeManagedLoginEmail(admin, existing.user_id, values.email) : null
   revalidatePath(TEACHERS_PATH)
+  if (emailResult) return emailResult
 
   return success(`${values.fullName} was updated.`)
 }

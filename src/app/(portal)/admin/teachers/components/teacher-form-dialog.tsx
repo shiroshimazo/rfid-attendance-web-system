@@ -116,7 +116,7 @@ const steps: WizardStep[] = [
 const emptyAssignment = {
   programId: "",
   courseId: "",
-  yearLevel: "",
+  yearLevel: PILOT_YEAR_LEVEL,
   section: "",
   campus: "",
 }
@@ -163,7 +163,7 @@ function defaultValues(teacher?: TeacherView | null): TeacherDialogValues {
         ? teacher.assignments.map((assignment) => ({
             programId: String(assignment.programId),
             courseId: String(assignment.courseId),
-            yearLevel: assignment.yearLevel ?? "",
+            yearLevel: assignment.yearLevel || PILOT_YEAR_LEVEL,
             section: assignment.section ?? "",
             campus: assignment.campus ?? "",
           }))

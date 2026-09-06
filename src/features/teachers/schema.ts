@@ -39,17 +39,17 @@ const teacherFields = {
 }
 
 const assignmentFields = {
-  // BSIT 2nd Year pilot scope; blank stays allowed, anything else must be pilot.
-  yearLevel: optionalText(40).refine(
-    (value): boolean => value === "" || value === PILOT_YEAR_LEVEL,
+  // Explicit placement prevents NULL assignment dimensions granting wildcard access.
+  yearLevel: requiredText(40, "Year level is required").refine(
+    (value): boolean => value === PILOT_YEAR_LEVEL,
     { message: `Only ${PILOT_YEAR_LEVEL} is supported in the pilot` }
   ),
-  section: optionalText(40).refine(
-    (value): boolean => value === "" || isPilotSection(value),
+  section: requiredText(40, "Section is required").refine(
+    (value): boolean => isPilotSection(value),
     { message: "Section must be a pilot section (21001-21010)" }
   ),
-  campus: optionalText(80).refine(
-    (value): boolean => value === "" || isPilotCampus(value),
+  campus: requiredText(80, "Campus is required").refine(
+    (value): boolean => isPilotCampus(value),
     { message: "Campus must be Main Campus, MV Campus, or Bulacan Campus" }
   ),
 }

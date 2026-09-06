@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 
+import { assertPilotProgram } from "@/features/academic/validation"
+import { changeManagedLoginEmail, cleanupFailedProfileCreation } from "@/features/shared/management"
 import { requireRole } from "@/features/auth/server"
 import {
   describeError as describeDatabaseError,
@@ -94,6 +96,9 @@ export async function createStudentAction(
   const values = parsed.data
   const supabase = await createServerSupabaseClient()
 
+  const programError = await assertPilotProgram(supabase, values.programId)
+  if (programError) return failure(programError)
+
   let admin: ReturnType<typeof createAdminSupabaseClient>
 
   try {
@@ -125,14 +130,14 @@ export async function createStudentAction(
 
   const userId = created.data.user.id
 
-  const { error: studentError } = await supabase
-    .from("students")
-    .insert({ user_id: userId, ...studentColumns(values) })
+  const { error: studentError } = await supabase.rpc("save_student_profile", {
+    p_user_id: userId,
+    p_profile: studentColumns(values),
+  })
 
   if (studentError) {
-    // Roll the orphaned login account back so the email can be reused.
-    await admin.auth.admin.deleteUser(userId)
-    return failure(describeError(studentError))
+    const cleanup = await cleanupFailedProfileCreation(admin, "students", userId, studentError.code)
+    return failure(describeError(studentError) + cleanup)
   }
 
   revalidatePath(STUDENTS_PATH)
@@ -155,6 +160,9 @@ export async function updateStudentAction(
   const values = parsed.data
   const supabase = await createServerSupabaseClient()
 
+  const programError = await assertPilotProgram(supabase, values.programId)
+  if (programError) return failure(programError)
+
   const { data: existing, error: existingError } = await supabase
     .from("students")
     .select("id, user_id, email")
@@ -164,46 +172,24 @@ export async function updateStudentAction(
   if (existingError) return failure(describeError(existingError))
   if (!existing) return failure("That student record no longer exists.")
 
-  const { error: updateError } = await supabase
-    .from("students")
-    .update(studentColumns(values))
-    .eq("id", values.id)
-
-  if (updateError) return failure(describeError(updateError))
-
-  // Lifecycle status and card retirement are synchronized by the profile
-  // trigger in the same transaction as the student update above.
-  const { error: accountError } = await supabase
-    .from("users")
-    .update({ email: values.email })
-    .eq("id", existing.user_id)
-
-  if (accountError) return failure(describeError(accountError))
-
-  if (existing.email.toLowerCase() !== values.email) {
-    try {
-      const admin = createAdminSupabaseClient()
-      const { error } = await admin.auth.admin.updateUserById(existing.user_id, {
-        email: values.email,
-        email_confirm: true,
-      })
-
-      if (error) {
-        return failure(
-          `The profile was saved, but the login email could not be changed: ${error.message}`
-        )
-      }
-    } catch (error) {
-      return failure(
-        error instanceof Error
-          ? error.message
-          : "The login email could not be changed."
-      )
-    }
+  const emailChanged = existing.email.toLowerCase() !== values.email
+  let admin: ReturnType<typeof createAdminSupabaseClient> | undefined
+  if (emailChanged) {
+    try { admin = createAdminSupabaseClient() }
+    catch { return failure("Supabase administration is not configured. No changes were saved.") }
   }
 
+  const { error: updateError } = await supabase.rpc("save_student_profile", {
+    p_id: values.id,
+    p_profile: studentColumns(values),
+  })
+  if (updateError) return failure(describeError(updateError))
+
+  // Non-email edits commit together. Email remains Auth-owned even if its API fails.
+  const emailResult = admin ? await changeManagedLoginEmail(admin, existing.user_id, values.email) : null
   revalidatePath(STUDENTS_PATH)
   revalidatePath("/admin/rfid-cards")
+  if (emailResult) return emailResult
 
   return success(`${values.fullName} was updated.`)
 }

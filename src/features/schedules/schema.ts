@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { isPilotSection, PILOT_YEAR_LEVEL } from "@/features/academic/pilot"
+import { isPilotCampus, isPilotSection, PILOT_YEAR_LEVEL } from "@/features/academic/pilot"
 import { databaseIdSchema, requiredText } from "@/features/shared/schema"
 
 /**
@@ -97,9 +97,10 @@ const graceTextField = z
   })
 
 const daysField = z
-  .array(z.number().int().min(0).max(6))
+  .array(z.number().int().min(1).max(5))
   .min(1, "Choose at least one class day")
-  .max(7)
+  .max(5)
+  .refine((days) => new Set(days).size === days.length, "Choose each weekday only once")
 
 export const scheduleDialogSchema = z.object({
   timeStart: timeField,
@@ -121,7 +122,7 @@ export const scheduleIdentitySchema = z.object({
   section: requiredText(40, "Section is required").refine(isPilotSection, {
     message: "Section must be a pilot section (21001-21010)",
   }),
-  campus: z.union([z.string().trim().min(1).max(80), z.null()]),
+  campus: z.union([z.string().trim().refine(isPilotCampus, "Select a pilot campus"), z.null()]),
 })
 
 export const updateScheduleSchema = scheduleIdentitySchema.extend({

@@ -222,21 +222,35 @@ Priorities: **P0** = security/correctness prerequisite; **P1** = required before
 
 **Current status: DONE on 2026-09-06.** The user confirmed all nine hosted SQL checks passed after migration execution and successful application deactivation/reactivation checks. No hosted migration or account mutation was performed by this assistant. Local tests use PGlite with an Auth identity stub; hosted SQL checks simulate authenticated claims. Revocation applies to subsequent statements observing the committed status change and cannot retract already downloaded data or cancel earlier transaction snapshots.
 
-### P02 — Finish safe management writes and pilot validation (P1)
+### P02 — Finish safe management writes and pilot validation (P1) — CODE DONE; HOSTED VERIFICATION PENDING
 
 **Basis:** ADMIN management/assignments; LATE Scope and Form Locks; DEV validation.
 
 **Evidence:**
 
-- `updateTeacherAction` deletes existing assignments before inserting replacements in `src/features/teachers/actions.ts`. A failed insert can leave no assignments.
-- Student/teacher edits update profile and public account information before changing the Auth email; errors can leave different displayed/login emails.
-- `src/features/students/actions.ts` and `src/features/teachers/actions.ts` do not verify that a submitted program ID actually identifies BSIT. `assertPilotProgram` already does this in schedules.
-- `src/features/teachers/schema.ts` permits blank assignment year/section/campus, and `assignmentRows` turns these into SQL nulls. Teacher access helpers interpret null dimensions as wildcards.
-- Schedule writes update, insert, and retire weekdays in separate requests. Its server schema accepts days 0–6 even though the pilot UI offers Monday–Friday.
+- The original teacher action deleted assignments before a separate replacement insert, risking assignment loss.
+- Original student/teacher edits wrote displayed emails before Auth acceptance, risking different displayed/login emails.
+- Student/teacher actions originally trusted program IDs without checking that they identified BSIT.
+- Blank teacher assignment year/section/campus originally became SQL nulls, which access helpers treat as wildcards.
+- Original schedule saves split day updates, insertions, and retirement into separate requests and accepted days 0–6.
 
 **Proceed:** preserve existing actions/forms, validate catalog identity and intended pilot dimensions on the server, and ensure failed related writes do not erase valid state. Keep SQL changes atomic where they form one operation; handle Auth API failure explicitly. Make schedule validation agree with the current pilot scope.
 
 **Done when:** invalid program/assignment/day inputs are rejected; a failed replacement leaves the previous assignments/card/week intact; account email changes cannot silently diverge. No new CRUD screen or wildcard-permission feature is needed.
+
+**Implementation completed on 2026-09-06:**
+
+- [x] Student profile/lifecycle and teacher profile/assignment writes now use atomic database functions. A failed assignment replacement rolls back the old profile, account status, and assignments together.
+- [x] Auth owns accepted emails and synchronizes account/profile fields in its transaction. Other profile details save first; rejected email changes return an explicit partial-save error. Network uncertainty asks for a reload. Existing email mismatches are preserved for review, not silently rewritten.
+- [x] Failed new-account creation only cleans up a newly issued unused login after a definite database rejection and a successful privileged check for an absent profile. Ambiguous outcomes retain the account for inspection.
+- [x] Shared server validation checks actual BSIT program identity and subject membership before account creation. RPCs repeat these checks. Teacher assignments require explicit pilot year, section, and campus; existing wildcard/non-pilot records are not automatically converted.
+- [x] Schedule saves and status toggles use atomic functions with the same per-week transaction lock. Unique Monday–Friday days are enforced. Omitted days remain archived; existing all-campus schedules remain supported.
+- [x] Local regression verification: **104 passed, 0 failed** across management SQL/action tests, profile lifecycle, and active-account access. Includes injected failures, Auth rejection/uncertainty, safe cleanup, preservation on migration/reapplication, and documented rollback/reapplication.
+- [x] `npm run build` passed, including TypeScript checks. `npm run lint` passed with 0 errors and the existing unused `children` warning in `src/components/ui/combobox.tsx:277`. `git diff --check` passed.
+- [x] User confirmed executing [202609100001_atomic_management_saves.sql](supabase/migrations/202609100001_atomic_management_saves.sql) in hosted Supabase on 2026-09-06, following the previously applied P01 migration.
+- [ ] Complete the student/teacher/email/schedule checks in the [P02 rollout instructions](supabase/migrations/README.md#p02-safe-management-saves-rollout), including hosted Auth synchronization. Local PGlite tests use an Auth schema stub; mocked Auth requests do not prove hosted service privileges or multi-session concurrency.
+
+**Current status:** application code is complete and the user confirmed hosted migration execution on 2026-09-06; hosted form/Auth verification remains pending. No hosted migration or account mutation was performed by the assistant. RFID replacement/UID behavior remains P03; this change preserves the existing card lifecycle and adds no screens or business features.
 
 ### P03 — Unify RFID registration and assignment correctness (P1)
 

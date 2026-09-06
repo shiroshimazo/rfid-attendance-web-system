@@ -98,9 +98,12 @@ aliases, not one row per alias.
 - Edit-legacy caveat: records created before the pilot with non-pilot
   academic values fail edit validation until an administrator migrates them
   to pilot values.
-- Server program-id check (verify program code is BSIT in create/update
-  actions) is still open for students and teachers. The schedules actions
-  already verify it.
+- P02 implements the server program-id check for students, teachers, and
+  schedules, verifying the actual BSIT catalog entry. Database save functions
+  repeat the checks; teacher subjects must belong to that program and assignment
+  dimensions cannot be blank. Schedule saves accept unique Monday–Friday days.
+  Hosted enforcement requires migration `202609100001_atomic_management_saves.sql`;
+  rollout status is tracked in `RFID-DOCS-SCOPE-AUDIT.md`.
 - Schedules Panel (admin): `/admin/schedules` edits Time Start, Grace, Status,
   and Class Days per section. Program and Year Level are read-only BSIT /
   2nd Year. Rows are never deleted: unchecking a day archives that row and the

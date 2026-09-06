@@ -1,5 +1,97 @@
 # Database migrations
 
+## P02 safe management saves rollout
+
+**Code implemented; user confirmed hosted migration execution on 2026-09-06.
+Hosted form/Auth verification remains pending.** For new environments, apply
+[202609100001_atomic_management_saves.sql](202609100001_atomic_management_saves.sql)
+after P01 and before using the updated student, teacher, and schedule actions.
+Run this one migration in the Supabase SQL editor. It adds functions/triggers;
+it does not delete or rewrite existing records or change RLS policies.
+
+Student profile/lifecycle changes commit together. Teacher profiles and their
+replacement assignments commit together, so a failed insert restores the old
+assignments. Schedule day updates, additions, and retirements commit as one week;
+edits and status toggles take the same transaction lock for that week. Omitted
+days remain archived. The RPCs require an active admin and validate the actual
+BSIT program, 2nd Year, sections 21001–21010, supported campuses, and subject
+membership. Schedule days must be unique Monday–Friday values. Existing
+all-campus schedules remain supported; teacher assignments require an explicit
+campus. Existing non-pilot or wildcard records are preserved until explicitly edited.
+
+Auth owns email. The existing Auth-to-account trigger runs before the new
+Auth-to-profile trigger; both commit with the Auth email change. Old application
+email writes retain the actual Auth email. The new actions save other profile
+details first, then request the Auth email change. If Auth rejects it, the UI
+reports that the details were saved but the email change failed. A network
+failure asks for a reload because acceptance may be uncertain. This is not one
+transaction across the Auth API and profile save. Existing email mismatches are
+not silently backfilled. New-account cleanup only deletes the newly issued
+unused login after a definite SQL rejection and a successful service-role read
+confirming no profile exists; ambiguous saves retain the account for inspection.
+
+After applying, verify with dedicated test accounts and the existing forms:
+
+1. Create and edit a student and a teacher with valid pilot placement. Confirm
+   teacher assignments persist after reopening and remain scoped to that teacher.
+2. Change a test account's email to an unused address. Confirm Auth, `public.users`,
+   and its profile agree and the account can sign in using that address. Then
+   attempt an email already used by another account: confirm the explicit partial
+   save message, matching original email fields, and retained assignments.
+3. Save a test schedule week, reopen it, and toggle its status. Confirm selected
+   days persist and omitted days are archived. Restore the intended test schedule.
+4. Confirm ordinary teacher/student access still works and cannot call these admin
+   saves. Inspect any pre-existing email mismatches without automatically repairing
+   them using the read-only counts below.
+
+```sql
+select 'students' as profile, count(*) as mismatched_emails
+from public.students p join public.users u on u.id = p.user_id
+join auth.users a on a.id = u.id
+where p.email is distinct from a.email or u.email is distinct from a.email
+union all
+select 'teachers', count(*)
+from public.teachers p join public.users u on u.id = p.user_id
+join auth.users a on a.id = u.id
+where p.email is distinct from a.email or u.email is distinct from a.email;
+```
+
+Local proof: `node --test tests/management-saves.test.mjs tests/management-actions.test.mjs`.
+These exercise actual SQL/RLS in PGlite and the actual server actions with mocked
+Auth requests, including injected failure rollback, validation, and email failure.
+They do not verify hosted Auth privileges or simultaneous database sessions.
+Check concurrent edits in staging if multiple administrators edit the same week.
+
+### P02 rollback only if deployment must be reverted
+
+Restore the previous application first and allow in-flight saves to finish.
+Leaving this additive migration installed is compatible with the earlier actions,
+although those actions retain their old non-email partial-save risks. If removing
+P02 is necessary, use the following as a separate, explicitly chosen rollback
+migration. It removes P02 write protections and functions, preserves all records
+and P01 access rules, and is not a normal setup step. Do not remove the earlier
+Auth sync or profile lifecycle triggers. Reapplying the forward migration restores
+P02 without rewriting data.
+
+<!-- p02-rollback:start -->
+```sql
+begin;
+drop trigger if exists p02_sync_auth_profile_email on auth.users;
+drop trigger if exists users_keep_auth_email on public.users;
+drop trigger if exists students_keep_account_email on public.students;
+drop trigger if exists teachers_keep_account_email on public.teachers;
+drop function if exists public.save_student_profile(jsonb, uuid, bigint);
+drop function if exists public.save_teacher_profile(jsonb, jsonb, uuid, bigint);
+drop function if exists public.save_schedule_week(bigint, text, text, text, integer[], time, integer, public.account_status);
+drop function if exists public.set_schedule_week_status(bigint, text, text, text, public.account_status);
+drop function if exists public.assert_pilot_placement(bigint, text, text, text, boolean);
+drop function if exists public.sync_auth_profile_email();
+drop function if exists public.keep_profile_account_email();
+drop function if exists public.keep_account_auth_email();
+commit;
+```
+<!-- p02-rollback:end -->
+
 ## P01 active-account access rollout
 
 `202609090001_enforce_active_account_access.sql` is implemented and locally tested.
