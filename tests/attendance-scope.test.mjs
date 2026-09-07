@@ -63,7 +63,7 @@ for (const role of ["admin", "teacher"]) {
     assert.equal(data.summary[0].absent, 1)
     if (role === "admin") {
       assert.equal(data.recentLogs.find(row => row.id === 4).status, "LegacyRecord")
-      assert.equal(data.kpis.rfidScans, 3)
+      assert.equal(data.kpis.rfidScans, 6) // Three current rows, each with time-in and time-out.
     }
     const legacyOnly = build({ ...snapshot, attendance: [attendance[3]] }, options)
     assert.equal(legacyOnly.kpis.totalPresent, 0)

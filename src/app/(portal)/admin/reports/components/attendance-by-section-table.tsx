@@ -33,6 +33,7 @@ type SortColumn =
   | "program"
   | "yearLevel"
   | "section"
+  | "campus"
   | "total"
   | "present"
   | "late"
@@ -54,6 +55,8 @@ function compareRows(
   switch (column) {
     case "yearLevel":
       return collator.compare(a.yearLevel, b.yearLevel) * factor
+    case "campus":
+      return collator.compare(a.campus, b.campus) * factor
     case "section":
       return collator.compare(a.section, b.section) * factor
     case "total":
@@ -140,6 +143,13 @@ export function AttendanceBySectionTable({
                     className="px-3"
                   />
                   <SortableHeader
+                    column="campus"
+                    label="Campus"
+                    sort={sort}
+                    onSort={toggleSort}
+                    className="px-3"
+                  />
+                  <SortableHeader
                     column="section"
                     label="Section"
                     sort={sort}
@@ -176,7 +186,7 @@ export function AttendanceBySectionTable({
                   />
                   <SortableHeader
                     column="rate"
-                    label="Attendance Rate"
+                    label="Recorded Rate"
                     sort={sort}
                     onSort={toggleSort}
                     className="px-3"
@@ -195,6 +205,7 @@ export function AttendanceBySectionTable({
                       </Badge>
                     </TableCell>
                     <TableCell className="px-3">{row.yearLevel}</TableCell>
+                    <TableCell className="px-3">{row.campus}</TableCell>
                     <TableCell className="px-3">{row.section}</TableCell>
                     <TableCell className="hidden px-3 tabular-nums md:table-cell">
                       {formatNumber(row.total)}

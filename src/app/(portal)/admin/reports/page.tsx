@@ -17,6 +17,7 @@ import { ExportPdfButton } from "./components/export-pdf-button"
 import { GroupBreakdownChart } from "./components/group-breakdown-chart"
 import { KpiCards } from "./components/kpi-cards"
 import { ReportsPanelSkeleton } from "./components/panel-skeleton"
+import { SmsReportRecords } from "@/features/reports/sms-report-records"
 import { RecentLogsTable } from "./components/recent-logs-table"
 import { StatusChart } from "./components/status-chart"
 import { SummaryChart } from "./components/summary-chart"
@@ -48,7 +49,8 @@ async function ReportsContent({ range }: { range: ReportsRange }) {
   return (
     <div className="flex flex-col gap-4 md:gap-6">
       <p className="text-sm text-muted-foreground tabular-nums">
-        Generated {data.generatedAtLabel}
+        Generated {data.generatedAtLabel}. Rates use recorded attendance only.
+        Program, year and section reflect current profiles; campus comes from the attendance record.
       </p>
 
       <KpiCards kpis={data.kpis} sessionDays={data.sessionDays} />
@@ -70,7 +72,8 @@ async function ReportsContent({ range }: { range: ReportsRange }) {
         rangeLabel={data.rangeLabel}
       />
 
-      <RecentLogsTable logs={data.recentLogs} />
+      <RecentLogsTable logs={data.recentLogs} total={data.attendanceLogs.length} />
+      <SmsReportRecords records={data.smsLogs.slice(0, 50)} total={data.smsLogs.length} />
     </div>
   )
 }
@@ -101,7 +104,7 @@ export default async function AdminReportsPage({
 
         <div className="flex flex-wrap items-end gap-2" data-print="hide">
           <DateRangePicker from={range.from} to={range.to} />
-          <ExportPdfButton />
+          <ExportPdfButton range={range} />
         </div>
       </div>
 

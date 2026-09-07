@@ -73,7 +73,7 @@ function compareRows(
   }
 }
 
-export function RecentLogsTable({ logs }: { logs: AttendanceLog[] }) {
+export function RecentLogsTable({ logs, total }: { logs: AttendanceLog[]; total: number }) {
   const [sort, setSort] = React.useState<SortState<SortColumn>>({
     column: "time",
     direction: "desc",
@@ -104,7 +104,7 @@ export function RecentLogsTable({ logs }: { logs: AttendanceLog[] }) {
       <CardHeader>
         <CardTitle>Recent Attendance Logs</CardTitle>
         <CardDescription>
-          The 50 newest RFID taps in the selected range.
+          Preview of the newest {logs.length} of {total} attendance records. Export PDF includes the complete selected range. Card status is its current state, not its state at the time of attendance.
         </CardDescription>
       </CardHeader>
 
@@ -122,7 +122,7 @@ export function RecentLogsTable({ logs }: { logs: AttendanceLog[] }) {
                 <TableRow className="bg-muted/50">
                   <SortableHeader
                     column="time"
-                    label="Time"
+                    label="In / out (PHT)"
                     sort={sort}
                     onSort={toggleSort}
                     className="px-3"
@@ -164,7 +164,7 @@ export function RecentLogsTable({ logs }: { logs: AttendanceLog[] }) {
                   />
                   <SortableHeader
                     column="rfidStatus"
-                    label="RFID Status"
+                    label="Recorded Card / Status Now"
                     sort={sort}
                     onSort={toggleSort}
                     className="hidden px-3 sm:table-cell"
@@ -176,7 +176,7 @@ export function RecentLogsTable({ logs }: { logs: AttendanceLog[] }) {
                   <TableRow key={log.id}>
                     <TableCell className="px-3">
                       <p className="font-medium tabular-nums">
-                        {formatClockTime(log.timeIn)}
+                        {formatClockTime(log.timeIn)} / {formatClockTime(log.timeOut)}
                       </p>
                       <p className="text-xs text-muted-foreground tabular-nums">
                         {format(parseISO(log.date), "d MMM yyyy")}
@@ -185,7 +185,7 @@ export function RecentLogsTable({ logs }: { logs: AttendanceLog[] }) {
                     <TableCell className="px-3">
                       <p className="font-medium">{log.studentName}</p>
                       <p className="text-xs text-muted-foreground tabular-nums">
-                        {log.studentId}
+                        {log.studentId} ? {log.studentStatus}
                       </p>
                     </TableCell>
                     <TableCell className="hidden px-3 md:table-cell">
@@ -200,12 +200,13 @@ export function RecentLogsTable({ logs }: { logs: AttendanceLog[] }) {
                       {log.yearLevel}
                     </TableCell>
                     <TableCell className="hidden px-3 lg:table-cell">
-                      {log.section}
+                      {log.section}<br />{log.campus}
                     </TableCell>
                     <TableCell className="px-3">
                       <AttendanceStatusBadge status={log.status} />
                     </TableCell>
                     <TableCell className="hidden px-3 sm:table-cell">
+                      <p className="mb-1 font-mono text-xs">{log.rfidNumber}</p>
                       <RfidStatusBadge status={log.rfidStatus} />
                     </TableCell>
                   </TableRow>

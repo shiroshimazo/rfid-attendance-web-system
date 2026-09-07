@@ -2,6 +2,7 @@ import type {
   AttendanceStatus,
   RfidCardStatus,
 } from "@/services/attendance/dashboard"
+import { fetchAllRows } from "@/services/supabase/pagination"
 import { createServerSupabaseClient } from "@/services/supabase/server"
 
 export type { AttendanceStatus, RfidCardStatus }
@@ -63,35 +64,22 @@ export async function fetchStudentAttendanceSnapshot({
     )
   }
 
-  const [
-    { data: records, error: recordsError },
-    { data: cards, error: cardsError },
-    { data: sms, error: smsError },
-  ] = await Promise.all([
-    supabase
+  const [records, cards, sms] = await Promise.all([
+    fetchAllRows<StudentAttendanceRecordRow>((from, to) => supabase
       .from("attendance_records")
-      .select(
-        "id, attendance_date, time_in, time_out, attendance_status, campus, rfid_card_id"
-      )
+      .select("id, attendance_date, time_in, time_out, attendance_status, campus, rfid_card_id")
       .eq("student_id", student.id)
-      .order("attendance_date", { ascending: false })
-      .returns<StudentAttendanceRecordRow[]>(),
-    supabase
-      .from("rfid_cards")
-      .select("id, rfid_number, card_status")
+      .order("attendance_date", { ascending: false }).order("id", { ascending: false })
+      .range(from, to).returns<StudentAttendanceRecordRow[]>()),
+    fetchAllRows<StudentAttendanceCardRow>((from, to) => supabase
+      .from("rfid_cards").select("id, rfid_number, card_status")
+      .eq("student_id", student.id).order("id", { ascending: true })
+      .range(from, to).returns<StudentAttendanceCardRow[]>()),
+    fetchAllRows<StudentAttendanceSmsRow>((from, to) => supabase
+      .from("sms_notifications").select("attendance_id, sms_status, sent_at, created_at")
       .eq("student_id", student.id)
-      .returns<StudentAttendanceCardRow[]>(),
-    supabase
-      .from("sms_notifications")
-      .select("attendance_id, sms_status, sent_at, created_at")
-      .eq("student_id", student.id)
-      .order("created_at", { ascending: false })
-      .returns<StudentAttendanceSmsRow[]>(),
+      .order("created_at", { ascending: false }).order("id", { ascending: false })
+      .range(from, to).returns<StudentAttendanceSmsRow[]>()),
   ])
-
-  if (recordsError) throw new Error(recordsError.message)
-  if (cardsError) throw new Error(cardsError.message)
-  if (smsError) throw new Error(smsError.message)
-
-  return { records: records ?? [], cards: cards ?? [], sms: sms ?? [] }
+  return { records, cards, sms }
 }

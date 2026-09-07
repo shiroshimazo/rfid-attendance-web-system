@@ -11,6 +11,7 @@ import {
   type ReportsSearchParams,
 } from "@/features/reports/teacher-panel"
 
+import { RecentLogsTable } from "../../admin/reports/components/recent-logs-table"
 import { DateRangePicker } from "./components/date-range-picker"
 import { ExportPdfButton } from "./components/export-pdf-button"
 import { KpiCards } from "./components/kpi-cards"
@@ -46,7 +47,8 @@ async function ReportsContent({ range }: { range: ReportsRange }) {
   return (
     <div className="flex flex-col gap-4 md:gap-6">
       <p className="text-sm text-muted-foreground tabular-nums">
-        Generated {data.generatedAtLabel}
+        Generated {data.generatedAtLabel}. Rates use recorded attendance only.
+        Program, year and section reflect current profiles; campus comes from the attendance record.
       </p>
 
       <KpiCards kpis={data.kpis} sessionDays={data.sessionDays} />
@@ -62,6 +64,7 @@ async function ReportsContent({ range }: { range: ReportsRange }) {
         rows={data.bySection}
         rangeLabel={data.rangeLabel}
       />
+      <RecentLogsTable logs={data.recentLogs} total={data.attendanceLogs.length} />
     </div>
   )
 }
@@ -92,7 +95,7 @@ export default async function TeacherReportsPage({
 
         <div className="flex flex-wrap items-end gap-2" data-print="hide">
           <DateRangePicker from={range.from} to={range.to} />
-          <ExportPdfButton />
+          <ExportPdfButton range={range} />
         </div>
       </div>
 

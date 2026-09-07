@@ -28,6 +28,7 @@ export interface TeacherReportStudentRow {
   section: string
   campus: string
   program_id: number
+  status: string
 }
 
 export interface TeacherReportAttendanceRow {
@@ -37,6 +38,8 @@ export interface TeacherReportAttendanceRow {
   time_in: string
   time_out: string | null
   attendance_status: string
+  campus: string
+  rfid_card_id: number
 }
 
 export interface TeacherReportProgramRow {
@@ -46,6 +49,8 @@ export interface TeacherReportProgramRow {
 }
 
 export interface TeacherReportRfidCardRow {
+  id: number
+  rfid_number: string
   student_id: number
   card_status: RfidCardStatus
 }
@@ -120,6 +125,7 @@ export async function fetchTeacherReportsSnapshot({
         .select("program_id, year_level, section, campus, status")
         .eq("teacher_id", teacher.id)
         .eq("status", "active")
+        .order("id", { ascending: true })
         .range(from, to)
         .returns<TeacherReportAssignmentRow[]>()
   )
@@ -135,10 +141,11 @@ export async function fetchTeacherReportsSnapshot({
       supabase
         .from("students")
         .select(
-          "id, student_id, full_name, year_level, section, campus, program_id"
+          "id, student_id, full_name, year_level, section, campus, program_id, status"
         )
         .eq("status", "active")
         .order("full_name", { ascending: true })
+        .order("id", { ascending: true })
         .range(from, to)
         .returns<TeacherReportStudentRow[]>()
     ),
@@ -146,12 +153,13 @@ export async function fetchTeacherReportsSnapshot({
       supabase
         .from("attendance_records")
         .select(
-          "id, student_id, attendance_date, time_in, time_out, attendance_status"
+          "id, student_id, attendance_date, time_in, time_out, attendance_status, campus, rfid_card_id"
         )
         .gte("attendance_date", fromDate)
         .lte("attendance_date", toDate)
         .order("attendance_date", { ascending: true })
         .order("time_in", { ascending: true })
+        .order("id", { ascending: true })
         .range(from, to)
         .returns<TeacherReportAttendanceRow[]>()
     ),
@@ -161,14 +169,16 @@ export async function fetchTeacherReportsSnapshot({
         .select("id, program_code, program_name")
         .in("id", programIds)
         .order("program_code", { ascending: true })
+        .order("id", { ascending: true })
         .range(from, to)
         .returns<TeacherReportProgramRow[]>()
     ),
     fetchAllRows<TeacherReportRfidCardRow>((from, to) =>
       supabase
         .from("rfid_cards")
-        .select("student_id, card_status")
+        .select("id, student_id, rfid_number, card_status")
         .order("student_id", { ascending: true })
+        .order("id", { ascending: true })
         .range(from, to)
         .returns<TeacherReportRfidCardRow[]>()
     ),

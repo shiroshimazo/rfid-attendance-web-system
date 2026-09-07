@@ -52,7 +52,7 @@ export function KpiCards({
   kpis: ReportsKpis
   sessionDays: number
 }) {
-  const dayLabel = `${formatNumber(sessionDays)} session day${sessionDays === 1 ? "" : "s"}`
+  const dayLabel = `${formatNumber(sessionDays)} recorded day${sessionDays === 1 ? "" : "s"}`
 
   return (
     <section
@@ -60,10 +60,10 @@ export function KpiCards({
       className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4"
     >
       <KpiCard
-        label="Total Students"
+        label="Current Active Students"
         value={<SlidingNumber value={kpis.totalStudents} />}
         icon={UsersRound}
-        detail="Active students counted in this report."
+        detail={`${kpis.representedStudents} students have records in this range, including retained history.`}
       />
       <KpiCard
         label="Total Present"
@@ -81,7 +81,7 @@ export function KpiCards({
         label="RFID Scans"
         value={<SlidingNumber value={kpis.rfidScans} />}
         icon={ScanLine}
-        detail="Attendance records created by reader taps in this range."
+        detail="Captured time-ins plus time-outs in this range; historical status values excluded."
       />
     </section>
   )

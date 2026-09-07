@@ -63,7 +63,7 @@ Your instruction resolves the current-release decision: remove this business sta
 | Manage RFID cards | `src/features/rfid/`, `src/services/rfid/cards.ts`, admin card screens | KEEP register/assign/status/view. Unify the two assignment implementations. |
 | Admin attendance | `src/features/attendance/panel.ts`, `src/services/attendance/panel.ts` | KEEP search, filters, times, and records. Excused choices removed under R01; finish the remaining absence-policy work. |
 | Admin schedules | `src/features/schedules/`, `src/services/schedules/`, `/admin/schedules` | KEEP. ADMIN and LATE explicitly document this module. Preserve status-based retirement. |
-| Admin reports | `src/features/reports/panel.ts`, `src/services/reports/snapshot.ts` | KEEP. Finish correct totals, required report records, and complete PDF output. |
+| Admin reports | `src/features/reports/panel.ts`, `src/services/reports/snapshot.ts` | KEEP. P08 implementation DONE: recorded totals, retained history, RFID/SMS records and complete pdfcn exports. Live acceptance and P05 policy remain separate. |
 | Admin settings | `src/features/profiles/actions.ts`, `/admin/settings` | KEEP profile/photo reference, email, phone, and password changes. |
 | Teacher dashboard/attendance/students | Teacher attendance feature/service files and `/teacher/` pages | KEEP assigned-student visibility, filters, date selection, read-only details, and attendance history access. |
 | Teacher reports/settings | `src/features/reports/teacher-panel.ts`, `src/features/profiles/teacher-profile.ts` | KEEP class reports/PDF, profile, assignments, and password changes. |
@@ -85,7 +85,7 @@ The current navigation already matches ADMIN, TEACHER, and STUDENT: eight admin,
 
 - [x] **Completed in the codebase on 2026-09-05.** Removed Excused from the active status contract, filters/URL choices, badges, sort maps, dashboard fields, chart slices, report tallies, and user-facing copy.
 - [x] Preserved Present, Late, Absent, and the existing no-tap display. Shared `status.ts` maps unsupported stored values to a display-only `LegacyRecord` marker, shown as **Historical record**. It is not a selectable, writable, or charted business status. Existing rows, times, and linked SMS remain available without reclassification.
-- [x] Excluded historical values from active attendance counts, rates, scan counters, and report session dates. Reports now count **explicit recorded absences**, matching current dashboards; this avoids converting legacy/missing rows into absences when removing Excused. The broader P05 school-policy/finalization decision remains open, as does P08's daily-row versus scan-event distinction.
+- [x] Excluded historical values from active attendance counts, rates, scan counters, and report session dates. Reports now count **explicit recorded absences**, matching current dashboards; this avoids converting legacy/missing rows into absences when removing Excused. The broader P05 school-policy/finalization decision remains open. P08 now counts captured time-in/time-out fields consistently with the dashboard.
 - [x] Added `supabase/migrations/202609080001_restrict_attendance_status.sql`. The new guard rejects unsupported inserts/status changes while preserving existing historical rows and unchanged-status updates for the same record/student/day/card. The original enum/migration remains intact; no history is deleted or converted.
 - [x] Updated current-contract tests and removed active/future Excused requirements from the related planning files and the LATE future list. Remaining mentions identify an exclusion, historical evidence, or compatibility/rejection tests.
 - [x] **Verification:** 50 local tests pass, including 7 application scope/compatibility tests and 9 database migration/preservation/rollback tests. TypeScript and the Next.js production build pass. ESLint reports 0 errors and the existing unused `children` warning in `src/components/ui/combobox.tsx:277`. A source search finds no Excused references under `src/`.
@@ -350,27 +350,41 @@ FR says SMS follows successful attendance recording broadly; ARCH explicitly pla
 
 **Evidence:** `LiveRefresh` exists and is mounted across the portal pages. Its timer resets on every event and subscription status is ignored. The publication migration lists attendance, RFID cards, SMS, and students; the schedules page subscribes to `class_schedules`, which that migration does not publish. Teacher management uses defaults that omit teacher/assignment changes.
 
-`src/lib/school-time.ts` and current dashboard/query entry points already use Asia/Manila for today's date. However, report defaults/generated timestamps in `src/features/reports/panel.ts` and `formatTimestamp` in `src/lib/format.ts` still use host/local time.
+`src/lib/school-time.ts` and current dashboard/query entry points already use Asia/Manila for today's date. P08 now also uses Asia/Manila for report defaults and generated/SMS timestamps. The shared `formatTimestamp` in `src/lib/format.ts` still uses host/local time outside those reports.
 
 **Proceed:** finish refresh behavior under continuous events/reconnection and align subscriptions with supported page data. Reuse the school-time helper where appropriate. Check deployed publications rather than assuming migration files have been applied.
 
 **Done when:** accepted attendance and SMS changes appear automatically in all authorized role views; a continuous stream does not postpone refresh indefinitely; midnight Manila produces consistent dates and timestamps in reports and dashboards. No new connection-monitoring module is required.
 
-### P08 — Make reports complete, consistent, and historically accurate (P1)
+### P08 ? Make reports complete, consistent, and historically accurate (P1) ? IMPLEMENTATION DONE
 
-**Basis:** FR Report Requirements, ADMIN Reports, TEACHER Reports, and FR admin visibility of all attendance records.
+**Basis:** FR Report Requirements, ADMIN Reports, TEACHER Reports, and FR admin visibility of all attendance records. The user explicitly selected [pdfcn](https://www.pdfcn.dev/) for PDF output.
 
-**Evidence and narrow work:**
+**Implementation completed and locally verified: 2026-09-08.** Live Supabase acceptance remains pending. Final absence-policy alignment depends on the separate P05 decision; this work preserves explicit recorded absences and does not introduce an absence cutoff or automatic job.
 
-- **SMS report content:** admin report snapshots never read `sms_notifications`; report models have no SMS notification records. Add the required records within authorized reports. Do not automatically grant teachers guardian phone/message access.
-- **RFID count/content:** admin `rfidScans` is `scoped.length`, counting daily attendance rows; dashboard tap totals also count time-out. Recent logs are described as taps but show one daily row per student. Make the metric and report agree with what was actually captured. The docs require RFID logs, not a particular event-storage architecture.
-- **Historical card identity:** admin reports select card status by the student's current cards instead of the attendance record's card. Preserve the relationship needed to describe the recorded transaction accurately; do not present today's card state as a historical scan result.
-- **PDF completeness:** both export buttons call `window.print()`. Print CSS exists at `src/app/globals.css:175`, but report tables render only their current page with `slice(...)`; admin recent logs are capped at 50 upstream. Printing cannot recover rows absent from the rendered document. Export the intended report scope independently of visible pagination and identify any deliberately limited recent-log section.
-- **Archived records:** admin report/attendance reads start from active students and then scope attendance through that roster. Archiving can remove historical records from the displayed report despite their retention in SQL. Separate today's active roster from the students represented by a historical report.
-- **Campus:** section report keys are `program|year|section`; campus is omitted, including from the admin report student snapshot. The same pilot section exists across supported campuses. Preserve campus identity so distinct classes do not silently merge.
-- **Read completeness:** `fetchAllRows` stops at 25 pages and returns without a truncation signal; student history/SMS queries use a single response. Make required histories/totals complete or explicitly bounded, with stable paging. Do not claim the deployed response cap was measured here.
+- [x] **Real PDF downloads:** both existing report buttons download a server-generated PDF through `/api/reports/pdf`, using a local adaptation of pdfcn's Forme DataTable and `@formepdf/react` / `@formepdf/core`. Upstream attribution/license and adaptations are documented in `src/components/pdf/README.md`. Rendering stays on the application server.
+- [x] **Complete selected range:** PDF generation fetches the selected date range independently of UI pagination. It includes the summary, every section/campus group, every attendance/RFID record, and admin SMS records. UI attendance and SMS previews explicitly disclose their 50-record limit and full record count. Buttons show progress and report download failures.
+- [x] **Recorded totals:** admin/teacher reports share aggregation. Present includes Late; Absent counts only stored Absent rows. Rates use attended / (attended + recorded absent). RFID scan totals count stored time-in plus time-out fields, matching the current dashboard convention. Historical status values remain visible but do not enter current totals. A scan count is not claimed to represent every physical device event.
+- [x] **Historical records and RFID identity:** admin reports load retained student profiles, including inactive/archived students with records in range. Current active-roster totals are separate from students represented in history. Logs resolve the attendance record's `rfid_card_id`; replacement cards cannot overwrite old report identity. Current card status is explicitly labeled as its state now.
+- [x] **Campus:** section keys include campus, and recorded attendance campus survives a subsequent profile transfer. Program/year/section and profile details are labeled as current information because historical placement snapshots are not stored. Section student counts can overlap after a transfer; the overall student count is distinct.
+- [x] **SMS:** the admin report/export includes stored recipient, message, Pending/Sent/Failed status and timestamps, filtered by the linked attendance date. This includes later retries for that attendance range. Stored Sent is not presented as proof of handset delivery. This does not implement P06 sending.
+- [x] **Role boundaries:** PDF authorization requires an active admin or teacher account; the role comes from the authenticated account, not a query parameter. Teachers retain current active assignment/active-student restrictions and RLS, and do not query or export SMS/guardian details. No service-role bypass or permission migration was added. Download responses are private/no-store.
+- [x] **Read completeness:** pagination advances by the actual returned count until an empty page, supporting deployed response caps below 1,000. The former silent 25-page truncation is removed. A 1,000-page safety limit throws a visible failure instead of claiming a partial result is complete. Report and student-history/SMS queries have stable ID tie-breakers; student dashboard history/cards are also paged. The live server cap has not been measured here.
+- [x] **School time:** report date defaults and generated/SMS timestamps use Asia/Manila (PHT); stored attendance clock times remain school-local.
 
-**Done when:** report totals match P05, required attendance/RFID/SMS content is available under the correct roles, historical records remain accessible to the admin, and a saved PDF contains the stated date scope regardless of which UI page is open. Preserve teacher assignment restrictions.
+**Verification:**
+
+- `node --test tests/*.test.mjs`: **206/206 PASS**, including 18 new report/authorization/PDF tests and the updated time-in/time-out expectation in the existing attendance regression.
+- Real Forme PDF rendering: 125 attendance records retained beyond the 50-row preview, repeated column headers, old card identity, archived rows, and a long SMS message across pages. Checked rendered text completeness, physical-page bounds, empty states, and absence of renderer warnings. Teacher PDF excludes guardian details.
+- Paging fixture: **26,050 rows** with a simulated **37-row server cap**; errors and safety-limit exhaustion never return partial success.
+- `node tests/report-export.browser.mjs`: **PASS** in Chromium for download bytes/filename, selected dates, pending state, retry, and error/non-PDF responses. Uses loopback fixtures; does not contact Supabase.
+- `pnpm.cmd build`: **PASS**, including TypeScript and the new PDF route. `pnpm.cmd lint`: **0 errors**, one existing unused-`children` warning in `src/components/ui/combobox.tsx`.
+
+**Next live checks ? no new SQL migration is needed:**
+
+1. Restart the application, open **Admin ? Reports**, select a range with known records, and download **Export PDF**. Confirm the oldest/newest records and record count match that range regardless of the visible table page. Check retained archived history, recorded card UID, campuses and any existing SMS records.
+2. Open **Teacher ? Reports** and export the same range. Confirm only currently authorized assigned students are included, with no guardian phone numbers or SMS messages.
+3. Report any export error or mismatch. After these checks pass, record user acceptance here. Resolve P05 separately before claiming the whole project's final absence policy is complete.
 
 ### P09 — Finish the explicit presentation gaps without adding screens (P2)
 
@@ -458,8 +472,8 @@ flow, finalize the absence policy, alter permissions, or complete R03–R05.
 - [ ] All authorized dashboards update automatically after accepted attendance changes.
 - [ ] Guardian arrival messages store truthful Pending/Sent/Failed results and correct student/campus identity.
 - [ ] Dashboard, history, attendance panel, and report totals follow one documented rule.
-- [ ] Admin reports include the required attendance, RFID, and SMS records; PDF output matches its stated scope.
-- [ ] Archived history is retained and remains available through the appropriate admin report/read path.
+- [x] Admin reports include the required attendance, RFID, and SMS records; PDF output matches its stated scope in local P08 tests. Live Supabase export acceptance remains pending above.
+- [x] Archived history is retained and available through the admin report/export path in local P08 tests. Live acceptance remains pending above.
 - [ ] Device display/LED/buzzer behavior is verified with real accepted and rejected cards.
 - [ ] No standalone extra feature was added to satisfy an old generated roadmap.
 

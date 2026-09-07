@@ -1,5 +1,7 @@
 import { format, isValid, parseISO, subDays } from "date-fns"
 
+import { schoolDateKey } from "@/lib/school-time"
+import { requireRole } from "@/features/auth/server"
 import type { StudentRfidStatus } from "@/features/attendance/dashboard"
 import {
   isAttendanceStatus,
@@ -10,6 +12,7 @@ import {
   fetchReportsSnapshot,
   type AttendanceStatus,
   type ReportStudentRow,
+  type ReportSmsRow,
   type ReportsSnapshot,
 } from "@/services/reports/snapshot"
 
@@ -28,6 +31,7 @@ export interface ReportsBuildOptions {
 
 export interface ReportsKpis {
   totalStudents: number
+  representedStudents: number
   totalPresent: number
   totalAbsent: number
   rfidScans: number
@@ -58,6 +62,7 @@ export interface SectionBreakdown {
   program: string
   yearLevel: string
   section: string
+  campus: string
   total: number
   /** Present includes late arrivals; both mean the student tapped in. */
   present: number
@@ -77,8 +82,12 @@ export interface AttendanceLog {
   program: string
   yearLevel: string
   section: string
+  campus: string
   status: AttendanceRecordStatus
   rfidStatus: StudentRfidStatus
+  rfidNumber: string
+  rfidCardId: number
+  studentStatus: string
 }
 
 export interface ReportsData {
@@ -94,6 +103,8 @@ export interface ReportsData {
   distribution: StatusSlice[]
   bySection: SectionBreakdown[]
   recentLogs: AttendanceLog[]
+  attendanceLogs: AttendanceLog[]
+  smsLogs: (ReportSmsRow & { studentName: string; studentId: string; attendanceDate: string })[]
 }
 
 export type ReportsSearchParams = Record<
@@ -104,7 +115,6 @@ export type ReportsSearchParams = Record<
 const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const DEFAULT_RANGE_DAYS = 7
 const RECENT_LOG_LIMIT = 50
-const MAX_GROUPS = 12
 
 export function toDateKey(value: Date) {
   return format(value, "yyyy-MM-dd")
@@ -128,7 +138,7 @@ export function parseReportsRange(
   params: ReportsSearchParams,
   now: Date = new Date()
 ): ReportsRange {
-  const to = readDateKey(firstValue(params.to)) ?? toDateKey(now)
+  const to = readDateKey(firstValue(params.to)) ?? schoolDateKey(now)
   const from =
     readDateKey(firstValue(params.from)) ??
     toDateKey(subDays(parseISO(to), DEFAULT_RANGE_DAYS - 1))
@@ -207,19 +217,17 @@ export function buildReportsData(
   snapshot: ReportsSnapshot,
   { fromDate, toDate, generatedAt }: ReportsBuildOptions
 ): ReportsData {
-  const { students, attendance, programs, rfidCards } = snapshot
-
-  const studentsById = new Map(students.map((student) => [student.id, student]))
-  const programsById = new Map(programs.map((program) => [program.id, program]))
-
-  const scoped = attendance.filter((record) => studentsById.has(record.student_id))
-
-  const rfidStatusByStudent = new Map<number, StudentRfidStatus>()
-
-  for (const card of rfidCards) {
-    if (rfidStatusByStudent.get(card.student_id) === "Active") continue
-    rfidStatusByStudent.set(card.student_id, card.card_status)
-  }
+  const { attendance, programs, rfidCards } = snapshot
+  const inRange = attendance.filter(record =>
+    record.attendance_date >= fromDate && record.attendance_date <= toDate)
+  const representedIds = new Set(inRange.map(record => record.student_id))
+  const students = snapshot.students.filter(student =>
+    (student.status ?? "active") === "active" || representedIds.has(student.id))
+  const studentsById = new Map(students.map(student => [student.id, student]))
+  const programsById = new Map(programs.map(program => [program.id, program]))
+  const scoped = inRange.filter(record => studentsById.has(record.student_id))
+  const cardsById = new Map(rfidCards.map(card => [card.id, card]))
+  const recordsById = new Map(scoped.map(record => [record.id, record]))
 
   // Historical values stay in the logs, but cannot create session days or totals.
   const currentRecords = scoped.filter((record) =>
@@ -230,7 +238,7 @@ export function buildReportsData(
     ...new Set(currentRecords.map((record) => record.attendance_date)),
   ].sort()
   const sessionDays = sessionDates.length
-  const totalStudents = students.length
+  const totalStudents = students.filter(student => (student.status ?? "active") === "active").length
 
   const talliesByStudent = new Map<number, Tally>()
   const talliesByDate = new Map<string, Tally>()
@@ -285,76 +293,55 @@ export function buildReportsData(
   const programCodeOf = (student: ReportStudentRow) =>
     programsById.get(student.program_id)?.program_code ?? "Unassigned"
 
-  const sectionGroups = new Map<
-    string,
-    {
-      program: string
-      yearLevel: string
-      section: string
-      total: number
-      present: number
-      late: number
-      absent: number
-    }
-  >()
-
-  for (const student of students) {
+  // Program/year/section describe the current profile; campus is captured on
+  // each attendance record. A transferred student's old campus stays distinct.
+  const sectionGroups = new Map<string, {
+    program: string; yearLevel: string; section: string; campus: string
+    ids: Set<number>; present: number; late: number; absent: number
+  }>()
+  function sectionBucket(student: ReportStudentRow, recordedCampus?: string) {
     const program = programCodeOf(student)
     const yearLevel = student.year_level.trim() || "Unassigned"
     const section = student.section.trim() || "Unassigned"
-    const key = `${program}|${yearLevel}|${section}`
-    const bucket = sectionGroups.get(key) ?? {
-      program,
-      yearLevel,
-      section,
-      total: 0,
-      present: 0,
-      late: 0,
-      absent: 0,
+    const campus = recordedCampus?.trim() || student.campus?.trim() || "Unknown campus"
+    const key = JSON.stringify([program, yearLevel, section, campus])
+    let bucket = sectionGroups.get(key)
+    if (!bucket) {
+      bucket = { program, yearLevel, section, campus, ids: new Set(), ...emptyTally() }
+      sectionGroups.set(key, bucket)
     }
-    const tally = talliesByStudent.get(student.id) ?? emptyTally()
-
-    bucket.total += 1
-    bucket.present += tally.present
-    bucket.late += tally.late
-    bucket.absent += tally.absent
-
-    sectionGroups.set(key, bucket)
+    bucket.ids.add(student.id)
+    return bucket
   }
-
+  // Include roster students even without records; never infer their absence.
+  for (const student of students) {
+    if (!representedIds.has(student.id)) sectionBucket(student)
+  }
+  for (const record of scoped) {
+    const bucket = sectionBucket(studentsById.get(record.student_id)!, record.campus)
+    if (isAttended(record.attendance_status)) bucket.present += 1
+    if (record.attendance_status === "Late") bucket.late += 1
+    if (record.attendance_status === "Absent") bucket.absent += 1
+  }
   const bySection: SectionBreakdown[] = [...sectionGroups.entries()]
-    .map(([key, bucket]) => {
-      const groupExpected = bucket.present + bucket.absent
+    .map(([key, { ids, ...bucket }]) => ({
+      key, ...bucket, total: ids.size,
+      rate: rateOf(bucket.present, bucket.present + bucket.absent),
+    }))
+    .sort((a, b) => compareGroupLabels(a.program, b.program) ||
+      compareGroupLabels(a.yearLevel, b.yearLevel) ||
+      compareGroupLabels(a.section, b.section) || compareGroupLabels(a.campus, b.campus))
 
-      return {
-        key,
-        program: bucket.program,
-        yearLevel: bucket.yearLevel,
-        section: bucket.section,
-        total: bucket.total,
-        present: bucket.present,
-        late: bucket.late,
-        absent: bucket.absent,
-        rate: rateOf(bucket.present, groupExpected),
-      }
-    })
-    .sort(
-      (a, b) =>
-        compareGroupLabels(a.program, b.program) ||
-        compareGroupLabels(a.yearLevel, b.yearLevel) ||
-        compareGroupLabels(a.section, b.section)
-    )
-
-  const recentLogs: AttendanceLog[] = [...scoped]
+  const attendanceLogs: AttendanceLog[] = [...scoped]
     .sort((a, b) =>
       `${b.attendance_date}T${b.time_in}`.localeCompare(
         `${a.attendance_date}T${a.time_in}`
-      )
+      ) || b.id - a.id
     )
-    .slice(0, RECENT_LOG_LIMIT)
     .map((record) => {
       const student = studentsById.get(record.student_id)
 
+      const card = cardsById.get(record.rfid_card_id)
       return {
         id: record.id,
         time: `${record.attendance_date}T${record.time_in}`,
@@ -366,9 +353,13 @@ export function buildReportsData(
         program: student ? programCodeOf(student) : "—",
         yearLevel: student?.year_level ?? "—",
         section: student?.section ?? "—",
+        campus: record.campus || student?.campus || "Unknown campus",
+        studentStatus: student?.status ?? "active",
+        rfidCardId: record.rfid_card_id,
+        rfidNumber: card?.rfid_number ?? "Unavailable",
         status: recordStatus(record.attendance_status),
         rfidStatus:
-          rfidStatusByStudent.get(record.student_id) ?? "Unassigned",
+          card?.card_status ?? "Unassigned",
       }
     })
 
@@ -376,18 +367,19 @@ export function buildReportsData(
     students,
     talliesByStudent,
     (student) => `${programCodeOf(student)} ${student.year_level}`.trim()
-  ).slice(0, MAX_GROUPS)
+  )
 
   return {
     range: { from: fromDate, to: toDate },
     rangeLabel: formatRangeLabel(fromDate, toDate),
-    generatedAtLabel: format(generatedAt, "d MMM yyyy, h:mm a"),
+    generatedAtLabel: formatReportTimestamp(generatedAt),
     sessionDays,
     kpis: {
       totalStudents,
+      representedStudents: new Set(scoped.map(record => record.student_id)).size,
       totalPresent,
       totalAbsent,
-      rfidScans: currentRecords.length,
+      rfidScans: currentRecords.reduce((total, record) => total + (record.time_in ? 1 : 0) + (record.time_out ? 1 : 0), 0),
     },
     summary,
     byProgram: buildGroups(
@@ -407,7 +399,14 @@ export function buildReportsData(
       { status: "Absent", count: totalAbsent },
     ],
     bySection,
-    recentLogs,
+    attendanceLogs,
+    recentLogs: attendanceLogs.slice(0, RECENT_LOG_LIMIT),
+    smsLogs: (snapshot.sms ?? []).flatMap(sms => {
+      const record = recordsById.get(sms.attendance_id)
+      if (!record || record.student_id !== sms.student_id) return []
+      const student = studentsById.get(sms.student_id)!
+      return [{ ...sms, studentName: student.full_name, studentId: student.student_id, attendanceDate: record.attendance_date }]
+    }),
   }
 }
 
@@ -415,6 +414,7 @@ export async function getAdminReportsData({
   from,
   to,
 }: ReportsRange): Promise<ReportsData> {
+  await requireRole("admin")
   const snapshot = await fetchReportsSnapshot({ fromDate: from, toDate: to })
 
   return buildReportsData(snapshot, {
@@ -422,4 +422,12 @@ export async function getAdminReportsData({
     toDate: to,
     generatedAt: new Date(),
   })
+}
+
+/** School-zone timestamps; stored attendance clock times are already local. */
+export function formatReportTimestamp(value: Date | string) {
+  return new Intl.DateTimeFormat("en-PH", {
+    timeZone: "Asia/Manila", year: "numeric", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", hour12: true,
+  }).format(new Date(value)) + " PHT"
 }

@@ -2,6 +2,7 @@ import type {
   AttendanceStatus,
   RfidCardStatus,
 } from "@/services/attendance/dashboard"
+import { fetchAllRows } from "@/services/supabase/pagination"
 import { createServerSupabaseClient } from "@/services/supabase/server"
 
 export type { AttendanceStatus, RfidCardStatus }
@@ -85,8 +86,8 @@ export async function fetchStudentDashboardSnapshot({
 
   const [
     { data: attendance, error: attendanceError },
-    { data: cards, error: cardsError },
-    { data: history, error: historyError },
+    cards,
+    history,
   ] = await Promise.all([
     supabase
       .from("attendance_records")
@@ -94,23 +95,21 @@ export async function fetchStudentDashboardSnapshot({
       .eq("student_id", student.id)
       .eq("attendance_date", date)
       .maybeSingle<StudentDashboardAttendanceRow>(),
-    supabase
+    fetchAllRows<StudentDashboardCardRow>((from, to) => supabase
       .from("rfid_cards")
       .select("rfid_number, card_status, assigned_date")
       .eq("student_id", student.id)
       .order("assigned_date", { ascending: false })
-      .returns<StudentDashboardCardRow[]>(),
-    supabase
+      .order("id", { ascending: true }).range(from, to).returns<StudentDashboardCardRow[]>()),
+    fetchAllRows<StudentDashboardHistoryRow>((from, to) => supabase
       .from("attendance_records")
       .select("attendance_date, attendance_status, time_out")
       .eq("student_id", student.id)
       .order("attendance_date", { ascending: true })
-      .returns<StudentDashboardHistoryRow[]>(),
+      .order("id", { ascending: true }).range(from, to).returns<StudentDashboardHistoryRow[]>()),
   ])
 
   if (attendanceError) throw new Error(attendanceError.message)
-  if (cardsError) throw new Error(cardsError.message)
-  if (historyError) throw new Error(historyError.message)
 
   let sms: StudentDashboardSmsRow | null = null
 
@@ -121,7 +120,7 @@ export async function fetchStudentDashboardSnapshot({
       .from("sms_notifications")
       .select("sms_status, sent_at")
       .eq("attendance_id", attendance.id)
-      .order("created_at", { ascending: false })
+      .order("created_at", { ascending: false }).order("id", { ascending: false })
       .limit(1)
       .maybeSingle<StudentDashboardSmsRow>()
 

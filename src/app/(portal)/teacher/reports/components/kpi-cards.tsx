@@ -52,7 +52,7 @@ export function KpiCards({
   kpis: TeacherReportsKpis
   sessionDays: number
 }) {
-  const dayLabel = `${formatNumber(sessionDays)} session day${sessionDays === 1 ? "" : "s"}`
+  const dayLabel = `${formatNumber(sessionDays)} recorded day${sessionDays === 1 ? "" : "s"}`
 
   return (
     <section
@@ -78,7 +78,7 @@ export function KpiCards({
         detail={`Recorded absences across ${dayLabel}.`}
       />
       <KpiCard
-        label="Attendance Rate"
+        label="Recorded Attendance Rate"
         value={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={TrendingUp}
         detail="Present and Late over attended plus recorded absent sessions."
