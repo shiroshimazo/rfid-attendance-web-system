@@ -2,10 +2,11 @@ import assert from "node:assert/strict"
 import { readFile, readdir } from "node:fs/promises"
 import { after, afterEach, before, beforeEach, test } from "node:test"
 import { PGlite } from "@electric-sql/pglite"
+import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist"
 
 // Run the real public-schema migrations. Only Supabase-owned Auth objects are
 // stubbed; lifecycle triggers, constraints, and RLS execute in PostgreSQL.
-const db = new PGlite()
+const db = new PGlite({ extensions: { btree_gist } })
 const adminId = "10000000-0000-0000-0000-000000000001"
 const userId = "20000000-0000-0000-0000-000000000001"
 

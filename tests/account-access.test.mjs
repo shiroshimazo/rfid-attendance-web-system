@@ -2,8 +2,9 @@ import assert from "node:assert/strict"
 import { readFile, readdir } from "node:fs/promises"
 import { after, afterEach, before, beforeEach, test } from "node:test"
 import { PGlite } from "@electric-sql/pglite"
+import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist"
 
-const db = new PGlite()
+const db = new PGlite({ extensions: { btree_gist } })
 const migrationName = "202609090001_enforce_active_account_access.sql"
 const directory = new URL("../supabase/migrations/", import.meta.url)
 const ids = Object.fromEntries(["admin", "teacher", "student", "otherTeacher", "otherStudent", "archivedStudent"]

@@ -12,3 +12,8 @@ export const createSubjectScheduleSchema = z.object({
   assignmentId: id, day: z.number().int().min(0).max(6), start: time, end: time,
 }).refine(value => value.end > value.start, "End time must be after start time")
 export const subjectScheduleIdSchema = id
+export const editSubjectScheduleSchema = z.object({
+  scheduleId: id, start: time, end: time,
+  expectedStart: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,6})?)?$/),
+  expectedEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{1,6})?)?$/),
+}).refine(value => value.end > value.start, "End time must be after start time")

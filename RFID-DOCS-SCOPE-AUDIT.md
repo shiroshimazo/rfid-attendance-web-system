@@ -85,7 +85,7 @@ The current navigation already matches ADMIN, TEACHER, and STUDENT: eight admin,
 
 - [x] **Completed in the codebase on 2026-09-05.** Removed Excused from the active status contract, filters/URL choices, badges, sort maps, dashboard fields, chart slices, report tallies, and user-facing copy.
 - [x] Preserved Present, Late, Absent, and the existing no-tap display. Shared `status.ts` maps unsupported stored values to a display-only `LegacyRecord` marker, shown as **Historical record**. It is not a selectable, writable, or charted business status. Existing rows, times, and linked SMS remain available without reclassification.
-- [x] Excluded historical values from active attendance counts, rates, scan counters, and report session dates. Reports now count **explicit recorded absences**, matching current dashboards; this avoids converting legacy/missing rows into absences when removing Excused. The broader P05 school-policy/finalization decision remains open. P08 now counts captured time-in/time-out fields consistently with the dashboard.
+- [x] Excluded historical values from active attendance counts, rates, scan counters, and report session dates. Reports now count **explicit recorded absences**, matching current dashboards; this avoids converting legacy/missing rows into absences when removing Excused. P05 subsequently resolved and implemented teacher-confirmed subject-session attendance; user acceptance is recorded below. P08 now counts captured time-in/time-out fields consistently with the dashboard.
 - [x] Added `supabase/migrations/202609080001_restrict_attendance_status.sql`. The new guard rejects unsupported inserts/status changes while preserving existing historical rows and unchanged-status updates for the same record/student/day/card. The original enum/migration remains intact; no history is deleted or converted.
 - [x] Updated current-contract tests and removed active/future Excused requirements from the related planning files and the LATE future list. Remaining mentions identify an exclusion, historical evidence, or compatibility/rejection tests.
 - [x] **Verification:** 50 local tests pass, including 7 application scope/compatibility tests and 9 database migration/preservation/rollback tests. TypeScript and the Next.js production build pass. ESLint reports 0 errors and the existing unused `children` warning in `src/components/ui/combobox.tsx:277`. A source search finds no Excused references under `src/`.
@@ -309,7 +309,16 @@ confirmed successful assignment and completion of the requested P03 checks.
 
 Do not mandate a particular scan-log table name, queue system, or additional device administration page. Choose the smallest storage design that satisfies the required records and transaction correctness.
 
-### P05 — Resolve absence and unify attendance totals (P0 decision, P1 implementation) - IMPLEMENTATION DONE; installation verified by user, functional acceptance pending
+### P05 — Resolve absence and unify attendance totals (P0 decision, P1 implementation) - DONE
+
+**Schedule time editing — implementation DONE; hosted rollout pending:** active schedule rows now offer Edit alongside Retire. The dialog edits only start/end times and saves explicitly with Save changes. Admin-only RPC `edit_subject_schedule_time` rejects invalid times, retired rows, stale edits and overlapping section slots; it preserves attendance snapshots and schedule identity. Apply `supabase/migrations/202609130002_edit_subject_schedule_time.sql` after the overlap guard migration. Local verification: 62 focused database/action/access/lifecycle tests, Chromium edit/save flow and targeted ESLint passed. Hosted acceptance: edit a time, confirm persistence after refresh, and verify an overlapping edit is rejected.
+
+**Subject schedule table — DONE:** replaced schedule cards with the requested Name (teacher), Subject Code (stored catalog code), Section, Campus, Day, Time (PHT), Status and Actions columns. The table scrolls horizontally on narrow screens, shows an empty state and preserves the existing create/retire actions. Targeted ESLint and the existing subject-attendance Chromium flow passed.
+
+**Schedule overlap follow-up — implementation DONE; hosted installation/testing pending:** the user requires occupied section times to be rejected. Active subject schedules now reject exact, partial and enclosing overlaps within the same program/year/section/campus/weekday, across subjects and teachers. Back-to-back sessions are allowed. Database migration `supabase/migrations/202609130001_prevent_subject_schedule_overlap.sql` enforces the rule, including concurrent writes; the save action displays a clear occupied-time error.
+
+- [x] Local verification: 61 tests passed across subject attendance, actions, account access and profile lifecycle; targeted ESLint passed. Checks cover overlap boundaries, campus/day separation, conflicting updates, retirement, migration reapplication and preservation of existing records.
+- [ ] Hosted rollout: run read-only `supabase/check_subject_schedule_overlaps.sql`, retire incorrect conflicting schedules in Admin > Schedules, then apply the new overlap migration and enter correct times. Existing conflicts stop installation with schedule IDs; no records or attendance history are deleted. Verify a conflicting save is rejected and a back-to-back save succeeds.
 
 **Basis:** FR dashboard/report totals; ADMIN and STUDENT KPI requirements; LATE "Late counts as attended."
 
@@ -322,7 +331,7 @@ Do not mandate a particular scan-log table name, queue system, or additional dev
 | No RFID tap and teacher has not confirmed attendance | Keep the state unconfirmed; do not automatically mark Absent. |
 | Existing RFID attendance | Preserve recorded card identity, time-in/time-out and applicable Present/Late rules. |
 
-**Decision status:** the user confirmed both the absence trigger (teacher confirmation) and the attendance unit (each subject's scheduled session). A student can be Present in one subject and Absent in another on the same day. Implementation is complete locally; hosted migration and user acceptance remain pending. Confirmation must stay within the teacher's authorized classes; this does not authorize unrelated teacher writes or automatic absence jobs.
+**Decision status:** the user confirmed both the absence trigger (teacher confirmation) and the attendance unit (each subject's scheduled session). A student can be Present in one subject and Absent in another on the same day. Implementation and user acceptance are complete. The user reported six PASS installation checks and subsequently confirmed completion of the requested functional testing. Confirmation must stay within the teacher's authorized classes; this does not authorize unrelated teacher writes or automatic absence jobs.
 
 **Implemented storage:** additive migration `supabase/migrations/202609120001_subject_attendance.sql` creates `subject_schedules` and `subject_attendance`. Existing daily `attendance_records`, RFID cards, SMS and profiles are not rewritten or deleted. Subject confirmations store teacher/class/date and subject/placement snapshots with a confirmation timestamp; they have no RFID card or tap-time fields. Scheduled start/end times are explicitly labeled, never treated as physical time-in/time-out.
 
@@ -346,7 +355,7 @@ Do not mandate a particular scan-log table name, queue system, or additional dev
 - `node tests/subject-attendance.browser.mjs`: **PASS** in Chromium for selecting subjects, cardless presence, second-subject absence, retained independent results, failed correction, schedule creation and retirement. Uses local fixtures, not hosted accounts.
 - `pnpm.cmd build`: **PASS**, including TypeScript. `pnpm.cmd lint`: **0 errors**, one pre-existing unused-children warning in `src/components/ui/combobox.tsx`.
 
-**User-reported installation:** the user confirmed all six installation checks returned PASS after applying the migration. This confirms hosted installation according to the user's report; end-to-end subject attendance acceptance remains separate.
+**User-reported installation and functional acceptance - DONE:** the user reported all six installation checks PASS, then confirmed "its done" after being asked to test subject schedules, cardless Present in Subject A, teacher-confirmed Absent in Subject B, student history/PDF results, and unchanged RFID scans/times. This records the user's acceptance; it is not an independent inspection of hosted data.
 
 **User-approved edit navigation - implemented:** Edit Student and Edit Teacher allow direct navigation through the step buttons in any order, including 2/3/4/1, retaining unsaved values. Create mode keeps the guided order. Step navigation is disabled while saving; final save still validates all fields and returns to the first invalid step. Chromium verified both edit flows, retained input, invalid-save navigation, create-mode restrictions and the existing select/layout fixes. Production build and targeted ESLint passed. No database migration is needed.
 
@@ -354,13 +363,11 @@ Do not mandate a particular scan-log table name, queue system, or additional dev
 
 **Profile form follow-up - fixed locally:** removed changing custom `SelectValue` children in student/teacher profile selectors to prevent React portal-container conflicts when selecting an initially blank value. Course/Subject now stays within its assignment column, truncates long selected text, and keeps the full label in the dropdown. Assignment fields align at the top. Chromium in React development mode passed teacher civil-status/gender and student gender transitions with no console errors, plus layout checks at 1200/768/390px. Production build and targeted ESLint passed. No database change is required for these form fixes.
 
-**Rollout / remaining acceptance:**
+**Rollout and acceptance completed (user-reported):**
 
-1. Run **only** `supabase/migrations/202609120001_subject_attendance.sql` after the already applied migrations. The assistant has not applied it to hosted Supabase.
-2. Optionally run the read-only `supabase/verify_subject_attendance.sql`; expect six PASS rows. This verifies installation, not live teacher behavior.
-3. Restart the app. Admin > Schedules > Subject Session Schedules: add real timetable entries for the existing active teaching assignments.
-4. On the matching date, the assigned teacher confirms a cardless student Present in one subject. That second subject's assigned teacher confirms Absent if the student did not attend. Verify separate results in teacher/admin reports and student history; untouched subjects remain unconfirmed, and RFID times/scans remain unchanged.
-5. Confirm results/PDF counts match for the same authorized date scope. Then record hosted/user acceptance here. Do not mark hosted rollout complete based only on local tests.
+- [x] Subject-attendance migration applied; six installation checks returned PASS.
+- [x] Requested functional testing completed, including separate subject results and cardless attendance without fabricated RFID evidence.
+- [x] P05 marked DONE following the user's confirmation. The next implementation task is P04, the RFID time-in/time-out processing path; physical hardware verification remains P11.
 
 `supabase/rollback_subject_attendance.sql` is optional rollback only: it disables write RPC access without deleting any data. It is **not** a setup step. Full implementation/rollout notes: `src/features/subject-attendance/README.md`.
 
@@ -417,7 +424,7 @@ FR says SMS follows successful attendance recording broadly; ARCH explicitly pla
 - [x] Admin and Teacher report export acceptance recorded from the user's "done testing" confirmation.
 - [x] No export error or mismatch was reported with that confirmation.
 
-P08 is complete for the recorded-attendance contract. P05's subject-attendance extension is implemented locally with its migration/live acceptance pending; P06 SMS sending and physical RFID verification remain separate tasks. No new SQL migration was required for P08.
+P08 is complete for the recorded-attendance contract. P05's subject-attendance extension is complete, with installation and functional testing confirmed by the user; P06 SMS sending and physical RFID verification remain separate tasks. No new SQL migration was required for P08.
 
 ### P09 — Finish the explicit presentation gaps without adding screens (P2)
 

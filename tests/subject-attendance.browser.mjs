@@ -46,7 +46,7 @@ const bundle = await build({
     builder.onResolve({ filter: /^next\/navigation$/ }, () => ({ path: "navigation", namespace: "fixture" }))
     builder.onLoad({ filter: /.*/, namespace: "fixture" }, args => ({ contents: args.path === "navigation"
       ? 'export const useRouter=()=>({refresh(){},push(url){window.pushed=url}});'
-      : 'export const confirmSubjectAction=input=>window.confirmFixture(input); export const createSubjectScheduleAction=async input=>{window.scheduleSaved=input;return {ok:true,message:"Schedule saved"}}; export const retireSubjectScheduleAction=async id=>{window.retired=id;return {ok:true,message:"Schedule retired"}};' }))
+      : 'export const confirmSubjectAction=input=>window.confirmFixture(input); export const createSubjectScheduleAction=async input=>{window.scheduleSaved=input;return {ok:true,message:"Schedule saved"}}; export const editSubjectScheduleAction=async input=>{window.scheduleEdited=input;return {ok:true,message:"Schedule updated"}}; export const retireSubjectScheduleAction=async id=>{window.retired=id;return {ok:true,message:"Schedule retired"}};' }))
   } }],
 })
 const server = createServer((req, res) => {
@@ -87,6 +87,14 @@ try {
   await page.getByRole("button", { name: "Add subject schedule" }).click()
   await page.waitForFunction(() => Boolean(window.scheduleSaved))
   assert.deepEqual(await page.evaluate(() => window.scheduleSaved), { assignmentId: 10, day: 1, start: "08:00", end: "09:00" })
+  await page.getByRole("button", { name: "Edit", exact: true }).first().click()
+  const dialog = page.getByRole("dialog")
+  await dialog.getByLabel("Start (PHT)", { exact: true }).fill("10:00")
+  await dialog.getByLabel("End (PHT)", { exact: true }).fill("11:00")
+  assert.equal(await page.evaluate(() => window.scheduleEdited), undefined)
+  await dialog.getByRole("button", { name: "Save changes" }).click()
+  await page.waitForFunction(() => Boolean(window.scheduleEdited))
+  assert.deepEqual(await page.evaluate(() => window.scheduleEdited), { scheduleId: 1, start: "10:00", end: "11:00", expectedStart: "08:00", expectedEnd: "09:00" })
   await page.getByRole("button", { name: "Retire schedule" }).first().click()
   await page.waitForFunction(() => window.retired === 1)
   assert.deepEqual(errors, [])

@@ -36,8 +36,16 @@ test("confirmation database failure is surfaced and never claims success", async
   assert.deepEqual(await actions.confirmSubjectAction(confirmation), { ok: false, message: "Attendance changed; refresh" })
   assert.deepEqual(paths, [])
 })
+
+test("occupied schedule returns a clear conflict message without successful-save refresh", async () => {
+  const { actions, paths } = setup({ error: { code: "23P01", message: "exclusion violation" } })
+  const result = await actions.createSubjectScheduleAction({ assignmentId: 1, day: 5, start: "10:30", end: "12:30" })
+  assert.equal(result.ok, false)
+  assert.match(result.message, /time is occupied.*section and campus/)
+  assert.deepEqual(paths, [])
+})
 test("every subject mutation authorizes before RPC or validation", async () => {
-  for (const name of ["confirmSubjectAction", "createSubjectScheduleAction", "retireSubjectScheduleAction"]) {
+  for (const name of ["confirmSubjectAction", "createSubjectScheduleAction", "retireSubjectScheduleAction", "editSubjectScheduleAction"]) {
     const { actions, calls } = setup({ forbidden: true })
     await assert.rejects(actions[name]({}), /Forbidden/)
     assert.equal(calls.length, 1)

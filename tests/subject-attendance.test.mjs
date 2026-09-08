@@ -2,8 +2,9 @@ import assert from "node:assert/strict"
 import { readFile, readdir } from "node:fs/promises"
 import { before, beforeEach, afterEach, after, test } from "node:test"
 import { PGlite } from "@electric-sql/pglite"
+import { btree_gist } from "@electric-sql/pglite/contrib/btree_gist"
 
-const db = new PGlite()
+const db = new PGlite({ extensions: { btree_gist } })
 const ids = Object.fromEntries(["admin", "teacher", "otherTeacher", "student", "otherStudent"].map((role, i) => [role, `10000000-0000-4000-8000-00000000000${i + 1}`]))
 let program, courseA, courseB, teacher, otherTeacher, student, otherStudent, assignmentA, assignmentB, day, date, migration, legacy
 const rows = async (sql, args = []) => (await db.query(sql, args)).rows
@@ -174,4 +175,71 @@ test("migration reapplication and write-disable rollback retain confirmations an
   await db.exec("reset role"); await db.exec(withinTransaction(migration))
   assert.deepEqual(await rows("select * from public.subject_attendance"), original)
   assert.deepEqual(await dailyEvidence(), legacy)
+})
+
+async function installOverlapRule() {
+  await db.exec("reset role")
+  const sql = await readFile(new URL("../supabase/migrations/202609130001_prevent_subject_schedule_overlap.sql", import.meta.url), "utf8")
+  await db.exec(sql.replace(/^begin;$/m, "").replace(/^commit;$/m, ""))
+}
+
+test("admin time edits reject overlaps/stale saves and preserve confirmation snapshots", async () => {
+  await installOverlapRule()
+  const sql = await readFile(new URL("../supabase/migrations/202609130002_edit_subject_schedule_time.sql", import.meta.url), "utf8")
+  await db.exec(sql.replace(/^begin;$/m, "").replace(/^commit;$/m, ""))
+  const a = await schedule()
+  await schedule(assignmentB, "09:00", "10:00")
+  await identity("teacher"); await confirm(a)
+  const history = await rows("select * from public.subject_attendance")
+  const edit = (start, end, oldStart = "08:00", oldEnd = "09:00") => rows("select public.edit_subject_schedule_time($1,$2,$3,$4,$5)", [a, start, end, oldStart, oldEnd])
+  await rejected(() => edit("10:00", "11:00"), /administrator/)
+  await identity("student"); await rejected(() => edit("10:00", "11:00"), /administrator/)
+  await identity("admin")
+  await rejected(() => edit("08:30", "09:30"), /exclusion constraint/)
+  await rejected(() => edit("11:00", "10:00"), /end time/)
+  await edit("10:00", "11:00")
+  assert.deepEqual(await rows("select * from public.subject_attendance"), history)
+  assert.equal((await rows("select time_start from public.subject_schedules where id=$1", [a]))[0].time_start, "10:00:00")
+  await rejected(() => edit("12:00", "13:00"), /changed/)
+  await rows("select public.retire_subject_schedule($1)", [a])
+  await rejected(() => edit("12:00", "13:00", "10:00", "11:00"), /active subject schedule/)
+  assert.deepEqual(await dailyEvidence(), legacy)
+})
+
+test("overlap guard rejects identical, contained and partial intervals across different subjects", async () => {
+  await installOverlapRule()
+  await schedule(assignmentA, "10:30", "12:30")
+  for (const [start, end] of [["10:30","12:30"],["11:00","12:00"],["10:00","13:00"],["09:30","11:00"],["12:00","13:00"]]) {
+    await rejected(() => schedule(assignmentB, start, end), /exclusion constraint/)
+  }
+  await schedule(assignmentB, "12:30", "13:30")
+  await schedule(assignmentB, "09:30", "10:30")
+  assert.deepEqual(await dailyEvidence(), legacy)
+})
+
+test("overlap guard permits another weekday/campus and retirement, but rejects conflicting updates", async () => {
+  await installOverlapRule()
+  const a = await schedule(assignmentA, "10:30", "12:30")
+  await identity("admin")
+  await rows("select public.create_subject_schedule($1,$2,'10:30','12:30')", [assignmentB, (day+1)%7])
+  await db.exec("reset role")
+  await rows(`insert into public.subject_schedules(teacher_id,course_id,program_id,year_level,section,campus,day_of_week,time_start,time_end)
+    select teacher_id,course_id,program_id,year_level,section,'MV Campus',day_of_week,time_start,time_end from public.subject_schedules where id=$1`, [a])
+  await rejected(() => rows("update public.subject_schedules set campus='Main Campus' where campus='MV Campus'"), /exclusion constraint|duplicate key/)
+  await identity("admin"); await rows("select public.retire_subject_schedule($1)", [a])
+  await schedule(assignmentB, "10:30", "12:30")
+})
+
+test("existing conflicts are reported without deleting schedules; installation works after retirement", async () => {
+  const a = await schedule(assignmentA, "10:30", "12:30")
+  await schedule(assignmentB, "10:30", "12:30")
+  await db.exec("reset role")
+  const before = await rows("select * from public.subject_schedules order by id")
+  await rejected(installOverlapRule, /Existing schedules.*overlap/)
+  assert.deepEqual(await rows("select * from public.subject_schedules order by id"), before)
+  const conflicts = await rows(await readFile(new URL("../supabase/check_subject_schedule_overlaps.sql", import.meta.url), "utf8"))
+  assert.equal(conflicts.length, 1)
+  await identity("admin"); await rows("select public.retire_subject_schedule($1)", [a])
+  await installOverlapRule(); await installOverlapRule()
+  assert.equal((await rows("select * from public.subject_schedules")).length, 2)
 })

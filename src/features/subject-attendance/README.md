@@ -10,8 +10,15 @@ RFID scan or SMS. A daily campus tap does not confirm attendance in each subject
 `subject_schedules` adds weekday/start/end and an explicit teacher/subject/class
 to the existing Admin Schedules page. Existing `class_schedules` remain the daily
 RFID start/grace rules. Admins select an existing active pilot teaching assignment;
-no invented subject times are seeded. To change a subject timetable, retire the
-old row and add the correct schedule. Retired schedules and confirmations remain.
+no invented subject times are seeded. Use Edit to change an active schedule's
+start/end times. Existing attendance snapshots retain their original times.
+For other timetable changes, retire the old row and add the correct schedule.
+Retired schedules and confirmations remain.
+
+Active subject schedules cannot overlap within the same program, year, section,
+campus and weekday, even with different subjects or teachers. The database exclusion
+constraint rejects exact and partial overlaps, including concurrent writes. An end
+time equal to the next start time is allowed. Conflicts show an occupied-time error.
 
 `subject_attendance` stores one student/schedule/date confirmation, the teacher,
 confirmation timestamp and subject/placement snapshots. It has no RFID timestamp
@@ -44,6 +51,24 @@ Historical absent confirmations remain after archiving; arbitrary old missing
 sessions are never inferred from today's roster/timetable.
 
 ## Rollout
+
+### Overlap rule follow-up
+
+For an existing installation, run the read-only
+`supabase/check_subject_schedule_overlaps.sql` to identify conflicting entries.
+In Admin > Schedules, retire the incorrect entries before applying
+`supabase/migrations/202609130001_prevent_subject_schedule_overlap.sql`, then add
+their correct times. The migration stops with conflicting schedule IDs if any
+overlaps remain; it never deletes or automatically retires records.
+Optional `supabase/rollback_subject_schedule_overlap.sql` removes only the guard
+and preserves data; do not run it during setup.
+
+### Initial subject attendance installation
+
+For time editing, apply `supabase/migrations/202609130002_edit_subject_schedule_time.sql`
+after the overlap guard migration. Only active admins may save; stale time values
+are rejected and the existing overlap constraint protects the update. Optional
+rollback `supabase/rollback_subject_schedule_time_edit.sql` removes only the new RPC.
 
 1. Apply `supabase/migrations/202609120001_subject_attendance.sql` after the existing
    migrations and before using the updated app. It adds tables/functions/policies;
