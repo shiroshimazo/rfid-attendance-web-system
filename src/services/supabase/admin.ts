@@ -16,8 +16,8 @@ export function isSupabaseAdminConfigured() {
 }
 
 /**
- * Service-role client used only for Supabase Auth administration, such as
- * creating the login account behind a teacher profile. It bypasses Row Level
+ * Service-role client for authorized server operations, including Auth
+ * administration and authenticated device ingestion. It bypasses Row Level
  * Security, so every caller must authorize the request first.
  */
 export function createAdminSupabaseClient() {

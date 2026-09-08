@@ -183,6 +183,25 @@ async function installOverlapRule() {
   await db.exec(sql.replace(/^begin;$/m, "").replace(/^commit;$/m, ""))
 }
 
+test("teacher Late confirmation is authorized per subject and preserves RFID evidence", async () => {
+  const sql = await readFile(new URL("../supabase/migrations/202609140002_teacher_confirmed_late.sql", import.meta.url), "utf8")
+  const install = () => db.exec(sql.replace(/^begin;$/m, "").replace(/^commit;$/m, ""))
+  await install()
+  const a = await schedule()
+  const b = await schedule(assignmentB)
+  await identity("teacher"); await confirm(a, "Late")
+  await rejected(() => confirm(b, "Late"))
+  const saved = await rows("select * from public.subject_attendance")
+  assert.equal(saved[0].attendance_status, "Late")
+  await rejected(() => confirm(a, "Excused"))
+  await identity("student")
+  assert.equal((await rows("select * from public.subject_attendance"))[0].attendance_status, "Late")
+  await rejected(() => confirm(a, "Present"))
+  await db.exec("reset role"); await install()
+  assert.deepEqual(await rows("select * from public.subject_attendance"), saved)
+  assert.deepEqual(await dailyEvidence(), legacy)
+})
+
 test("admin time edits reject overlaps/stale saves and preserve confirmation snapshots", async () => {
   await installOverlapRule()
   const sql = await readFile(new URL("../supabase/migrations/202609130002_edit_subject_schedule_time.sql", import.meta.url), "utf8")

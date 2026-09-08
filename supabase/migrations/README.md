@@ -1,5 +1,15 @@
 # Database migrations
 
+## P04 tap processing and teacher Late rollout
+
+Apply `202609140001_rfid_tap_processing.sql`, then
+`202609140002_teacher_confirmed_late.sql` after the earlier migrations. Run
+[verify_rfid_tap.sql](../verify_rfid_tap.sql) for seven read-only PASS checks.
+Set the separate server/device secret and restart the app before testing.
+See the [tap endpoint rollout and test instructions](../../src/app/api/rfid/tap/README.md#install-and-test).
+SMS rows remain Pending until P06 implements provider delivery. Rollback scripts
+are optional write-disable operations, not setup steps; all history is retained.
+
 ## P03 UID registration and assignment rollout
 
 **P03 software is DONE:** the user confirmed migration execution, successful

@@ -25,7 +25,7 @@ test("teacher confirmation sends only decision/session/version fields, without a
   for (const path of ["/admin/reports", "/teacher/reports", "/student/dashboard", "/student/my-attendance"]) assert(paths.includes(path))
 })
 test("invalid dates, IDs and retired statuses fail before database writes", async () => {
-  for (const invalid of [{ date: "2026-02-30" }, { status: "Excused" }, { studentId: 0 }, { status: "Late" }]) {
+  for (const invalid of [{ date: "2026-02-30" }, { status: "Excused" }, { studentId: 0 }, { status: "Pending" }]) {
     const { actions, calls } = setup()
     assert.equal((await actions.confirmSubjectAction({ ...confirmation, ...invalid })).ok, false)
     assert.equal(calls.length, 1)
@@ -61,15 +61,15 @@ test("subject schedule writes use existing assignment and reject reversed times"
 test("shared subject totals and PDF preserve separate subject results without increasing daily RFID totals", async () => {
   const { load } = setup()
   const { subjectTotals } = load("src/features/subject-attendance/model.ts")
-  const subjects = ["Present", "Absent"].map((status, index) => ({
+  const subjects = ["Present", "Absent", "Late"].map((status, index) => ({
     id: index + 1, schedule_id: index + 1, student_id: 1, attendance_date: "2026-09-08",
     attendance_status: status, time_start: "08:00", time_end: "09:00", student_number: "CARDLESS",
     student_name: "Cardless Student", teacher_name: `Teacher ${index}`, course_code: `SUBJECT-${index}`,
     course_name: `Subject ${index}`, program_code: "BSIT", year_level: "2nd Year", section: "21001",
     campus: "Main Campus", confirmed_at: "2026-09-08T00:00:00Z",
   }))
-  assert.deepEqual(subjectTotals(subjects), { present: 1, absent: 1, confirmed: 2, rate: 50 })
-  assert.deepEqual(subjectTotals([]), { present: 0, absent: 0, confirmed: 0, rate: null })
+  assert.deepEqual(subjectTotals(subjects), { present: 1, late: 1, absent: 1, confirmed: 3, rate: 2 / 3 * 100 })
+  assert.deepEqual(subjectTotals([]), { present: 0, late: 0, absent: 0, confirmed: 0, rate: null })
   const data = load("src/features/reports/panel.ts").buildReportsData({ students: [], attendance: [], programs: [], rfidCards: [], sms: [] }, { fromDate: "2026-09-08", toDate: "2026-09-08", generatedAt: new Date("2026-09-08T00:00:00Z") })
   data.subjectAttendance = subjects
   assert.equal(data.kpis.rfidScans, 0)
@@ -77,8 +77,8 @@ test("shared subject totals and PDF preserve separate subject results without in
   const result = await renderDocumentWithLayout(createElement(ReportPdfDocument, { role: "admin", data }))
   assert.deepEqual(result.warnings, [])
   const text = findElements(result.layout, node => node.nodeType === "TextLine").map(node => node.textContent).join(" ")
-  assert.match(text, /Rate: 50.0%/)
-  assert.match(text, /SUBJECT-0/); assert.match(text, /SUBJECT-1/)
+  assert.match(text, /Rate: 66.7%/)
+  assert.match(text, /Late: 1/); assert.match(text, /SUBJECT-2/); assert.match(text, /SUBJECT-0/); assert.match(text, /SUBJECT-1/)
   assert.match(text, /Daily RFID Evidence/)
   assert.match(text, /empty RFID time-in\/time-out/)
 })

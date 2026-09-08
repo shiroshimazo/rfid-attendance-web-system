@@ -19,7 +19,7 @@ export function SubjectRecords({ rows, summaryOnly = false }: { rows: SubjectAtt
     </CardHeader>
     <CardContent className="space-y-4">
       <p className="font-medium tabular-nums" aria-live="polite">
-        Present: {totals.present} · Absent: {totals.absent} · Confirmed student-sessions: {totals.confirmed} · Rate: {totals.rate === null ? "No confirmations" : `${totals.rate.toFixed(1)}%`}
+        Present: {totals.present} · Late: {totals.late} · Absent: {totals.absent} · Confirmed student-sessions: {totals.confirmed} · Rate: {totals.rate === null ? "No confirmations" : `${totals.rate.toFixed(1)}%`}
       </p>
       {!rows.length && <p className="text-sm text-muted-foreground">No teacher confirmations in this scope. This does not mean students are absent.</p>}
       {!summaryOnly && rows.length > 0 && <>

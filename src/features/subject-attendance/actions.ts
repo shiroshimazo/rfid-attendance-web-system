@@ -12,7 +12,7 @@ function refreshSubjectViews() {
 export async function confirmSubjectAction(input: unknown) {
   await requireRole("teacher")
   const parsed = confirmSubjectSchema.safeParse(input)
-  if (!parsed.success) return { ok: false, message: "Choose a student, session date, and Present or Absent." }
+  if (!parsed.success) return { ok: false, message: "Choose a student, session date, and Present, Late or Absent." }
   const value = parsed.data
   const supabase = await createServerSupabaseClient()
   const { error } = await supabase.rpc("confirm_subject_attendance", {

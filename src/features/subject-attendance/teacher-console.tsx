@@ -31,7 +31,7 @@ export function TeacherSubjectConsole({ schedules, students, records, date, toda
   const pageCount = Math.max(1, Math.ceil(filtered.length / 10))
   const currentPage = Math.min(page, pageCount)
 
-  function confirm(studentId: number, status: "Present" | "Absent") {
+  function confirm(studentId: number, status: "Present" | "Late" | "Absent") {
     if (!schedule) return
     startTransition(async () => {
       try {
@@ -46,7 +46,7 @@ export function TeacherSubjectConsole({ schedules, students, records, date, toda
 
   return <Card>
     <CardHeader><CardTitle>Confirm Attendance by Subject</CardTitle>
-      <CardDescription>Check the students in this subject before confirming. Present without a card creates no RFID time-in or time-out. Confirm Absent only when you have checked that the student is not in this class.</CardDescription>
+      <CardDescription>A campus tap leaves every subject unconfirmed. Check this class, then confirm Present, Late or Absent. Your confirmation creates no RFID time-in or time-out; students without a card can still be confirmed.</CardDescription>
     </CardHeader>
     <CardContent className="space-y-4">
       <div className="grid gap-3 md:grid-cols-2">
@@ -67,9 +67,10 @@ export function TeacherSubjectConsole({ schedules, students, records, date, toda
         <Table><TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Current confirmation</TableHead><TableHead>Confirm after checking</TableHead></TableRow></TableHeader>
           <TableBody>{filtered.slice((currentPage - 1) * 10, currentPage * 10).map(student => <TableRow key={student.id}>
             <TableCell>{student.full_name}<br />{student.student_id}</TableCell>
-            <TableCell>{byStudent.get(student.id)?.attendance_status ?? "Unconfirmed"}</TableCell>
+            <TableCell>{byStudent.get(student.id)?.attendance_status ?? "Not confirmed yet"}</TableCell>
             <TableCell><div className="flex gap-2">
               <Button size="sm" variant="outline" disabled={pending || date > today || byStudent.get(student.id)?.attendance_status === "Present"} onClick={() => confirm(student.id, "Present")}>Present</Button>
+              <Button size="sm" variant="outline" disabled={pending || date > today || byStudent.get(student.id)?.attendance_status === "Late"} onClick={() => confirm(student.id, "Late")}>Late</Button>
               <Button size="sm" variant="outline" disabled={pending || date > today || byStudent.get(student.id)?.attendance_status === "Absent"} onClick={() => confirm(student.id, "Absent")}>Absent</Button>
             </div></TableCell>
           </TableRow>)}</TableBody>

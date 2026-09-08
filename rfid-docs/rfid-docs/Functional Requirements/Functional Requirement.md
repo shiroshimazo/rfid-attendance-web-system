@@ -201,6 +201,25 @@ Second successful tap:
 
 Time Out remains empty until the student taps again.
 
+## School-confirmed campus and subject rules (P04 follow-up)
+
+- Reject a third campus tap after Time In and Time Out are recorded for the day.
+  Keep both saved times unchanged.
+- A tap on the next Asia/Manila calendar date starts that day's Time In. Leave
+  previous days' missing times blank; do not fill them automatically.
+- A campus arrival leaves every scheduled subject **Not confirmed yet**. For
+  example, three Monday subjects each await their own teacher's decision.
+- The assigned teacher checks the classroom and confirms **Present**, **Late**,
+  or **Absent** for that subject. A campus tap never confirms subject presence.
+  Students without RFID cards can still receive a teacher confirmation.
+- Late counts as attended in subject totals. Unconfirmed subjects are excluded
+  from confirmed attendance rates and are never inferred to be Absent.
+- Parent notification describes arrival at the campus. Time Out, a network
+  retry and a subject confirmation do not create additional arrival messages.
+
+These user-confirmed rules extend the earlier teacher Present/Absent decision;
+they do not introduce Excused, automatic absences or automatic subject Late.
+
 # SMS Notification Requirements
 
 After successful attendance recording, the system shall:

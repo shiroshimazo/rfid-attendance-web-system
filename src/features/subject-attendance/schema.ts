@@ -5,7 +5,7 @@ const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)
 
 export const confirmSubjectSchema = z.object({
   scheduleId: id, studentId: id, date,
-  status: z.enum(["Present", "Absent"]),
+  status: z.enum(["Present", "Late", "Absent"]),
   expectedConfirmedAt: z.iso.datetime({ offset: true }).nullable(),
 })
 export const createSubjectScheduleSchema = z.object({

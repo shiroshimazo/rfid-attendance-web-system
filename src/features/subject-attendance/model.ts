@@ -3,7 +3,7 @@ export interface SubjectAttendanceRow {
   schedule_id: number
   student_id: number
   attendance_date: string
-  attendance_status: "Present" | "Absent"
+  attendance_status: "Present" | "Late" | "Absent"
   time_start: string
   time_end: string
   student_number: string
@@ -52,9 +52,10 @@ export function belongsToSubject(student: SubjectStudent, schedule: SubjectSched
 /** Each row is one confirmed student/session, never one physical RFID tap. */
 export function subjectTotals(rows: SubjectAttendanceRow[]) {
   const present = rows.filter(row => row.attendance_status === "Present").length
+  const late = rows.filter(row => row.attendance_status === "Late").length
   const absent = rows.filter(row => row.attendance_status === "Absent").length
-  const confirmed = present + absent
-  return { present, absent, confirmed, rate: confirmed ? present / confirmed * 100 : null }
+  const confirmed = present + late + absent
+  return { present, late, absent, confirmed, rate: confirmed ? (present + late) / confirmed * 100 : null }
 }
 
-export const subjectAttendancePolicy = "Subject attendance is teacher-confirmed. Missing taps are not absences. Present without a card has no time-in/time-out and adds zero RFID scans. Rates use confirmed Present / (Present + Absent) student-sessions; unconfirmed sessions are excluded."
+export const subjectAttendancePolicy = "Subject attendance is teacher-confirmed as Present, Late or Absent. Campus taps leave subject sessions unconfirmed. A teacher confirmation creates no RFID time-in/time-out or scans. Rates use confirmed (Present + Late) / (Present + Late + Absent) student-sessions; unconfirmed sessions are excluded."

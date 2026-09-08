@@ -50,6 +50,22 @@ Class start = the late reference point. Class end is informational only in v1
    fills `time_out` and never changes the status.
 7. All schedule and cutoff comparisons use Philippines Time (Asia/Manila).
 
+## School-confirmed follow-up: schedule priority and subject Late
+
+When an active all-campus (`campus is null`) class schedule and an active
+campus-specific schedule both match, the **all-campus row takes priority**.
+Use the specific row only when no active all-campus row matches. No matching
+active row still means Present. This priority was explicitly selected by the
+user for P04; it does not automatically reclassify historical attendance.
+
+The subsequently approved subject-attendance flow is separate from this campus
+Late rule. Each teacher may confirm their own scheduled subject as Present,
+Late or Absent after checking the classroom. A campus arrival leaves all subject
+rosters **Not confirmed yet**. Subject Late is a teacher decision, with no new
+automatic cutoff. Present and Late both count as attended in subject summaries.
+This later school decision supersedes the earlier deferral of per-subject
+attendance below; other deferred features remain outside the release.
+
 ## BSIT 2nd Year Subjects (8)
 
 These are the subjects attached to the 10 pilot sections. No per-subject

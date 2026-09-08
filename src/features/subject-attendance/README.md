@@ -1,7 +1,7 @@
 # Subject attendance (P05)
 
 The school confirmed attendance is per scheduled subject session. Only the assigned
-teacher confirms Present/Absent. No confirmation is unconfirmed, not Absent.
+teacher confirms Present/Late/Absent. No confirmation is unconfirmed, not Absent.
 Cardless students may be confirmed Present without producing a card, tap timestamp,
 RFID scan or SMS. A daily campus tap does not confirm attendance in each subject.
 
@@ -38,7 +38,7 @@ teacher confirmation. RPCs and Realtime use the existing authenticated session.
 ## Views and totals
 
 The shared `subjectTotals` function counts confirmed student-sessions, with
-Present / (Present + Absent). Unconfirmed sessions do not enter the denominator.
+(Present + Late) / (Present + Late + Absent). Unconfirmed sessions do not enter the denominator.
 Dashboard summaries use today's Manila date; date panels/reports use their selected
 range, and student history includes all visible confirmations. Rates agree for the
 same records and scope; different teacher/role/date scopes can differ.
@@ -89,3 +89,15 @@ if withdrawing the feature. Reapplying the migration restores write access.
 Local checks: real migrations/RLS in `tests/subject-attendance.test.mjs`, actions
 and PDF in `tests/subject-attendance-actions.test.mjs`, Chromium controls in
 `tests/subject-attendance.browser.mjs`. No hosted credentials or SMS are used.
+
+## School-confirmed Late follow-up (P04)
+
+Apply `202609140002_teacher_confirmed_late.sql` after the P04 tap migration.
+Teachers may explicitly choose Late for their own subject session. Late counts
+as attended in the shared summaries and PDFs. Every scheduled subject roster
+shows **Not confirmed yet** until its teacher saves a decision; a campus tap
+never confirms any of those subjects or automatically assigns subject Late.
+The displayed unconfirmed roster also includes students without a card. No
+placeholder confirmation rows are created, because they would imply a teacher
+had confirmed a result. Existing snapshots, role checks and stale-edit protection
+remain intact. Optional write-disable rollback preserves all Late history.

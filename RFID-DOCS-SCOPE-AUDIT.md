@@ -293,9 +293,22 @@ confirmed successful assignment and completion of the requested P03 checks.
 
 ### P04 — Implement the actual RFID time-in/time-out path (P1)
 
+**Implementation complete; hosted migration/configuration/testing pending.** The user resolved the school rules: reject the third tap; start a new Asia/Manila day without filling yesterday's missing times; prefer the active all-campus schedule over a matching campus-specific row. The user also authorized teacher-confirmed subject Late. These decisions are recorded in FR and LATE.
+
+- [x] Authenticated `POST /api/rfid/tap` validates a UUID request ID and shared normalized UID. It accepts no device-supplied student, date/time or status. The separate device secret is server-configured; Supabase service-role credentials remain on the server.
+- [x] Migration `202609140001_rfid_tap_processing.sql` adds a service-role-only atomic writer and private RLS-protected retry receipts. It records first Time In, second Time Out, rejects a third tap and retains the first Present/Late result. Successful retries, including across midnight, return the stored response without recording another tap.
+- [x] Eligible active cards, students and linked accounts are required. Pilot Late cutoffs use Asia/Manila and active `class_schedules`, prioritizing all-campus rows. Unscheduled/out-of-pilot arrivals remain Present. Existing daily records, RFID associations and subject confirmations are preserved; conflicting legacy records are rejected for review.
+- [x] One Pending guardian arrival notification is saved atomically with Time In. Departure and retry create no additional notification. **Actual SMS delivery and Sent/Failed handling remain P06; Pending is not Sent.**
+- [x] Existing scheduled subject rosters display **Not confirmed yet** until each assigned teacher confirms Present, Late or Absent. Campus arrival never writes or resets a subject confirmation. `202609140002_teacher_confirmed_late.sql` adds the explicit teacher Late choice, preserving authorization, history and stale-edit checks. Shared summaries and PDF rates count Present + Late as attended.
+- [x] Local verification: **257 tests passed, 0 failed**, targeted ESLint, TypeScript and production build passed. Chromium subject flow passed including Late confirmation. SQL checks cover cutoff seconds, retries, third tap, Manila midnight, all-campus priority, rejected cards/accounts, atomic rollback, permissions and migration reapplication. The read-only installer probe returns seven PASS locally.
+- [ ] Apply both new migrations in order, run `supabase/verify_rfid_tap.sql`, configure `RFID_DEVICE_API_KEY`, restart and test the hosted/local app with assigned temporary UIDs. Use the [P04 rollout instructions](src/app/api/rfid/tap/README.md#install-and-test) and `scripts/test-rfid-tap.ps1`. No hosted writes or SMS sends were performed by the assistant.
+- [ ] Live acceptance: first/retry/second/third tap, one Pending notification, dashboard/history updates and independent teacher Present/Late/Absent. Database tests use PGlite; simultaneous independent PostgreSQL connections and physical reader behavior have not been independently verified. Hardware remains P11.
+
+Optional rollback scripts disable the new writers while retaining all data. Do not run rollback scripts during setup.
+
 **Basis:** FR RFID and Time-In/Time-Out; ARCH Attendance Process; LATE v1 and Data Model Direction.
 
-**Evidence:** `src/app/api/rfid/tap/` contains only a README. No API route handler or device-driven attendance writer was found. Existing Late badges, schedule controls, and backfill SQL do not implement live tap classification.
+**Original audit evidence:** the tap folder initially contained only a README. The implementation above now supplies the receiver; hosted deployment and physical device operation still require verification.
 
 **Proceed:** implement the documented device receiver with server-side validation, card/student lookup, safe time-in/time-out recording, persisted first-tap classification, and the student/year/date/time/result response needed by the display. Authenticate the device as a technical consequence of preventing unauthorized attendance writes; keep privileged keys on the server.
 
@@ -305,7 +318,7 @@ confirmed successful assignment and completion of the requested P03 checks.
 - With default schedules, morning 06:15:00 is Present and 06:15:01 is Late; afternoon 13:15:00 is Present and 13:15:01 is Late.
 - No applicable active weekday schedule means Present. Out-of-pilot placement is not classified Late. Stored status is read consistently rather than recalculated by each screen.
 - Invalid/ineligible cards do not create attendance. Repeated delivery of the same request does not accidentally become time-out or send duplicate arrival notifications.
-- All dates/cutoffs use Asia/Manila. Define unresolved third-tap/day-boundary behavior in the requirements before implementing a new attendance rule.
+- All dates/cutoffs use Asia/Manila. The confirmed third-tap rejection and new-calendar-day rules above apply; previous missing times remain blank.
 
 Do not mandate a particular scan-log table name, queue system, or additional device administration page. Choose the smallest storage design that satisfies the required records and transaction correctness.
 
@@ -340,9 +353,9 @@ Do not mandate a particular scan-log table name, queue system, or additional dev
 **Completed implementation:**
 
 - [x] Admin Schedules has a Subject Session Schedules section: choose an existing active teacher/subject/class assignment and enter the real weekday/start/end. No subject timetable is invented or seeded. Retire and replace schedule rows without deleting confirmations.
-- [x] Teacher Attendance has a date and scheduled-subject selector, the authorized roster, unconfirmed count, student search, and per-student Present/Absent controls. Corrections affect only that session. Same-result retries are idempotent; stale corrections fail with a refresh message.
+- [x] Teacher Attendance has a date and scheduled-subject selector, the authorized roster, unconfirmed count, student search, and per-student Present/Late/Absent controls (Late added by the P04 school decision). Corrections affect only that session. Same-result retries are idempotent; stale corrections fail with a refresh message.
 - [x] SQL checks the active account/teacher, actual subject assignment, student class/campus, scheduled weekday and non-future date. Direct authenticated table writes are denied. A teacher sharing a roster cannot confirm/read another teacher's subject. Student reads are personal; admins retain archived history. Admins do not impersonate teacher confirmations.
-- [x] Shared subject totals and history appear in existing dashboards, attendance panels, student history and Admin/Teacher Reports. PDF exports include all visible subject confirmations for the date range. Rate = confirmed Present / (Present + Absent) student-sessions. No confirmations produce no rate; unconfirmed sessions are not inferred as absent.
+- [x] Shared subject totals and history appear in existing dashboards, attendance panels, student history and Admin/Teacher Reports. PDF exports include all visible subject confirmations for the date range. Rate = confirmed (Present + Late) / (Present + Late + Absent) student-sessions after the school-approved Late follow-up. No confirmations produce no rate; unconfirmed sessions are not inferred as absent.
 - [x] Existing daily RFID counts/charts/history are labeled separately. Daily Present/Late/Absent evidence remains unchanged, and daily Late does not establish presence in every subject. A cardless subject confirmation produces zero new RFID scans, no tap times and no arrival SMS.
 - [x] Subject/placement/teacher labels are stored at confirmation time. Retiring schedules, replacing assignments or archiving students does not delete confirmations. Current teacher assignment restrictions still govern teacher reads.
 - [x] Subject tables join the existing Realtime publication/subscriptions and successful writes revalidate the affected existing pages. P07's broader refresh reliability work remains separate.
@@ -367,7 +380,7 @@ Do not mandate a particular scan-log table name, queue system, or additional dev
 
 - [x] Subject-attendance migration applied; six installation checks returned PASS.
 - [x] Requested functional testing completed, including separate subject results and cardless attendance without fabricated RFID evidence.
-- [x] P05 marked DONE following the user's confirmation. The next implementation task is P04, the RFID time-in/time-out processing path; physical hardware verification remains P11.
+- [x] P05 marked DONE following the user's confirmation. P04 software is now implemented with hosted acceptance pending; P06 is the next sender implementation. Physical hardware verification remains P11.
 
 `supabase/rollback_subject_attendance.sql` is optional rollback only: it disables write RPC access without deleting any data. It is **not** a setup step. Full implementation/rollout notes: `src/features/subject-attendance/README.md`.
 
@@ -375,7 +388,7 @@ Do not mandate a particular scan-log table name, queue system, or additional dev
 
 **Basis:** FR SMS; ARCH Time-In; OVERVIEW arrival notification; STUDENT SMS status.
 
-**Evidence:** `sms_notifications` and student read/display services exist. `src/services/sms/` and `src/features/sms/` contain only READMEs; no sender was found.
+**Evidence:** P04 now inserts one Pending arrival notification atomically with Time In. Student read/display services exist, but `src/services/sms/` and `src/features/sms/` still contain only READMEs; no provider sender exists. Continue from these Pending arrival records without generating duplicate messages.
 
 **Proceed:** after successful arrival recording, retrieve the guardian contact, send the documented student/campus arrival message, and persist Pending/Sent/Failed plus the sent time. Validate the contact format required by the selected provider. Keep attendance recorded if sending fails, and avoid duplicate messages for a retried arrival transaction.
 
@@ -465,9 +478,9 @@ These are gaps to resolve before implementing dependent behavior, not invitation
 | Decision | Why it matters | Current boundary |
 | --- | --- | --- |
 | Subject-session attendance and teacher confirmation | RESOLVED by the user: each scheduled subject session has its own result; existing daily RFID storage requires compatible implementation. | Present in one subject and teacher-confirmed Absent in another are separate outcomes. No-card presence has empty tap times and zero scans; no automatic absence cutoff. |
-| What happens on a third tap, rapid repeated physical tap, or cross-day departure? | FR defines first/second taps only; current table permits one row per student/day. | Keep first/second rule. Distinguish retransmission from a new physical tap. |
+| Third tap and cross-day departure | RESOLVED by user for P04: reject third tap; new day starts new Time In and retains missing previous times. | Same request ID is a retry; a distinct physical tap uses a new ID. Reader card-removal handling remains P11. |
 | Does time-out send SMS? | FR is broad; ARCH explicitly shows arrival SMS only. | Arrival is required. Departure messages need a clarified rule. |
-| Which schedule wins when campus-specific and null-campus rows both match? | Current schema/backfill can match both. | Do not choose precedence implicitly in one screen or query. |
+| Campus-specific versus all-campus schedule | RESOLVED by user: active all-campus row wins for new P04 taps; specific row is fallback. | Historical backfill remains a separate P10 review; no history is recomputed automatically. |
 | Which roles receive SMS report details? | Generic report content includes SMS, but TEACHER does not specify guardian-message access. | Preserve owner/admin SMS policy until visibility is defined. |
 | What should happen to existing Excused records, if any? | Removing a type/UI option does not resolve historical data. | Preserve evidence; do not silently convert or delete. |
 

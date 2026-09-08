@@ -31,7 +31,7 @@ export function ReportPdfDocument({ role, data }: ReportPdfInput) {
         {footer}<Title>Subject Attendance</Title>
         <Text style={{ marginBottom: 10 }}>{`${data.rangeLabel} | Generated ${data.generatedAtLabel}`}</Text>
         <Text style={{ marginBottom: 10, lineHeight: 1.4 }}>{subjectAttendancePolicy}</Text>
-        <Text style={{ marginBottom: 10 }}>{`Present: ${subjectSummary.present} | Absent: ${subjectSummary.absent} | Confirmed student-sessions: ${subjectSummary.confirmed} | Rate: ${subjectSummary.rate === null ? "No confirmations" : `${subjectSummary.rate.toFixed(1)}%`}`}</Text>
+        <Text style={{ marginBottom: 10 }}>{`Present: ${subjectSummary.present} | Late: ${subjectSummary.late} | Absent: ${subjectSummary.absent} | Confirmed student-sessions: ${subjectSummary.confirmed} | Rate: ${subjectSummary.rate === null ? "No confirmations" : `${subjectSummary.rate.toFixed(1)}%`}`}</Text>
         <Text style={{ marginBottom: 10 }}>The times below are scheduled class times, not RFID taps. All confirmations have empty RFID time-in/time-out and create zero scans. Subject/placement details reflect confirmation time. Daily RFID evidence is reported separately on subsequent pages.</Text>
         {subjects.length ? <DataTable columns={[
           { key: "session", header: "Date / scheduled time" },
