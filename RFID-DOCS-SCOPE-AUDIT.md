@@ -63,7 +63,7 @@ Your instruction resolves the current-release decision: remove this business sta
 | Manage RFID cards | `src/features/rfid/`, `src/services/rfid/cards.ts`, admin card screens | KEEP register/assign/status/view. Unify the two assignment implementations. |
 | Admin attendance | `src/features/attendance/panel.ts`, `src/services/attendance/panel.ts` | KEEP search, filters, times, and records. Excused choices removed under R01; finish the remaining absence-policy work. |
 | Admin schedules | `src/features/schedules/`, `src/services/schedules/`, `/admin/schedules` | KEEP. ADMIN and LATE explicitly document this module. Preserve status-based retirement. |
-| Admin reports | `src/features/reports/panel.ts`, `src/services/reports/snapshot.ts` | KEEP. P08 implementation DONE: recorded totals, retained history, RFID/SMS records and complete pdfcn exports. Live acceptance and P05 policy remain separate. |
+| Admin reports | `src/features/reports/panel.ts`, `src/services/reports/snapshot.ts` | KEEP. P08 DONE: recorded totals, retained history, RFID/SMS records and complete pdfcn exports. User confirmed live testing passed; P05 policy remains separate. |
 | Admin settings | `src/features/profiles/actions.ts`, `/admin/settings` | KEEP profile/photo reference, email, phone, and password changes. |
 | Teacher dashboard/attendance/students | Teacher attendance feature/service files and `/teacher/` pages | KEEP assigned-student visibility, filters, date selection, read-only details, and attendance history access. |
 | Teacher reports/settings | `src/features/reports/teacher-panel.ts`, `src/features/profiles/teacher-profile.ts` | KEEP class reports/PDF, profile, assignments, and password changes. |
@@ -309,28 +309,60 @@ confirmed successful assignment and completion of the requested P03 checks.
 
 Do not mandate a particular scan-log table name, queue system, or additional device administration page. Choose the smallest storage design that satisfies the required records and transaction correctness.
 
-### P05 — Resolve absence and unify attendance totals (P0 decision, P1 implementation)
+### P05 — Resolve absence and unify attendance totals (P0 decision, P1 implementation) - IMPLEMENTATION DONE; installation verified by user, functional acceptance pending
 
 **Basis:** FR dashboard/report totals; ADMIN and STUDENT KPI requirements; LATE "Late counts as attended."
 
-**Evidence:** `buildAdminDashboardData`, `buildTeacherDashboardData`, attendance panels, and `countPersonalAbsentDays` now count explicit stored Absent records. `buildReportsData` and `buildTeacherReportsData` instead derive absence from current roster size multiplied by dates with records, minus attended/Excused totals.
+**User-confirmed school rule:** the teacher checks the students in their class before teaching. A student becomes Absent only when the teacher confirms that the student is not in that class. No RFID tap by itself is not an absence.
 
-**Local reproduction using the actual aggregation functions:**
+| Situation | Required behavior |
+| --- | --- |
+| Teacher confirms student is not in class | Record teacher-confirmed Absent; do not fabricate RFID times or a card. |
+| Teacher confirms student is in class but has no RFID card | Record teacher-confirmed presence. Keep time-in/time-out empty and RFID scan count zero. |
+| No RFID tap and teacher has not confirmed attendance | Keep the state unconfirmed; do not automatically mark Absent. |
+| Existing RFID attendance | Preserve recorded card identity, time-in/time-out and applicable Present/Late rules. |
 
-| Same input: two students, one Present row with time-in and time-out | Dashboard | Admin report |
-| --- | --- | --- |
-| Present | 1 | 1 |
-| Absent | 0 | 1 |
-| Tap/scan count | 2 | 1 |
-| Untapped student's state | `NoRecord` | Included in derived absence |
+**Decision status:** the user confirmed both the absence trigger (teacher confirmation) and the attendance unit (each subject's scheduled session). A student can be Present in one subject and Absent in another on the same day. Implementation is complete locally; hosted migration and user acceptance remain pending. Confirmation must stay within the teacher's authorized classes; this does not authorize unrelated teacher writes or automatic absence jobs.
 
-The dashboard rate is 100% in that example because it excludes the untapped student. The docs require a rate but do not supply its denominator/finalization policy. Neither existing calculation should be treated as the approved school rule just because it is implemented.
+**Implemented storage:** additive migration `supabase/migrations/202609120001_subject_attendance.sql` creates `subject_schedules` and `subject_attendance`. Existing daily `attendance_records`, RFID cards, SMS and profiles are not rewritten or deleted. Subject confirmations store teacher/class/date and subject/placement snapshots with a confirmation timestamp; they have no RFID card or tap-time fields. Scheduled start/end times are explicitly labeled, never treated as physical time-in/time-out.
 
-**Proceed:** record a single definition of expected attendance, when absence becomes final, and the denominator. Apply it to dashboards, panels, histories, charts, and PDFs. Remove Excused from that decision. Keep no-tap display truthful while the policy is unresolved.
+**Confirmed subject/session boundary:** store a separate attendance outcome for each student and scheduled subject session. Attendance in one subject does not mark the student present in a later subject. Missing a later subject becomes Absent only when that subject's teacher confirms it; the second subject is not automatically marked Absent from missing RFID data. One session's confirmation must not overwrite another session's outcome.
 
-The existing attendance table requires both `rfid_card_id` and `time_in`, so a stored absence for a student who never tapped cannot be added honestly without resolving the representation. Choose between a derived presentation and compatible storage once the policy is defined. Do not invent a midnight tap, assign a fake card, or automatically schedule a nightly job.
+**Completed implementation:**
 
-**Done when:** identical students/dates yield identical totals across roles and exports; Late counts as attended; no records fabricate a tap. Include no-tap days, a day with zero taps anywhere, weekends, pre-class time, and historical/archived students in the agreed acceptance examples.
+- [x] Admin Schedules has a Subject Session Schedules section: choose an existing active teacher/subject/class assignment and enter the real weekday/start/end. No subject timetable is invented or seeded. Retire and replace schedule rows without deleting confirmations.
+- [x] Teacher Attendance has a date and scheduled-subject selector, the authorized roster, unconfirmed count, student search, and per-student Present/Absent controls. Corrections affect only that session. Same-result retries are idempotent; stale corrections fail with a refresh message.
+- [x] SQL checks the active account/teacher, actual subject assignment, student class/campus, scheduled weekday and non-future date. Direct authenticated table writes are denied. A teacher sharing a roster cannot confirm/read another teacher's subject. Student reads are personal; admins retain archived history. Admins do not impersonate teacher confirmations.
+- [x] Shared subject totals and history appear in existing dashboards, attendance panels, student history and Admin/Teacher Reports. PDF exports include all visible subject confirmations for the date range. Rate = confirmed Present / (Present + Absent) student-sessions. No confirmations produce no rate; unconfirmed sessions are not inferred as absent.
+- [x] Existing daily RFID counts/charts/history are labeled separately. Daily Present/Late/Absent evidence remains unchanged, and daily Late does not establish presence in every subject. A cardless subject confirmation produces zero new RFID scans, no tap times and no arrival SMS.
+- [x] Subject/placement/teacher labels are stored at confirmation time. Retiring schedules, replacing assignments or archiving students does not delete confirmations. Current teacher assignment restrictions still govern teacher reads.
+- [x] Subject tables join the existing Realtime publication/subscriptions and successful writes revalidate the affected existing pages. P07's broader refresh reliability work remains separate.
+
+**Local verification:**
+
+- Full regression suite: `node --test tests/*.test.mjs` **227/227 PASS** before adding the final installation-probe test. The expanded subject SQL suite then passed **16/16**, including that probe (228 tests now present overall).
+- Actual migrations/RLS in isolated PostgreSQL: cardless Present in Subject A and Absent in Subject B; no inferred absence; wrong teacher/campus/student, disabled access, invalid weekday/future dates and retired statuses rejected; stale corrections, idempotent retries, preserved archived history, reapplication and non-destructive rollback verified.
+- Six action/model/PDF tests passed: role checks before writes, no caller-supplied teacher or fabricated taps, failed writes do not claim success, separate subject results and a 50% two-session rate render in the PDF while RFID scans stay zero.
+- `node tests/subject-attendance.browser.mjs`: **PASS** in Chromium for selecting subjects, cardless presence, second-subject absence, retained independent results, failed correction, schedule creation and retirement. Uses local fixtures, not hosted accounts.
+- `pnpm.cmd build`: **PASS**, including TypeScript. `pnpm.cmd lint`: **0 errors**, one pre-existing unused-children warning in `src/components/ui/combobox.tsx`.
+
+**User-reported installation:** the user confirmed all six installation checks returned PASS after applying the migration. This confirms hosted installation according to the user's report; end-to-end subject attendance acceptance remains separate.
+
+**User-approved edit navigation - implemented:** Edit Student and Edit Teacher allow direct navigation through the step buttons in any order, including 2/3/4/1, retaining unsaved values. Create mode keeps the guided order. Step navigation is disabled while saving; final save still validates all fields and returns to the first invalid step. Chromium verified both edit flows, retained input, invalid-save navigation, create-mode restrictions and the existing select/layout fixes. Production build and targeted ESLint passed. No database migration is needed.
+
+**Explicit-save fix - locally verified:** Student and Teacher wizard Next and Save now have separate button identities. Save is an explicit button action; implicit form submissions and Enter in fields cannot save. Existing step-validation behavior is retained. Chromium verified both edit forms advance through the last two steps with zero save calls, ignore implicit submission, then save exactly once on Save changes. Final-save schema validation remains enforced. No SQL migration is needed.
+
+**Profile form follow-up - fixed locally:** removed changing custom `SelectValue` children in student/teacher profile selectors to prevent React portal-container conflicts when selecting an initially blank value. Course/Subject now stays within its assignment column, truncates long selected text, and keeps the full label in the dropdown. Assignment fields align at the top. Chromium in React development mode passed teacher civil-status/gender and student gender transitions with no console errors, plus layout checks at 1200/768/390px. Production build and targeted ESLint passed. No database change is required for these form fixes.
+
+**Rollout / remaining acceptance:**
+
+1. Run **only** `supabase/migrations/202609120001_subject_attendance.sql` after the already applied migrations. The assistant has not applied it to hosted Supabase.
+2. Optionally run the read-only `supabase/verify_subject_attendance.sql`; expect six PASS rows. This verifies installation, not live teacher behavior.
+3. Restart the app. Admin > Schedules > Subject Session Schedules: add real timetable entries for the existing active teaching assignments.
+4. On the matching date, the assigned teacher confirms a cardless student Present in one subject. That second subject's assigned teacher confirms Absent if the student did not attend. Verify separate results in teacher/admin reports and student history; untouched subjects remain unconfirmed, and RFID times/scans remain unchanged.
+5. Confirm results/PDF counts match for the same authorized date scope. Then record hosted/user acceptance here. Do not mark hosted rollout complete based only on local tests.
+
+`supabase/rollback_subject_attendance.sql` is optional rollback only: it disables write RPC access without deleting any data. It is **not** a setup step. Full implementation/rollout notes: `src/features/subject-attendance/README.md`.
 
 ### P06 — Implement guardian SMS sending and persisted results (P1)
 
@@ -356,11 +388,11 @@ FR says SMS follows successful attendance recording broadly; ARCH explicitly pla
 
 **Done when:** accepted attendance and SMS changes appear automatically in all authorized role views; a continuous stream does not postpone refresh indefinitely; midnight Manila produces consistent dates and timestamps in reports and dashboards. No new connection-monitoring module is required.
 
-### P08 ? Make reports complete, consistent, and historically accurate (P1) ? IMPLEMENTATION DONE
+### P08 - Make reports complete, consistent, and historically accurate (P1) - DONE
 
 **Basis:** FR Report Requirements, ADMIN Reports, TEACHER Reports, and FR admin visibility of all attendance records. The user explicitly selected [pdfcn](https://www.pdfcn.dev/) for PDF output.
 
-**Implementation completed and locally verified: 2026-09-08.** Live Supabase acceptance remains pending. Final absence-policy alignment depends on the separate P05 decision; this work preserves explicit recorded absences and does not introduce an absence cutoff or automatic job.
+**Implementation completed and locally verified: 2026-09-08. User acceptance: DONE.** The user confirmed testing was completed after being asked to test PDF exports from both Admin and Teacher Reports. Live acceptance is recorded from that confirmation, not an independent inspection of the hosted results. P05 has since resolved the policy as separate teacher-confirmed subject sessions and extended these PDFs accordingly. That additive rollout and live acceptance are tracked under P05; no automatic absence cutoff or job was introduced.
 
 - [x] **Real PDF downloads:** both existing report buttons download a server-generated PDF through `/api/reports/pdf`, using a local adaptation of pdfcn's Forme DataTable and `@formepdf/react` / `@formepdf/core`. Upstream attribution/license and adaptations are documented in `src/components/pdf/README.md`. Rendering stays on the application server.
 - [x] **Complete selected range:** PDF generation fetches the selected date range independently of UI pagination. It includes the summary, every section/campus group, every attendance/RFID record, and admin SMS records. UI attendance and SMS previews explicitly disclose their 50-record limit and full record count. Buttons show progress and report download failures.
@@ -380,11 +412,12 @@ FR says SMS follows successful attendance recording broadly; ARCH explicitly pla
 - `node tests/report-export.browser.mjs`: **PASS** in Chromium for download bytes/filename, selected dates, pending state, retry, and error/non-PDF responses. Uses loopback fixtures; does not contact Supabase.
 - `pnpm.cmd build`: **PASS**, including TypeScript and the new PDF route. `pnpm.cmd lint`: **0 errors**, one existing unused-`children` warning in `src/components/ui/combobox.tsx`.
 
-**Next live checks ? no new SQL migration is needed:**
+**Live acceptance - user confirmed testing completed:**
 
-1. Restart the application, open **Admin ? Reports**, select a range with known records, and download **Export PDF**. Confirm the oldest/newest records and record count match that range regardless of the visible table page. Check retained archived history, recorded card UID, campuses and any existing SMS records.
-2. Open **Teacher ? Reports** and export the same range. Confirm only currently authorized assigned students are included, with no guardian phone numbers or SMS messages.
-3. Report any export error or mismatch. After these checks pass, record user acceptance here. Resolve P05 separately before claiming the whole project's final absence policy is complete.
+- [x] Admin and Teacher report export acceptance recorded from the user's "done testing" confirmation.
+- [x] No export error or mismatch was reported with that confirmation.
+
+P08 is complete for the recorded-attendance contract. P05's subject-attendance extension is implemented locally with its migration/live acceptance pending; P06 SMS sending and physical RFID verification remain separate tasks. No new SQL migration was required for P08.
 
 ### P09 — Finish the explicit presentation gaps without adding screens (P2)
 
@@ -424,7 +457,7 @@ These are gaps to resolve before implementing dependent behavior, not invitation
 
 | Decision | Why it matters | Current boundary |
 | --- | --- | --- |
-| When does no tap become Absent, which days/students are expected, and what is the rate denominator? | Dashboard/report disagreement; no-tap storage requires a deliberate model. | Keep Absent as required; do not invent a cron, school calendar, or cutoff. |
+| Subject-session attendance and teacher confirmation | RESOLVED by the user: each scheduled subject session has its own result; existing daily RFID storage requires compatible implementation. | Present in one subject and teacher-confirmed Absent in another are separate outcomes. No-card presence has empty tap times and zero scans; no automatic absence cutoff. |
 | What happens on a third tap, rapid repeated physical tap, or cross-day departure? | FR defines first/second taps only; current table permits one row per student/day. | Keep first/second rule. Distinguish retransmission from a new physical tap. |
 | Does time-out send SMS? | FR is broad; ARCH explicitly shows arrival SMS only. | Arrival is required. Departure messages need a clarified rule. |
 | Which schedule wins when campus-specific and null-campus rows both match? | Current schema/backfill can match both. | Do not choose precedence implicitly in one screen or query. |
@@ -472,8 +505,8 @@ flow, finalize the absence policy, alter permissions, or complete R03–R05.
 - [ ] All authorized dashboards update automatically after accepted attendance changes.
 - [ ] Guardian arrival messages store truthful Pending/Sent/Failed results and correct student/campus identity.
 - [ ] Dashboard, history, attendance panel, and report totals follow one documented rule.
-- [x] Admin reports include the required attendance, RFID, and SMS records; PDF output matches its stated scope in local P08 tests. Live Supabase export acceptance remains pending above.
-- [x] Archived history is retained and available through the admin report/export path in local P08 tests. Live acceptance remains pending above.
+- [x] Admin reports include the required attendance, RFID, and SMS records; PDF output matches its stated scope in local P08 tests. User confirmed live export testing completed under P08.
+- [x] Archived history is retained and available through the admin report/export path in local P08 tests. User acceptance is recorded under P08.
 - [ ] Device display/LED/buzzer behavior is verified with real accepted and rejected cards.
 - [ ] No standalone extra feature was added to satisfy an old generated roadmap.
 

@@ -2,6 +2,7 @@ import { Document, Page, Text, Fixed } from "@formepdf/react"
 import { DataTable } from "@/components/pdf/data-table"
 import { formatReportTimestamp, type ReportsData } from "@/features/reports/panel"
 import type { TeacherReportsData } from "@/features/reports/teacher-panel"
+import { subjectTotals, subjectAttendancePolicy } from "@/features/subject-attendance/model"
 
 export type ReportPdfInput =
   | { role: "admin"; data: ReportsData }
@@ -12,6 +13,8 @@ function Title({ children }: { children: string }) {
 }
 
 export function ReportPdfDocument({ role, data }: ReportPdfInput) {
+  const subjects = data.subjectAttendance ?? []
+  const subjectSummary = subjectTotals(subjects)
   const attended = data.kpis.totalPresent
   const recorded = attended + data.kpis.totalAbsent
   const pageStyle = { fontFamily: "Helvetica", color: "#172b42", fontSize: 9 }
@@ -25,8 +28,28 @@ export function ReportPdfDocument({ role, data }: ReportPdfInput) {
   return (
     <Document title="RFID Attendance Report" author="RFID Attendance System">
       <Page size={{ width: 842, height: 595 }} margin={36} style={pageStyle}>
+        {footer}<Title>Subject Attendance</Title>
+        <Text style={{ marginBottom: 10 }}>{`${data.rangeLabel} | Generated ${data.generatedAtLabel}`}</Text>
+        <Text style={{ marginBottom: 10, lineHeight: 1.4 }}>{subjectAttendancePolicy}</Text>
+        <Text style={{ marginBottom: 10 }}>{`Present: ${subjectSummary.present} | Absent: ${subjectSummary.absent} | Confirmed student-sessions: ${subjectSummary.confirmed} | Rate: ${subjectSummary.rate === null ? "No confirmations" : `${subjectSummary.rate.toFixed(1)}%`}`}</Text>
+        <Text style={{ marginBottom: 10 }}>The times below are scheduled class times, not RFID taps. All confirmations have empty RFID time-in/time-out and create zero scans. Subject/placement details reflect confirmation time. Daily RFID evidence is reported separately on subsequent pages.</Text>
+        {subjects.length ? <DataTable columns={[
+          { key: "session", header: "Date / scheduled time" },
+          { key: "subject", header: "Subject / teacher" },
+          { key: "student", header: "Student" },
+          { key: "class", header: "Class / campus" },
+          { key: "result", header: "Teacher confirmation" },
+        ]} data={subjects.map(row => ({
+          session: `${row.attendance_date}\n${row.time_start}–${row.time_end} PHT`,
+          subject: `${row.course_code} / ${row.course_name}\n${row.teacher_name}`,
+          student: `${row.student_name}\n${row.student_number}`,
+          class: `${row.program_code} ${row.year_level}\n${row.section}\n${row.campus}`,
+          result: `${row.attendance_status}\n${formatReportTimestamp(row.confirmed_at)}`,
+        }))} /> : <Text>No teacher confirmations in the selected range. Missing taps are not absences.</Text>}
+      </Page>
+      <Page size={{ width: 842, height: 595 }} margin={36} style={pageStyle}>
         {footer}
-        <Title>RFID Attendance Report</Title>
+        <Title>Daily RFID Evidence</Title>
         <Text style={{ marginBottom: 8 }}>{`${data.rangeLabel} | Generated ${data.generatedAtLabel}`}</Text>
         <Text style={{ marginBottom: 12 }}>{role === "admin" ? "Institution-wide records, including archived students." : "Records visible under your current active teaching assignments."}</Text>
         <DataTable columns={[{ key: "metric", header: "Measure" }, { key: "value", header: "Value" }]} data={[

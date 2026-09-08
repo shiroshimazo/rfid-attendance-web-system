@@ -1,3 +1,4 @@
+import { SubjectHistoryPanel } from "@/features/subject-attendance/server-panels"
 import { Suspense } from "react"
 import type { Metadata } from "next"
 
@@ -36,6 +37,8 @@ async function AttendanceContent() {
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
+      <SubjectHistoryPanel />
+      <h2 className="text-lg font-semibold">Daily RFID history (separate from subject attendance)</h2>
       <KpiCards kpis={data.kpis} />
       <AttendanceHistoryTable rows={data.rows} />
     </div>

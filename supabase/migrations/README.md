@@ -446,3 +446,14 @@ hosted Auth service still need staging verification.
 If rolling back, restore the previous server actions before removing the three
 new triggers and their two functions in a follow-up migration. Do not reactivate
 cards as part of rollback: previous lost/retired states must remain intact.
+# P05 subject attendance rollout
+
+Apply `202609120001_subject_attendance.sql` after the existing migrations, before
+using the P05 application controls. It adds subject schedules and teacher-confirmed
+student/session results; it does not rewrite daily RFID, SMS or profile history.
+Do not use daily start/grace rows as invented subject timetables.
+
+See `src/features/subject-attendance/README.md` for setup, scope and acceptance.
+`supabase/verify_subject_attendance.sql` is a read-only six-check installation
+probe. `supabase/rollback_subject_attendance.sql` is optional rollback only and
+preserves all records while disabling new writes; it is not a setup step.

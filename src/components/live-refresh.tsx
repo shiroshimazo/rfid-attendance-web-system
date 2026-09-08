@@ -8,6 +8,8 @@ import { createBrowserSupabaseClient } from "@/services/supabase/client"
 
 const DEFAULT_TABLES = [
   "attendance_records",
+  "subject_attendance",
+  "subject_schedules",
   "rfid_cards",
   "sms_notifications",
   "students",

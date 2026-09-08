@@ -1,3 +1,4 @@
+import { SubjectRecords } from "@/features/subject-attendance/records"
 import { Suspense } from "react"
 import type { Metadata } from "next"
 
@@ -53,6 +54,8 @@ async function ReportsContent({ range }: { range: ReportsRange }) {
         Program, year and section reflect current profiles; campus comes from the attendance record.
       </p>
 
+      <SubjectRecords rows={data.subjectAttendance} />
+      <h2 className="text-lg font-semibold">Daily RFID evidence (separate from subject attendance)</h2>
       <KpiCards kpis={data.kpis} sessionDays={data.sessionDays} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 md:gap-6">

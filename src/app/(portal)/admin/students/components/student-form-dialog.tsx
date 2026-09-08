@@ -164,18 +164,30 @@ function defaultValues(student?: StudentView | null): StudentDialogValues {
 }
 
 /** Numbered progress rail: done, current, and still-to-come steps. */
-function Stepper({ current }: { current: number }) {
+function Stepper({ current, onStepChange, disabled = false }: {
+  current: number
+  onStepChange?: (step: number) => void
+  disabled?: boolean
+}) {
   return (
-    <ol className="flex items-start" aria-label="Add student progress">
+    <ol className="flex items-start" aria-label={onStepChange ? "Edit student steps" : "Add student progress"}>
       {steps.map((step, index) => {
-        const isDone = index < current
+        const isDone = !onStepChange && index < current
         const isCurrent = index === current
 
         return (
           <li
             key={step.id}
-            className="flex flex-1 flex-col items-center gap-1.5 last:flex-none"
+            className="flex min-w-0 flex-1 flex-col items-center last:flex-none"
           >
+            <button
+              type="button"
+              aria-label={`Step ${index + 1}: ${step.label}`}
+              aria-current={isCurrent ? "step" : undefined}
+              disabled={!onStepChange || disabled}
+              onClick={() => onStepChange?.(index)}
+              className="flex w-full flex-col items-center gap-1.5 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring enabled:cursor-pointer enabled:hover:bg-muted/50 disabled:cursor-default"
+            >
             <div className="flex w-full items-center gap-2">
               <span
                 aria-hidden
@@ -207,6 +219,7 @@ function Stepper({ current }: { current: number }) {
               {step.label}
               {isCurrent ? <span className="sr-only"> (current step)</span> : null}
             </span>
+            </button>
           </li>
         )
       })}
@@ -308,6 +321,56 @@ export function StudentFormDialog({
     setStepIndex((current) => Math.max(current - 1, 0))
   }
 
+  async function handleStepChange(target: number) {
+    if (target === stepIndex || isSubmitting) return
+    if (target < stepIndex) {
+      setStepIndex(target)
+      return
+    }
+    // Forward jumps validate every step left behind. Never saves — only moves locally.
+    for (let index = stepIndex; index < target; index += 1) {
+      const valid = await form.trigger(steps[index].fields, {
+        shouldFocus: true,
+      })
+      if (!valid) {
+        setStepIndex(index)
+        return
+      }
+    }
+    setStepIndex(target)
+  }
+
+  function handleFormKeyDown(event: React.KeyboardEvent<HTMLFormElement>) {
+    if (event.key !== "Enter") return
+    const target = event.target as HTMLElement | null
+    if (!target) return
+    if (
+      target.tagName === "TEXTAREA" ||
+      target.tagName === "BUTTON" ||
+      target.closest("[data-no-wizard-next]")
+    ) {
+      return
+    }
+    // Enter on an early step moves forward instead of auto-saving.
+    event.preventDefault()
+    if (!isLastStep) void goNext()
+  }
+
+  function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
+    // Navigation and implicit Enter submissions never authorize a save.
+    event.preventDefault()
+  }
+
+  function handleSave() {
+    if (!isLastStep || isSubmitting) return
+    void form.handleSubmit(onSubmit, (errors) => {
+      const owning = steps.findIndex((entry) =>
+        entry.fields.some((field) => field in errors)
+      )
+      if (owning >= 0) setStepIndex(owning)
+    })()
+  }
+
   async function onSubmit(values: StudentDialogValues) {
     const result =
       mode === "create"
@@ -351,11 +414,12 @@ export function StudentFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Stepper current={stepIndex} />
+        <Stepper current={stepIndex} onStepChange={mode === "edit" ? handleStepChange : undefined} disabled={isSubmitting} />
 
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={handleFormSubmit}
+            onKeyDown={handleFormKeyDown}
             className="space-y-6"
             noValidate
           >
@@ -421,9 +485,7 @@ export function StudentFormDialog({
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select gender">
-                                {field.value || undefined}
-                              </SelectValue>
+                              <SelectValue placeholder="Select gender" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -645,9 +707,7 @@ export function StudentFormDialog({
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select section">
-                                {field.value || undefined}
-                              </SelectValue>
+                              <SelectValue placeholder="Select section" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -674,9 +734,7 @@ export function StudentFormDialog({
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select campus">
-                                {field.value || undefined}
-                              </SelectValue>
+                              <SelectValue placeholder="Select campus" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -703,9 +761,7 @@ export function StudentFormDialog({
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select status (default: Active)">
-                                {accountStatusLabels[field.value]}
-                              </SelectValue>
+                              <SelectValue placeholder="Select status (default: Active)" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -869,7 +925,9 @@ export function StudentFormDialog({
 
                 {isLastStep ? (
                   <Button
-                    type="submit"
+                    key="save"
+                    type="button"
+                    onClick={handleSave}
                     className={buttonMotion}
                     disabled={isSubmitting}
                   >
@@ -880,8 +938,10 @@ export function StudentFormDialog({
                   </Button>
                 ) : (
                   <Button
+                    key="next"
                     type="button"
                     className={buttonMotion}
+                    disabled={isSubmitting}
                     onClick={goNext}
                   >
                     Next

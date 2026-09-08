@@ -1,3 +1,4 @@
+import { fetchSubjectAttendance } from "@/services/attendance/subject-attendance"
 import { requireRole } from "@/features/auth/server"
 import {
   buildReportsData, formatRangeLabel, parseReportsRange,
@@ -41,5 +42,6 @@ export function buildTeacherReportsData(snapshot: TeacherReportsSnapshot, option
 export async function getTeacherReportsData({ from, to }: ReportsRange): Promise<TeacherReportsData> {
   const account = await requireRole("teacher")
   const snapshot = await fetchTeacherReportsSnapshot({ authUserId: account.id, fromDate: from, toDate: to })
-  return buildTeacherReportsData(snapshot, { fromDate: from, toDate: to, generatedAt: new Date() })
+  const report = buildTeacherReportsData(snapshot, { fromDate: from, toDate: to, generatedAt: new Date() })
+  return { ...report, subjectAttendance: await fetchSubjectAttendance({ from, to }) }
 }

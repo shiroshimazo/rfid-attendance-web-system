@@ -1,3 +1,5 @@
+import { fetchSubjectAttendance } from "@/services/attendance/subject-attendance"
+import type { SubjectAttendanceRow } from "@/features/subject-attendance/model"
 import { format, isValid, parseISO, subDays } from "date-fns"
 
 import { schoolDateKey } from "@/lib/school-time"
@@ -91,6 +93,7 @@ export interface AttendanceLog {
 }
 
 export interface ReportsData {
+  subjectAttendance: SubjectAttendanceRow[]
   range: ReportsRange
   rangeLabel: string
   generatedAtLabel: string
@@ -370,6 +373,7 @@ export function buildReportsData(
   )
 
   return {
+    subjectAttendance: [],
     range: { from: fromDate, to: toDate },
     rangeLabel: formatRangeLabel(fromDate, toDate),
     generatedAtLabel: formatReportTimestamp(generatedAt),
@@ -417,11 +421,8 @@ export async function getAdminReportsData({
   await requireRole("admin")
   const snapshot = await fetchReportsSnapshot({ fromDate: from, toDate: to })
 
-  return buildReportsData(snapshot, {
-    fromDate: from,
-    toDate: to,
-    generatedAt: new Date(),
-  })
+  const report = buildReportsData(snapshot, { fromDate: from, toDate: to, generatedAt: new Date() })
+  return { ...report, subjectAttendance: await fetchSubjectAttendance({ from, to }) }
 }
 
 /** School-zone timestamps; stored attendance clock times are already local. */

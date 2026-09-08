@@ -1,3 +1,4 @@
+import { SubjectHistoryPanel, TeacherSubjectPanel } from "@/features/subject-attendance/server-panels"
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import { format, parseISO } from "date-fns"
@@ -48,6 +49,9 @@ async function AttendanceContent({ query }: { query: AttendancePanelQuery }) {
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
+      <TeacherSubjectPanel date={query.date} />
+      <SubjectHistoryPanel from={query.date} to={query.date} />
+      <h2 className="text-lg font-semibold">Daily RFID evidence (separate from subject attendance)</h2>
       <KpiCards kpis={data.kpis} readableDate={readableDate} />
       <FiltersBar query={data.query} options={data.options} />
       <AttendanceTable

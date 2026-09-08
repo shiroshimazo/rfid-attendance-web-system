@@ -7,6 +7,7 @@ const student = { id: 1, student_id: "S-1", full_name: "Assigned", program_id: 1
 function harness(account = { id: "teacher-user", role: "teacher", status: "active" }, fail = false) {
   const calls = []
   const tables = {
+    subject_attendance: [],
     teachers: [{ id: 4, user_id: "teacher-user" }],
     teacher_assignments: [{ id: 1, teacher_id: 4, program_id: 1, year_level: "2nd Year", section: "21001", campus: "Main", status: "active" }],
     students: [student, { ...student, id: 2, full_name: "Outside campus", campus: "Other" }, { ...student, id: 3, full_name: "Archived", status: "archived" }],
