@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { PhoneInput } from "@/components/ui/phone-input"
 import {
   Select,
   SelectContent,
@@ -186,7 +187,7 @@ function Stepper({ current, onStepChange, disabled = false }: {
               aria-current={isCurrent ? "step" : undefined}
               disabled={!onStepChange || disabled}
               onClick={() => onStepChange?.(index)}
-              className="flex w-full flex-col items-center gap-1.5 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring enabled:cursor-pointer enabled:hover:bg-muted/50 disabled:cursor-default"
+              className="flex w-full flex-col items-center gap-1.5 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring enabled:cursor-pointer disabled:cursor-default"
             >
             <div className="flex w-full items-center gap-2">
               <span
@@ -539,15 +540,18 @@ export function StudentFormDialog({
                       <FormItem>
                         <FormLabel>Contact number</FormLabel>
                         <FormControl>
-                          <Input
-                            type="tel"
+                          <PhoneInput
                             autoComplete="tel"
-                            placeholder="Enter contact number"
-                            {...field}
+                            name={field.name}
+                            ref={field.ref}
+                            value={field.value}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            disabled={field.disabled}
                           />
                         </FormControl>
                         <FormDescription>
-                          Include country code (e.g., +639181234567).
+                          Mobile number without the leading 0 (e.g., 9181234567).
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -623,14 +627,17 @@ export function StudentFormDialog({
                       <FormItem>
                         <FormLabel>Parent or guardian contact number</FormLabel>
                         <FormControl>
-                          <Input
-                            type="tel"
-                            placeholder="Enter contact number"
-                            {...field}
+                          <PhoneInput
+                            name={field.name}
+                            ref={field.ref}
+                            value={field.value}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            disabled={field.disabled}
                           />
                         </FormControl>
                         <FormDescription>
-                          Include country code (e.g., +639191234567).
+                          Mobile number without the leading 0 (e.g., 9191234567).
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
