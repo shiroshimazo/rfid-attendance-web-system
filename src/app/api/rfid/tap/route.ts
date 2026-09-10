@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto"
 import { rfidTapSchema } from "@/features/rfid-tap/schema"
+import { deliverArrivalSms } from "@/services/sms/philsms"
 import { createAdminSupabaseClient, isSupabaseAdminConfigured } from "@/services/supabase/admin"
 
 export const runtime = "nodejs"
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
     })
     if (error) return failure(503, "SAVE_UNAVAILABLE", "Could not record attendance. Retry with the same request ID.")
     if (!data || typeof data.ok !== "boolean") return failure(503, "SAVE_UNAVAILABLE", "Could not confirm attendance. Retry with the same request ID.")
+    if (data.ok && data.action === "time_in") await deliverArrivalSms(data.attendanceId)
     return reply(data, data.ok ? 200 : data.code === "INVALID_CARD" ? 422 : 409)
   } catch {
     return failure(503, "SAVE_UNAVAILABLE", "Could not record attendance. Retry with the same request ID.")

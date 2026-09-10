@@ -1,11 +1,18 @@
-# SMS service
+# Guardian arrival SMS (P06)
 
-Send the documented guardian arrival message after attendance is recorded and
-persist its Pending/Sent/Failed result and sent time. Sending remains pending.
-SMS failure must not undo attendance, and duplicate requests must not send
-duplicate arrival messages.
+PhilSMS delivery is implemented in `philsms.ts`. See
+[PHILSMS-SETUP.md](../../../PHILSMS-SETUP.md) for configuration, migration order,
+status meanings and live testing.
 
-Provider selection and any delivery callback/retry mechanism are implementation
-choices, not separate release features. Do not mandate a provider, offline queue,
-or retry console. Preserve existing SMS read permissions until report visibility
-is explicitly defined under P06/P08 in the scope audit.
+After a committed Time In (including an eligible retry), the route awaits the
+sender. A service-role-only SQL claim guarantees one send attempt per arrival.
+Only new P04 notifications within ten minutes are eligible; historical records
+are preserved and never automatically sent. Time Out and teacher confirmations
+do not invoke sending. Guardian contact and campus message come from the saved
+arrival snapshot, not caller input.
+
+Sent means PhilSMS API acceptance, not confirmed handset delivery. Failed means
+invalid recipient or explicit rejection. Network/response uncertainty stays
+Pending with an attempt marker and is not automatically retried. A crash or
+completion-save failure also retains its claim; inspect provider logs before any
+manual reconciliation. No provider calls are made in automated tests.

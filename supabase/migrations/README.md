@@ -1,5 +1,13 @@
 # Database migrations
 
+## P06 PhilSMS rollout
+
+Apply `202609150001_philsms_arrival_delivery.sql`, then run
+`../verify_philsms_delivery.sql` for five PASS rows. Follow
+[PHILSMS-SETUP.md](../../PHILSMS-SETUP.md) before enabling the sender.
+Historical SMS remains ineligible for automatic sending; rollback only revokes
+the sender functions and preserves data.
+
 ## P04 tap processing and teacher Late rollout
 
 Apply `202609140001_rfid_tap_processing.sql`, then

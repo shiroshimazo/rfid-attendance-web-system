@@ -291,9 +291,9 @@ confirmed successful assignment and completion of the requested P03 checks.
 
 **Current status: DONE for software on 2026-09-06.** Local checks passed, and the user confirmed hosted migration execution, assignment, and completion of the requested P03 tests with authorized temporary UIDs. Hosted results are user-reported; automated SQL tests use PGlite, and local browser tests use fixture students and mocked saves. Multi-session concurrency and physical UID/reader confirmation were not verified. Physical confirmation remains a P11 integration check. P04 will reuse the shared UID contract; no attendance receiver, enrollment screen, or hardware feature was added here.
 
-### P04 — Implement the actual RFID time-in/time-out path (P1)
+### P04 — Implement the actual RFID time-in/time-out path (P1) — DONE (software; temporary UIDs)
 
-**Implementation complete; hosted migration/configuration/testing pending.** The user resolved the school rules: reject the third tap; start a new Asia/Manila day without filling yesterday's missing times; prefer the active all-campus schedule over a matching campus-specific row. The user also authorized teacher-confirmed subject Late. These decisions are recorded in FR and LATE.
+**Implementation and user-reported app acceptance complete on 2026-09-09.** The user resolved the school rules: reject the third tap; start a new Asia/Manila day without filling yesterday's missing times; prefer the active all-campus schedule over a matching campus-specific row. The user also authorized teacher-confirmed subject Late. These decisions are recorded in FR and LATE.
 
 - [x] Authenticated `POST /api/rfid/tap` validates a UUID request ID and shared normalized UID. It accepts no device-supplied student, date/time or status. The separate device secret is server-configured; Supabase service-role credentials remain on the server.
 - [x] Migration `202609140001_rfid_tap_processing.sql` adds a service-role-only atomic writer and private RLS-protected retry receipts. It records first Time In, second Time Out, rejects a third tap and retains the first Present/Late result. Successful retries, including across midnight, return the stored response without recording another tap.
@@ -301,8 +301,8 @@ confirmed successful assignment and completion of the requested P03 checks.
 - [x] One Pending guardian arrival notification is saved atomically with Time In. Departure and retry create no additional notification. **Actual SMS delivery and Sent/Failed handling remain P06; Pending is not Sent.**
 - [x] Existing scheduled subject rosters display **Not confirmed yet** until each assigned teacher confirms Present, Late or Absent. Campus arrival never writes or resets a subject confirmation. `202609140002_teacher_confirmed_late.sql` adds the explicit teacher Late choice, preserving authorization, history and stale-edit checks. Shared summaries and PDF rates count Present + Late as attended.
 - [x] Local verification: **257 tests passed, 0 failed**, targeted ESLint, TypeScript and production build passed. Chromium subject flow passed including Late confirmation. SQL checks cover cutoff seconds, retries, third tap, Manila midnight, all-campus priority, rejected cards/accounts, atomic rollback, permissions and migration reapplication. The read-only installer probe returns seven PASS locally.
-- [ ] Apply both new migrations in order, run `supabase/verify_rfid_tap.sql`, configure `RFID_DEVICE_API_KEY`, restart and test the hosted/local app with assigned temporary UIDs. Use the [P04 rollout instructions](src/app/api/rfid/tap/README.md#install-and-test) and `scripts/test-rfid-tap.ps1`. No hosted writes or SMS sends were performed by the assistant.
-- [ ] Live acceptance: first/retry/second/third tap, one Pending notification, dashboard/history updates and independent teacher Present/Late/Absent. Database tests use PGlite; simultaneous independent PostgreSQL connections and physical reader behavior have not been independently verified. Hardware remains P11.
+- [x] User reported seven PASS installation checks, configured device authentication and supplied successful tap responses with temporary UID 00:00:00:11. Evidence includes replay of attendance #4, next-day Time In for #5, Time Out retaining Late, and a third request returning HTTP 409. The 409 output did not expose the response code/body. No hosted writes or SMS sends were performed by the assistant.
+- [x] User confirmed completion of the remaining app verification: saved times/status, one Pending arrival notification, unconfirmed subject rosters and independent teacher decisions reflected in student history. This is user-reported acceptance, not an independent inspection of hosted data. Database tests use PGlite; simultaneous independent PostgreSQL connections and physical reader behavior remain unverified. Hardware remains P11; actual SMS delivery remains P06.
 
 Optional rollback scripts disable the new writers while retaining all data. Do not run rollback scripts during setup.
 
@@ -380,15 +380,24 @@ Do not mandate a particular scan-log table name, queue system, or additional dev
 
 - [x] Subject-attendance migration applied; six installation checks returned PASS.
 - [x] Requested functional testing completed, including separate subject results and cardless attendance without fabricated RFID evidence.
-- [x] P05 marked DONE following the user's confirmation. P04 software is now implemented with hosted acceptance pending; P06 is the next sender implementation. Physical hardware verification remains P11.
+- [x] P05 marked DONE following the user's confirmation. P04 software and user-reported app acceptance are complete; P06 is the next sender implementation. Physical hardware verification remains P11.
 
 `supabase/rollback_subject_attendance.sql` is optional rollback only: it disables write RPC access without deleting any data. It is **not** a setup step. Full implementation/rollout notes: `src/features/subject-attendance/README.md`.
 
 ### P06 — Implement guardian SMS sending and persisted results (P1)
 
+**Implementation complete; configuration and live acceptance pending.** PhilSMS was selected by the user. The tap route invokes the sender after committed Time In, including eligible retries. Migration `202609150001_philsms_arrival_delivery.sql` adds service-role-only claim/completion functions and tracking fields while preserving every original SMS/attendance field.
+
+- [x] Normalize single Philippine mobile numbers to 639 format; preserve the captured student/campus message; send through the documented Bearer API with plain/Unicode types. Secrets remain server-only and endpoint URLs are restricted to the two PhilSMS hosts described in the setup guide.
+- [x] One durable send attempt per new arrival. No sends for Time Out, third taps, historical messages, duplicate SMS rows or previously claimed attempts. Unclaimed arrival retries are limited to ten minutes; there is no backlog sender.
+- [x] API acceptance becomes Sent with an acceptance timestamp; explicit rejection/invalid recipient becomes Failed. Uncertain outcomes remain Pending for provider-log reconciliation. Claims survive completion-save failures to prevent duplicate sends. SMS failure never rolls back attendance. Sent does not prove handset delivery; automatic delivery-receipt reconciliation is not implemented.
+- [x] Configuration and testing guide: [PHILSMS-SETUP.md](PHILSMS-SETUP.md). Read-only installer: `supabase/verify_philsms_delivery.sql` (five checks). No real SMS was sent and no account settings/secrets were changed by the assistant.
+- [x] Verification: all 268 automated tests passed; targeted ESLint and production build passed. Tests cover request formats, invalid contacts, provider acceptance/rejection/uncertainty, no send when disabled/already claimed, duplicate protection, historical field preservation, rollback and RPC permissions. Provider calls are mocked; actual network delivery and simultaneous independent PostgreSQL sessions still require live verification.
+- [ ] Live acceptance: configure sender/token/credits and confirm five PASS checks; verify controlled Smart/Globe/DITO recipients, correct campus/student identity, status persistence, no duplicate on replay and attendance preservation on rejection. P06 is not fully DONE until these pass.
+
 **Basis:** FR SMS; ARCH Time-In; OVERVIEW arrival notification; STUDENT SMS status.
 
-**Evidence:** P04 now inserts one Pending arrival notification atomically with Time In. Student read/display services exist, but `src/services/sms/` and `src/features/sms/` still contain only READMEs; no provider sender exists. Continue from these Pending arrival records without generating duplicate messages.
+**Original evidence:** P04 inserted Pending arrival records, but no provider sender existed. The implementation above now supplies PhilSMS sending for new arrivals; existing student and report displays remain in use.
 
 **Proceed:** after successful arrival recording, retrieve the guardian contact, send the documented student/campus arrival message, and persist Pending/Sent/Failed plus the sent time. Validate the contact format required by the selected provider. Keep attendance recorded if sending fails, and avoid duplicate messages for a retried arrival transaction.
 
@@ -550,3 +559,7 @@ No production build, hosted database/RLS test, migration deployment, browser PDF
 ## 10. Instruction to use with future coding requests
 
 > Use `RFID-DOCS-SCOPE-AUDIT.md` and the current requirements under `rfid-docs/rfid-docs` to constrain this change. Implement only the named task. Cite its requirement and acceptance condition before editing. Excused is excluded from the current feature scope. Keep the documented Late rule and admin schedules. Future improvements and generated roadmaps do not authorize new features. Preserve existing records and working role restrictions. If a school rule is missing, identify that specific decision and continue only the independent work; do not invent the rule or build a new module around it. Finish the relevant checks and stop when the task's acceptance conditions pass.
+
+### Profile review summary contact clarification - DONE
+
+Student Review Summary now shows separate Student contact and Guardian contact values from the unsaved form. Previously the ambiguous Contact row showed only the guardian number. Both student and teacher summaries already subscribe to form changes. Chromium verification confirms edited names and phone numbers appear before saving, with no automatic saves during step navigation. No database migration required.

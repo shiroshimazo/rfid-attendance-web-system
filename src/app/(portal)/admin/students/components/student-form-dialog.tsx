@@ -847,11 +847,15 @@ export function StudentFormDialog({
                         value={summary.email || "(not set)"}
                       />
                       <SummaryRow
+                        label="Student contact"
+                        value={summary.contactNumber || "(not set)"}
+                      />
+                      <SummaryRow
                         label="Guardian"
                         value={summary.parentName || "(not set)"}
                       />
                       <SummaryRow
-                        label="Contact"
+                        label="Guardian contact"
                         value={summary.parentContactNumber || "(not set)"}
                       />
                       <SummaryRow label="Program" value={programLabel} />

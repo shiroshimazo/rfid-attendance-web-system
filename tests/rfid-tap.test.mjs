@@ -192,4 +192,56 @@ test("read-only rollout probe returns seven PASS checks", async () => {
   assert.equal(checks.length, 7)
   assert(checks.every(row => row.result === "PASS"), JSON.stringify(checks))
   assert.equal((await rows("select * from public.attendance_records")).length, 0)
+  const smsChecks = await rows(await readFile(new URL("../supabase/verify_philsms_delivery.sql", import.meta.url), "utf8"))
+  assert.equal(smsChecks.length, 5)
+  assert(smsChecks.every(row => row.result === "PASS"), JSON.stringify(smsChecks))
+})
+
+test("SMS claim is one attempt per new arrival and completion cannot be overwritten", async () => {
+  const result = await tap()
+  const attempt = randomUUID()
+  const claim = async token => (await rows('select public.claim_arrival_sms($1,$2) as result',[result.attendanceId,token]))[0].result
+  await db.exec('set local role service_role')
+  const sms = await claim(attempt)
+  assert(sms.id)
+  assert.equal(await claim(randomUUID()),null)
+  await rows("select public.finish_arrival_sms($1,$2,'accepted','provider-id')",[sms.id,attempt])
+  await rows("select public.finish_arrival_sms($1,$2,'rejected',null)",[sms.id,attempt])
+  await db.exec('reset role')
+  const saved=(await rows('select * from public.sms_notifications'))[0]
+  assert.equal(saved.sms_status,'Sent'); assert(saved.sent_at); assert.equal(saved.provider_message_id,'provider-id')
+  assert.equal((await rows('select * from public.attendance_records')).length,1)
+})
+
+test("SMS skips historical, expired and duplicate notifications; portal roles cannot dispatch", async () => {
+  const result=await tap()
+  const claim=async()=> (await rows('select public.claim_arrival_sms($1,$2) as result',[result.attendanceId,randomUUID()]))[0].result
+  await rows('update public.sms_notifications set delivery_enabled=false')
+  assert.equal(await claim(),null)
+  await rows("update public.sms_notifications set delivery_enabled=true,created_at=now()-interval '11 minutes'")
+  assert.equal(await claim(),null)
+  await rows('update public.sms_notifications set created_at=now()')
+  await rows('insert into public.sms_notifications(attendance_id,student_id,parent_contact_number,message) select attendance_id,student_id,parent_contact_number,message from public.sms_notifications')
+  assert.equal(await claim(),null)
+  for(const role of ['authenticated','anon']) {
+    await db.exec(`set local role ${role}`); await rejected(claim)
+    await rejected(()=>rows("select public.finish_arrival_sms(1,$1,'accepted',null)",[randomUUID()]))
+    await db.exec('reset role')
+  }
+})
+
+test("unknown SMS outcomes stay Pending and cannot be claimed again; rollback preserves evidence", async () => {
+  const result=await tap(); const attempt=randomUUID()
+  const sms=(await rows('select public.claim_arrival_sms($1,$2) as result',[result.attendanceId,attempt]))[0].result
+  await rows("select public.finish_arrival_sms($1,$2,'unknown',null)",[sms.id,attempt])
+  assert.equal((await rows('select sms_status from public.sms_notifications'))[0].sms_status,'Pending')
+  assert.equal((await rows('select public.claim_arrival_sms($1,$2) as result',[result.attendanceId,randomUUID()]))[0].result,null)
+  const before=await rows('select * from public.sms_notifications')
+  const sql=await readFile(new URL('../supabase/migrations/202609150001_philsms_arrival_delivery.sql',import.meta.url),'utf8')
+  await db.exec(sql.replace(/^begin;$/m,'').replace(/^commit;$/m,''))
+  await db.exec(await readFile(new URL('../supabase/rollback_philsms_delivery.sql',import.meta.url),'utf8'))
+  await db.exec('set local role service_role')
+  await rejected(()=>rows('select public.claim_arrival_sms($1,$2)',[result.attendanceId,randomUUID()]))
+  await db.exec('reset role')
+  assert.deepEqual(await rows('select * from public.sms_notifications'),before)
 })

@@ -55,7 +55,7 @@ serializes the student's writes, updates existing `attendance_records`, stores a
 retry receipt in `rfid_tap_requests`, and inserts one **Pending** arrival SMS in
 `sms_notifications`. The guardian number, student name and campus are captured
 at arrival. Time Out and retries create no extra SMS. A Pending row is not proof
-of delivery: **P06 must implement the provider sender and Sent/Failed updates**.
+of delivery: **P06 now supplies the PhilSMS sender and Sent/Failed updates; configure it using PHILSMS-SETUP.md**.
 
 The receipt table is private, RLS-enabled and has no portal access. The RPC is
 unavailable to anonymous or signed-in portal roles. It uses the database clock by

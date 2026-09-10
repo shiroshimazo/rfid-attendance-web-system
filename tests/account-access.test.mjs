@@ -102,6 +102,12 @@ before(async () => {
   }
   await db.exec("rollback; reset role")
   originalData = await snapshot()
+  // P06 adds tracking fields without changing any original value. Old SMS must
+  // explicitly remain ineligible, with no fabricated delivery attempt/result.
+  originalData.sms_notifications = originalData.sms_notifications.map(row => ({ ...row,
+    delivery_enabled: false, delivery_attempt: null, delivery_started_at: null,
+    delivery_result: null, provider_message_id: null,
+  }))
   migration = await readFile(new URL(migrationName, directory), "utf8")
   await db.exec(migration)
   // Later migrations must follow the legacy fixture/baseline setup, preserving

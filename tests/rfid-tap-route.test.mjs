@@ -12,7 +12,9 @@ const requestId = "10000000-0000-4000-8000-000000000001"
 function setup({ configured = true, error = null, data = { ok: true, action: "time_in" }, throws = false } = {}) {
   process.env.RFID_DEVICE_API_KEY = key
   const calls = []
+  const smsCalls = []
   const load = createSourceLoader({
+    "@/services/sms/philsms": { deliverArrivalSms: async id => { smsCalls.push(id) } },
     "@/services/supabase/admin": {
       isSupabaseAdminConfigured: () => configured,
       createAdminSupabaseClient: () => ({ rpc: async (...args) => {
@@ -27,7 +29,7 @@ function setup({ configured = true, error = null, data = { ok: true, action: "ti
     method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${key}`, ...headers },
     body: typeof body === "string" ? body : JSON.stringify(body),
   }))
-  return { calls, send }
+  return { calls, send, smsCalls }
 }
 test("only an authenticated device reaches the service-role writer", async () => {
   const { calls, send } = setup()
@@ -81,5 +83,11 @@ test("failures never expose credentials/database errors or claim a successful ta
     assert.equal(result.ok, false)
     assert.match(result.message, /same request ID/)
     assert(!JSON.stringify(result).includes("private"))
+  }
+})
+
+test("only successful arrivals (including safe retries) invoke the SMS dispatcher", async () => {
+  for (const [data, expected] of [[{ok:true,action:"time_in",attendanceId:5},[5]], [{ok:true,action:"time_in",attendanceId:5,replayed:true},[5]], [{ok:true,action:"time_out",attendanceId:5},[]], [{ok:false,code:"DAY_COMPLETE"},[]]]) {
+    const x=setup({data}); await x.send(); assert.deepEqual(x.smsCalls,expected)
   }
 })

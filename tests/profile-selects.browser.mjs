@@ -103,11 +103,25 @@ try {
     if(kind==='teacher') {
       await page.getByRole('button',{name:'Open teacher',exact:true}).click()
     }
+    await page.getByRole('button',{name:/^Step 1:/}).click()
+    await page.getByRole('textbox',{name:'Full name',exact:true}).fill(`Updated ${kind}`)
+    await page.getByRole('textbox',{name:kind==='student'?'Contact number':'Phone number',exact:true}).fill('+639171234567')
     await page.getByRole('button',{name:/^Step 2:/}).click()
+    if(kind==='student') {
+      await page.getByRole('textbox',{name:'Parent or guardian contact number',exact:true}).fill('+639201234567')
+    }
     await page.getByRole('button',{name:'Next',exact:true}).click()
     await page.waitForFunction(()=>document.querySelector('[aria-current="step"]')?.getAttribute('aria-label').startsWith('Step 3:'))
     await page.getByRole('button',{name:'Next',exact:true}).click()
     await page.getByRole('button',{name:'Save changes',exact:true}).waitFor()
+    const summary = page.locator('dl')
+    await summary.getByText(`Updated ${kind}`,{exact:true}).waitFor()
+    await summary.getByText('+639171234567',{exact:true}).waitFor()
+    if(kind==='student') {
+      await summary.getByText('Student contact',{exact:true}).waitFor()
+      await summary.getByText('Guardian contact',{exact:true}).waitFor()
+      await summary.getByText('+639201234567',{exact:true}).waitFor()
+    }
     assert.equal(await page.getByRole('button',{name:/^Step 4:/}).getAttribute('aria-current'),'step')
     assert.equal(await page.evaluate(()=>window.saveCount||0),kind==='student'?0:1)
     await page.locator('form').evaluate(form=>form.requestSubmit())

@@ -1,9 +1,8 @@
 # SMS
 
-Guardian arrival notifications and the documented Pending, Sent, and Failed
-states, linked to attendance records and their sent times. Sending remains to be
-implemented; current display support is not proof of delivery.
+P06 uses the existing guardian arrival messages and Pending/Sent/Failed displays.
+The sender is `src/services/sms/philsms.ts`; installation and acceptance are in
+`PHILSMS-SETUP.md`. Sent means provider API acceptance, not handset delivery.
 
-Keep student status/history and authorized report content. A retry console,
-general audit subsystem, and broader teacher access to guardian messages or
-contact numbers are outside the current release scope.
+Student status/history and admin report permissions remain unchanged. There is
+no new sender screen, manual resend console or guardian-account feature.
