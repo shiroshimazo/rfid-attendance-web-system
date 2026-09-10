@@ -183,6 +183,33 @@ async function installOverlapRule() {
   await db.exec(sql.replace(/^begin;$/m, "").replace(/^commit;$/m, ""))
 }
 
+test("Regane correction preserves times and history, rejects overlaps, and supports rollback", async () => {
+  await installOverlapRule()
+  await rows("update public.teachers set full_name='Regane Macahibag' where id=$1",[teacher])
+  const correctCourse=(await rows("select id from public.courses where course_code='CCS1201' and program_id=$1",[program]))[0].id
+  await rows('update public.teacher_assignments set course_id=$1 where id=$2',[correctCourse,assignmentA])
+  const a=await schedule()
+  await identity('teacher');await confirm(a)
+  await db.exec('reset role')
+  const history=await rows('select * from public.subject_attendance')
+  await rows("update public.teacher_assignments set section='21003',campus='MV Campus' where id=$1",[assignmentA])
+  const original=await rows('select * from public.subject_schedules where id=$1',[a])
+  const sql=await readFile(new URL('../supabase/correct_regane_subject_schedules.sql',import.meta.url),'utf8')
+  const run=()=>db.exec(sql.replace(/^begin;$/m,'').replace(/^commit;$/m,''))
+  await run();await run()
+  const corrected=(await rows('select * from public.subject_schedules where id=$1',[a]))[0]
+  assert.deepEqual(corrected,{...original[0],section:'21003',campus:'MV Campus'})
+  assert.deepEqual(await rows('select * from public.subject_attendance'),history)
+  const rollback=await readFile(new URL('../supabase/rollback_regane_subject_schedules.sql',import.meta.url),'utf8')
+  await db.exec(rollback.replace(/^begin;$/m,'').replace(/^commit;$/m,''))
+  assert.deepEqual(await rows('select * from public.subject_schedules where id=$1',[a]),original)
+  await rows("update public.teacher_assignments set section='21003',campus='MV Campus' where id=$1",[assignmentB])
+  await schedule(assignmentB)
+  await db.exec('reset role')
+  await rejected(run,/exclusion constraint/)
+  assert.deepEqual(await rows('select * from public.subject_schedules where id=$1',[a]),original)
+})
+
 test("teacher Late confirmation is authorized per subject and preserves RFID evidence", async () => {
   const sql = await readFile(new URL("../supabase/migrations/202609140002_teacher_confirmed_late.sql", import.meta.url), "utf8")
   const install = () => db.exec(sql.replace(/^begin;$/m, "").replace(/^commit;$/m, ""))
@@ -261,4 +288,65 @@ test("existing conflicts are reported without deleting schedules; installation w
   await identity("admin"); await rows("select public.retire_subject_schedule($1)", [a])
   await installOverlapRule(); await installOverlapRule()
   assert.equal((await rows("select * from public.subject_schedules")).length, 2)
+})
+
+async function installAssignmentSync() {
+  await installOverlapRule()
+  await db.exec('reset role')
+  const sql = await readFile(new URL('../supabase/migrations/202609170001_link_assignment_schedules.sql', import.meta.url), 'utf8')
+  await db.exec(sql.replace(/^begin;$/m, '').replace(/^commit;$/m, ''))
+}
+async function saveAssignment(overrides = {}, assignmentId = assignmentA) {
+  await identity('admin')
+  const profile = (await rows('select * from public.teachers where id=$1', [teacher]))[0]
+  const assignment = (await rows('select * from public.teacher_assignments where id=$1', [assignmentId]))[0]
+  return rows('select public.save_teacher_profile($1::jsonb,$2::jsonb,null,$3)', [JSON.stringify({...profile, full_name:'Updated Teacher'}), JSON.stringify([{...assignment, ...overrides}]), teacher])
+}
+test('assignment sync keeps IDs, updates active placement and preserves confirmation history', async () => {
+  const a = await schedule()
+  const archived = await schedule(assignmentA, '10:00', '11:00')
+  const other = await schedule(assignmentB, '12:00', '13:00')
+  await identity('teacher'); await confirm(a)
+  await db.exec('reset role')
+  const history = await rows('select * from public.subject_attendance order by id')
+  await rows("update public.subject_schedules set status='archived' where id=$1", [archived])
+  await installAssignmentSync(); await installAssignmentSync()
+  const before = await rows('select * from public.subject_schedules order by id')
+  assert.equal(before.find(s=>s.id===a).assignment_id, assignmentA)
+  await saveAssignment({section:'21003',campus:'MV Campus',course_id:courseB})
+  const after = await rows('select * from public.subject_schedules order by id')
+  assert.deepEqual(after.find(s=>s.id===a), {...before.find(s=>s.id===a),section:'21003',campus:'MV Campus',course_id:courseB})
+  for (const id of [archived, other]) assert.deepEqual(after.find(s=>s.id===id), before.find(s=>s.id===id))
+  assert.deepEqual(await rows('select * from public.subject_attendance order by id'),history)
+  const newer = await schedule(assignmentA, '14:00', '15:00')
+  assert.equal((await rows('select assignment_id from public.subject_schedules where id=$1',[newer]))[0].assignment_id,assignmentA)
+  assert.deepEqual(await dailyEvidence(),legacy)
+})
+test('assignment schedule conflict cancels the entire profile save and foreign IDs are rejected', async () => {
+  await db.exec('reset role')
+  await rows("update public.teacher_assignments set campus='MV Campus' where id=$1",[assignmentB])
+  await schedule(); await schedule(assignmentB)
+  await installAssignmentSync()
+  const before={}
+  for(const table of ['teachers','teacher_assignments','subject_schedules']) before[table]=await rows(`select * from public.${table} order by id`)
+  await rejected(()=>saveAssignment({campus:'MV Campus'}),/occupied subject schedule/)
+  await rejected(()=>saveAssignment({},assignmentB),/Reload the teacher form/)
+  await db.exec('reset role')
+  for(const table of Object.keys(before)) assert.deepEqual(await rows(`select * from public.${table} order by id`),before[table])
+})
+test('removing an assignment retires its schedules without deleting confirmations', async () => {
+  const a=await schedule()
+  await identity('teacher');await confirm(a)
+  await installAssignmentSync()
+  const history=await rows('select * from public.subject_attendance')
+  const extra=(await rows("insert into public.teacher_assignments(teacher_id,program_id,course_id,year_level,section,campus) values($1,$2,$3,'2nd Year','21003','MV Campus') returning id",[teacher,program,courseB]))[0].id
+  await saveAssignment({},extra)
+  const retired=(await rows('select * from public.subject_schedules where id=$1',[a]))[0]
+  assert.equal(retired.status,'archived');assert.equal(retired.assignment_id,null)
+  assert.deepEqual(await rows('select * from public.subject_attendance'),history)
+})
+test('old clients can save unchanged assignments but cannot silently reassign linked schedules', async () => {
+  await schedule();await installAssignmentSync()
+  await saveAssignment({id:null})
+  await rejected(()=>saveAssignment({id:null,campus:'MV Campus'}),/Reload the teacher form/)
 })

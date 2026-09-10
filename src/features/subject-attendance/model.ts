@@ -1,3 +1,20 @@
+import type { AccountStatus } from "@/features/teachers/directory"
+
+/** `day_of_week` is stored 0-6 with Sunday first, matching Postgres `dow`. */
+export const weekdays = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const
+
+export function weekdayLabel(day: number) {
+  return weekdays[day] ?? "—"
+}
+
 export interface SubjectAttendanceRow {
   id: number
   schedule_id: number
@@ -29,7 +46,7 @@ export interface SubjectSchedule {
   day_of_week: number
   time_start: string
   time_end: string
-  status: string
+  status: AccountStatus
   course: { course_code: string; course_name: string } | null
   teacher: { full_name: string } | null
 }

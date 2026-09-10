@@ -72,6 +72,7 @@ export function formatTimestamp(value: string | null | undefined) {
   if (Number.isNaN(parsed.getTime())) return value
 
   return parsed.toLocaleString("en-US", {
+    timeZone: "Asia/Manila",
     year: "numeric",
     month: "short",
     day: "numeric",

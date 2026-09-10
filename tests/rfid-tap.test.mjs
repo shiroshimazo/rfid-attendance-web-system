@@ -188,6 +188,11 @@ test("migration reapplication and rollback preserve attendance and retry receipt
 })
 
 test("read-only rollout probe returns seven PASS checks", async () => {
+  const realtimeSql = await readFile(new URL('../supabase/migrations/202609160001_complete_realtime_publication.sql', import.meta.url),'utf8')
+  await db.exec(realtimeSql.replace(/^begin;$/m,'').replace(/^commit;$/m,''))
+  const realtimeChecks = await rows(await readFile(new URL('../supabase/verify_realtime.sql', import.meta.url),'utf8'))
+  assert.equal(realtimeChecks.length,11)
+  assert(realtimeChecks.every(row=>row.result==='PASS'),JSON.stringify(realtimeChecks))
   const checks = await rows(await readFile(new URL("../supabase/verify_rfid_tap.sql", import.meta.url), "utf8"))
   assert.equal(checks.length, 7)
   assert(checks.every(row => row.result === "PASS"), JSON.stringify(checks))

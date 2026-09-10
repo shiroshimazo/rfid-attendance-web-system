@@ -407,6 +407,16 @@ FR says SMS follows successful attendance recording broadly; ARCH explicitly pla
 
 ### P07 — Finish Realtime behavior and the remaining time-zone inconsistencies (P1)
 
+**Regane schedule placement correction prepared; SQL execution pending:** user confirmed all active BSIT 2nd Year CCS1201 schedules for Regane Macahibag belong to 21003, MV Campus, retaining days/times. `supabase/correct_regane_subject_schedules.sql` requires the matching active teaching assignment, checks unique teacher identity and the overlap guard, backs up changed placement, and updates only these active schedules in one transaction. Existing confirmation snapshots remain intact. Optional `supabase/rollback_regane_subject_schedules.sql` restores backed-up placement subject to overlap validation. All 22 subject-attendance tests passed, including correction reapplication, rollback and rejection without partial changes. This corrects stored schedule data; it does not introduce automatic reassignment of other teachers' schedules when management assignments change.
+
+**Implemented; hosted publication and user acceptance pending.** The shared refresh timer now batches events without restarting its deadline. Successful subscription/reconnection, browser online and tab return trigger refresh. A visible-page 30-second check recovers disconnected views and detects Manila date rollover. Cleanup cancels timers/listeners/channels, and table-list identity no longer causes repeated subscriptions on refresh.
+
+- [x] Added teacher, assignment, class schedule and academic catalog dependencies to existing live page subscriptions, including Admin Schedules. Additive migration `202609160001_complete_realtime_publication.sql` publishes the required eleven tables without changing RLS or data.
+- [x] Shared `formatTimestamp` explicitly uses Asia/Manila. Existing date-only and local tap-time rendering remains unchanged.
+- [x] Focused tests passed for continuous events, initial/reconnection refresh, online/tab return, disconnected recovery, date rollover, cleanup, timestamp boundaries and migration reapplication. Read-only publication/RLS probe returns eleven PASS locally. Targeted ESLint and TypeScript checks passed.
+- [x] User reported all eleven `supabase/verify_realtime.sql` installation checks PASS on 2026-09-10 after the migration instructions. This records user-reported installation verification.
+- [ ] Perform authorized-role live updates and reconnect checks in [P07-REALTIME-SETUP.md](P07-REALTIME-SETUP.md). Hosted subscription health has not been independently inspected. No new screens or attendance rules were added.
+
 **Basis:** FR Real-Time Updates; LATE Rule 7.
 
 **Evidence:** `LiveRefresh` exists and is mounted across the portal pages. Its timer resets on every event and subscription status is ignored. The publication migration lists attendance, RFID cards, SMS, and students; the schedules page subscribes to `class_schedules`, which that migration does not publish. Teacher management uses defaults that omit teacher/assignment changes.
@@ -563,3 +573,13 @@ No production build, hosted database/RLS test, migration deployment, browser PDF
 ### Profile review summary contact clarification - DONE
 
 Student Review Summary now shows separate Student contact and Guardian contact values from the unsaved form. Previously the ambiguous Contact row showed only the guardian number. Both student and teacher summaries already subscribe to form changes. Chromium verification confirms edited names and phone numbers appear before saving, with no automatic saves during step navigation. No database migration required.
+
+Regane correction clarification: user confirmed MV Campus as the intended target. The previous Main Campus script failed its assignment precondition and made no schedule changes. Correction and optional rollback now target 21003 / MV Campus; execution remains pending.
+
+### Automatic assignment-to-schedule updates (user requested)
+
+- [x] Regane's correction to 21003 / MV Campus confirmed working by the user; supersedes earlier execution-pending notes.
+- [x] Preserve assignment IDs in the edit form and atomic save; update linked active schedule subject/placement on Save changes. Reject overlaps atomically, preserve weekday/time and confirmation snapshots, and archive schedules when their assignment is removed.
+- [x] Add exact-match backfill and read-only verification; no guessed mapping of unmatched schedules.
+- [ ] Apply `202609170001_link_assignment_schedules.sql`, run the verification and confirm automatic changes in the hosted app. See [ASSIGNMENT-SCHEDULE-SYNC.md](ASSIGNMENT-SCHEDULE-SYNC.md).
+- Validation: all 276 automated tests PASS; TypeScript and targeted teacher form/schema/action lint PASS. Hosted execution remains pending.

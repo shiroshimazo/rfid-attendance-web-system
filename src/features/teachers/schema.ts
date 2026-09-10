@@ -39,6 +39,7 @@ const teacherFields = {
 }
 
 const assignmentFields = {
+  assignmentId: z.number().int().positive().optional(),
   // Explicit placement prevents NULL assignment dimensions granting wildcard access.
   yearLevel: requiredText(40, "Year level is required").refine(
     (value): boolean => value === PILOT_YEAR_LEVEL,

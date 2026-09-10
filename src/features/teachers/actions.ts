@@ -35,6 +35,7 @@ function describeError(error: { message: string; code?: string }) {
 }
 
 type AssignmentValues = {
+  assignmentId?: number
   programId: number
   courseId: number
   yearLevel: string
@@ -48,6 +49,7 @@ function assignmentRows(assignments: AssignmentValues[]) {
 
   return assignments.flatMap((assignment) => {
     const row = {
+      ...(assignment.assignmentId ? { id: assignment.assignmentId } : {}),
       program_id: assignment.programId,
       course_id: assignment.courseId,
       year_level: assignment.yearLevel,
@@ -193,6 +195,7 @@ export async function updateTeacherAction(
 
   const emailResult = admin ? await changeManagedLoginEmail(admin, existing.user_id, values.email) : null
   revalidatePath(TEACHERS_PATH)
+  revalidatePath("/admin/schedules")
   if (emailResult) return emailResult
 
   return success(`${values.fullName} was updated.`)

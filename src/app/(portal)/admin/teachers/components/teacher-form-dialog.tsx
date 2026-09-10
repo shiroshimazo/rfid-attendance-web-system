@@ -162,6 +162,7 @@ function defaultValues(teacher?: TeacherView | null): TeacherDialogValues {
     assignments:
       teacher.assignments.length > 0
         ? teacher.assignments.map((assignment) => ({
+            assignmentId: assignment.id,
             programId: String(assignment.programId),
             courseId: String(assignment.courseId),
             yearLevel: assignment.yearLevel || PILOT_YEAR_LEVEL,

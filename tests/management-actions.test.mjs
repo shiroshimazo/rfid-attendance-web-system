@@ -205,3 +205,12 @@ test("schedule status toggle also uses one serialized RPC", async () => {
   assert.equal((await actions.setScheduleStatusAction({ programId: 1, yearLevel: "2nd Year", section: "21001", campus: null, status: "inactive" })).ok, true)
   assert.equal(f.calls.find(call => call[0] === "rpc")[1], "set_schedule_week_status")
 })
+
+test('teacher edit forwards stable assignment identity and refreshes schedules', async () => {
+  const f=fixture('teacher')
+  const result=await f.update({...inputs.teacher,assignments:[{...inputs.teacher.assignments[0],assignmentId:42}]})
+  assert.equal(result.ok,true)
+  const payload=f.calls.find(c=>c[0]==='rpc')[2]
+  assert.equal(payload.p_assignments[0].id,42)
+  assert(f.calls.some(c=>c[0]==='revalidate' && c[1]==='/admin/schedules'))
+})
