@@ -610,3 +610,11 @@ UI review scope: new student history component only; React/Next.js, existing Tai
 | MEDIUM | New history component source | Misencoded punctuation found in first screenshot | UTF-8 source verified in rerender | Restores readable labels and separators |
 
 Considered but rejected: sketch fonts would conflict with the app's typography; an Unconfirmed filter would imply rows the confirmation-only dataset does not contain; export/bulk actions are outside selected layout 1a. Verdict: approve local implementation; live-account visual check and exhaustive keyboard/screen-reader verification remain unverified.
+
+### Dashboard subject summary removal — DONE
+
+User requested removal of the Subject Attendance summary card from all three dashboards. Removed only the admin, teacher and student dashboard panel mounts and unused imports. Subject attendance remains available on the existing attendance pages; no database or attendance rules changed.
+
+### Teacher Reports subject table — DONE
+
+Applied the existing layout 1a component to Teacher Reports, immediately after Attendance by Section and before Recent Attendance Logs. Replaced the earlier plain subject table rather than duplicating it. Uses the existing teacher-authorized subject records scoped to the report date range. Search, filters, sorting and pagination are reused. TypeScript and targeted lint passed; live app visual verification remains pending.

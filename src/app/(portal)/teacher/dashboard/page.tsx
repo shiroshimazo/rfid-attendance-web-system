@@ -1,4 +1,3 @@
-import { SubjectHistoryPanel } from "@/features/subject-attendance/server-panels"
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import { format, parseISO } from "date-fns"
@@ -53,7 +52,6 @@ async function DashboardContent() {
         </div>
       </div>
 
-      <SubjectHistoryPanel from={data.today} to={data.today} summaryOnly />
       <h2 className="text-lg font-semibold">Daily RFID evidence (separate from subject attendance)</h2>
 
       <KpiCards data={data} />
