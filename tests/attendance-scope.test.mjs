@@ -117,3 +117,18 @@ test("student history retains legacy rows and SMS without treating them as atten
   assert.doesNotMatch(cardHtml, /second tap/)
   assert.equal(legacy.attendance_status, "Excused")
 })
+
+test('admin attendance rows expose their actual program with an honest missing-program label', () => {
+  const build=load('src/features/attendance/dashboard.ts').buildAdminDashboardData
+  const data=build({...snapshot,students:[students[0],{...students[1],program:null}]},date)
+  assert.deepEqual(data.students.map(row=>row.programCode),['BSIT','Unassigned'])
+})
+
+test('teacher daily history honors the requested past date and student search', () => {
+  const {parseAttendancePanelQuery,buildTeacherAttendancePanelData}=load('src/features/attendance/teacher-attendance.ts')
+  const query=parseAttendancePanelQuery({date,search:'S-2'})
+  const data=buildTeacherAttendancePanelData({...snapshot,attendance:[...attendance,{...attendance[1],attendance_date:'2026-09-05',time_in:'10:00:00'}]},query)
+  assert.equal(data.date,date)
+  assert.deepEqual(data.rows.map(row=>row.studentId),['S-2'])
+  assert.equal(data.rows[0].timeIn,'06:16:00')
+})

@@ -64,6 +64,7 @@ export interface StudentAttendanceRow {
   id: number
   studentId: string
   name: string
+  programCode: string
   yearLevel: string
   section: string
   status: AttendanceRowStatus
@@ -351,6 +352,7 @@ export function buildAdminDashboardData(
         id: student.id,
         studentId: student.student_id,
         name: student.full_name,
+        programCode: student.program?.program_code ?? "Unassigned",
         yearLevel: student.year_level,
         section: student.section,
         status: record ? recordStatus(record.attendance_status) : "NoRecord",

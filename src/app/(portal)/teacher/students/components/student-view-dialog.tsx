@@ -104,9 +104,13 @@ export function StudentViewDialog({
                   href={`/teacher/attendance?search=${encodeURIComponent(student.studentId)}`}
                 >
                   <History aria-hidden />
-                  View attendance history
+                  View daily RFID history
                 </Link>
               </Button>
+              <p className="text-xs text-muted-foreground">
+                Opens attendance filtered by this student ID. Choose a past date
+                to view earlier RFID records.
+              </p>
             </div>
           </>
         ) : null}

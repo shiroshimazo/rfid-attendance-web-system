@@ -143,6 +143,7 @@ export function StudentAttendanceTable({
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead className="px-3">Name</TableHead>
+                  <TableHead className="px-3">Program</TableHead>
                   <TableHead className="hidden px-3 md:table-cell">
                     Year Level
                   </TableHead>
@@ -170,6 +171,7 @@ export function StudentAttendanceTable({
                         {student.studentId}
                       </span>
                     </TableCell>
+                    <TableCell className="px-3">{student.programCode}</TableCell>
                     <TableCell className="hidden px-3 md:table-cell">
                       {student.yearLevel}
                     </TableCell>

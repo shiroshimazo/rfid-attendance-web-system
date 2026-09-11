@@ -460,23 +460,32 @@ P08 is complete for the recorded-attendance contract. P05's subject-attendance e
 
 ### P09 — Finish the explicit presentation gaps without adding screens (P2)
 
+**DONE 2026-09-11 — implementation checked locally; app verification confirmed by the user.**
+
+- [x] Admin dashboard attendance projection and table now include the student's actual Program code, with `Unassigned` when unavailable. The column remains visible on small screens.
+- [x] Teacher student dialog now labels the existing link “View daily RFID history” and explains selecting a past date. It retains the student-ID search; subject confirmations remain separate.
+- [x] Verified selected-date/student filtering and existing teacher assignment access restrictions. All 40 focused attendance/dashboard/account-access tests, TypeScript and targeted lint passed. No schema, permission or attendance-rule changes.
+- [x] User confirmed app verification on 2026-09-11: Program in Admin > Dashboard and the teacher student-history flow with a past date. Hosted results are user-reported.
+
 **Basis:** ADMIN Dashboard table; FR Teacher Students/attendance history.
 
-The admin dashboard `StudentAttendanceRow` and table lack the documented Program column, even though other attendance screens have it. Add Program to that existing projection/table.
+Original gap: the admin dashboard `StudentAttendanceRow` and table lacked the documented Program column. This is now included in the existing projection/table.
 
 The teacher student dialog's "View attendance history" link passes a student search to the existing single-date attendance panel. Historical dates are accessible through its date filter, so history is **not entirely absent**. Verify that this route supports the documented task and make its wording/navigation accurately describe the existing behavior. A new student-history module is not automatically required.
 
 **Done when:** documented identity fields are visible and an assigned student's past attendance can be inspected without weakening teacher access restrictions.
 
-### P10 — Align pilot seed, schedule lookup, and backfill assumptions (P1)
+### P10 — Align pilot seed, schedule lookup, and backfill assumptions (P1) — DONE
 
 **Basis:** LATE Scope, Data Model Direction, and Form Locks; DEV preservation/validation.
 
-`supabase/seed.sql` still inserts a 1st Year `BSIT-1A` student/assignment, BSHM, and older example subjects, while current forms lock to the BSIT 2nd Year pilot and migration `202609060001` seeds eight canonical subjects. Align local demonstration fixtures with the current pilot; retain migration/history compatibility for real records.
+Completed 2026-09-11: `supabase/seed.sql` now uses BSIT 2nd Year, section 21001, Main Campus, canonical CCS2105 and temporary UID 00000011. It reuses the migrations' eight-subject catalog instead of adding BSHM or obsolete subjects. Existing rows are not overwritten. The seed no longer invents attendance or successful SMS delivery; explicit tap tests create that evidence. This is a local-development fixture, not a hosted cleanup script.
 
-Schedule migration `202609050001` seeds null-campus rows applying across campuses. The schema also permits campus-specific rows, so both can match. Neither the current v1 rule nor admin screen specification defines precedence. Resolve it before sharing lookup logic between ingestion and `supabase/backfill_late_status.sql`.
+Schedule priority was already resolved in P04 and the Late Attendance Ruling: active all-campus rows take priority; campus-specific rows are fallback. The unchanged tap handler and updated historical candidate report follow that priority, pilot bounds and strictly-after cutoff. No matching schedule means no inferred Late.
 
-The backfill already exists and only changes matching Present rows to Late. It uses current student placement and current schedules; it is not proof of the schedule/placement that existed on the historical date. Do not run it automatically after every schedule edit or describe it as a complete historical recomputation.
+`supabase/backfill_late_status.sql` is now entirely read-only. It lists candidate Present records with original status/update timestamp, recorded campus, current placement, selected schedule and proposed cutoff. Current placement/rules are not historical proof. No historical update has been requested or executed; any later correction requires a reviewed affected-row list, before-images and an explicit update scoped to those records. Never run automatic reclassification after schedule edits.
+
+Validation: all 22 RFID/P10 database tests passed, including actual business-seed execution/reapplication, preservation of edited rows and RFID/SMS history, schedule priority/fallback, exact cutoff, out-of-pilot exclusion and read-only candidate report. Supabase Auth password hashing and a full local Supabase reset were not exercised. No new migration or hosted SQL execution is required. See [P10-PILOT-DATA.md](P10-PILOT-DATA.md).
 
 **Done when:** a fresh pilot fixture matches the form restrictions; schedule lookup has one documented result; any authorized historical backfill has a reviewed affected-row list and preserves unrelated statuses/history. No non-pilot student deletion is needed.
 
@@ -581,5 +590,23 @@ Regane correction clarification: user confirmed MV Campus as the intended target
 - [x] Regane's correction to 21003 / MV Campus confirmed working by the user; supersedes earlier execution-pending notes.
 - [x] Preserve assignment IDs in the edit form and atomic save; update linked active schedule subject/placement on Save changes. Reject overlaps atomically, preserve weekday/time and confirmation snapshots, and archive schedules when their assignment is removed.
 - [x] Add exact-match backfill and read-only verification; no guessed mapping of unmatched schedules.
-- [ ] Apply `202609170001_link_assignment_schedules.sql`, run the verification and confirm automatic changes in the hosted app. See [ASSIGNMENT-SCHEDULE-SYNC.md](ASSIGNMENT-SCHEDULE-SYNC.md).
-- Validation: all 276 automated tests PASS; TypeScript and targeted teacher form/schema/action lint PASS. Hosted execution remains pending.
+- [x] Apply `202609170001_link_assignment_schedules.sql`, run the verification and confirm automatic changes in the hosted app. User reported completion on 2026-09-10. See [ASSIGNMENT-SCHEDULE-SYNC.md](ASSIGNMENT-SCHEDULE-SYNC.md).
+- Validation: all 276 automated tests PASS; TypeScript and targeted teacher form/schema/action lint PASS. Hosted completion is user-reported, not independently inspected.
+
+### Student Subject Attendance UI � wireframe 1a
+
+Implemented 2026-09-11 from the user's selected 1a layout in `Subject Attendance Wireframes.html`.
+
+- [x] Student > My Attendance uses summary cards, search, inclusive date range, subject/result dropdowns, additional campus/teacher filters, removable filter chips, sortable columns and ten-row pagination.
+- [x] Summary totals reflect filtered confirmations; empty results never imply absence. Historical placement stays as recorded. Student access remains enforced by the existing authenticated query/RLS. Dashboard summary and other roles retain their existing views.
+- [x] Verification: 28 focused model/database tests, TypeScript, targeted lint and Chromium fixture checks passed. Browser checks cover search, result/campus filters, clearing, sorting, pagination, popovers, empty states and mobile page overflow. Desktop/mobile light and mobile dark screenshots reviewed; a text-encoding issue was corrected.
+- [ ] User verification in the live Student > My Attendance page. No migration required.
+
+UI review scope: new student history component only; React/Next.js, existing Tailwind/shadcn tokens. Typography: tabular totals, readable secondary metadata, existing fonts. Surfaces: summary cards, structural table border, stacked mobile controls and horizontal table scrolling. Icons: existing Lucide icons with labels. Animation: no custom animation added; inherited popovers used. Performance: client filtering of the existing authorized rows; no additional fetches or dependencies.
+
+| Severity | Location | Before | After | Why |
+| --- | --- | --- | --- | --- |
+| MEDIUM | Student subject history | Dense summary sentence and unfilterable table | Four summary cards, filter toolbar and sorting | Makes specific subject/date results easier to find |
+| MEDIUM | New history component source | Misencoded punctuation found in first screenshot | UTF-8 source verified in rerender | Restores readable labels and separators |
+
+Considered but rejected: sketch fonts would conflict with the app's typography; an Unconfirmed filter would imply rows the confirmation-only dataset does not contain; export/bulk actions are outside selected layout 1a. Verdict: approve local implementation; live-account visual check and exhaustive keyboard/screen-reader verification remain unverified.

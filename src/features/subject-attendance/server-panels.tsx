@@ -3,6 +3,7 @@ import { requireCurrentAccount, requireRole } from "@/features/auth/server"
 import { schoolDateKey } from "@/lib/school-time"
 import { fetchSubjectAttendance, fetchSubjectAssignments, fetchSubjectSchedules, fetchSubjectStudents } from "@/services/attendance/subject-attendance"
 import { SubjectRecords } from "@/features/subject-attendance/records"
+import { StudentSubjectHistory } from "@/features/subject-attendance/student-history"
 import { TeacherSubjectConsole } from "@/features/subject-attendance/teacher-console"
 import { SubjectSchedulesEditor } from "@/features/subject-attendance/schedules-editor"
 
@@ -11,10 +12,11 @@ function errorPanel(error: unknown) {
 }
 
 export async function SubjectHistoryPanel({ from, to, summaryOnly = false }: { from?: string; to?: string; summaryOnly?: boolean }) {
-  await requireCurrentAccount()
+  const account = await requireCurrentAccount()
   let rows
   try { rows = await fetchSubjectAttendance({ from, to }) }
   catch (error) { return errorPanel(error) }
+  if (account.role === "student" && !summaryOnly) return <StudentSubjectHistory rows={rows} />
   return <SubjectRecords rows={rows} summaryOnly={summaryOnly} />
 }
 

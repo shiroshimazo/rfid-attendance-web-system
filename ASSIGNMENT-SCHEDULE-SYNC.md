@@ -1,6 +1,6 @@
 # Automatic teaching-assignment schedule updates
 
-Implemented; hosted migration and app verification pending.
+Done — user reported completing the migration, verification and app test on 2026-09-10. Hosted results were not independently inspected.
 
 1. Run `supabase/migrations/202609170001_link_assignment_schedules.sql` in Supabase SQL Editor after the earlier migrations. This requires the existing schedule overlap constraint.
 2. Run `supabase/verify_assignment_schedule_sync.sql`: expect two PASS rows and no unmatched schedules in the final result. If unmatched rows appear, correct their placement or retire them before editing that teacher. Do not delete attendance history.

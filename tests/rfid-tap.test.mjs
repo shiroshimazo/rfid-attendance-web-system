@@ -250,3 +250,55 @@ test("unknown SMS outcomes stay Pending and cannot be claimed again; rollback pr
   await db.exec('reset role')
   assert.deepEqual(await rows('select * from public.sms_notifications'),before)
 })
+
+test('P10 backfill preview follows tap priority and never changes stored evidence', async () => {
+  const first=await tap('2026-09-08T06:15:00+08:00')
+  const sql=await readFile(new URL('../supabase/backfill_late_status.sql',import.meta.url),'utf8')
+  await rows(`insert into public.class_schedules(program_id,year_level,section,campus,day_of_week,time_start,grace_minutes)
+    values($1,'2nd Year','21001','Main Campus',2,'05:00',15)`,[program])
+  assert.deepEqual(await rows(sql),[]) // all-campus 06:00 wins; equality is not Late
+  await rows("update public.attendance_records set time_in='06:15:01' where id=$1",[first.attendanceId])
+  const before=await rows('select * from public.attendance_records order by id')
+  const candidates=await rows(sql)
+  assert.equal(candidates.length,1)
+  assert.equal(candidates[0].schedule_campus,null)
+  assert.equal(candidates[0].id,first.attendanceId)
+  await rows(sql)
+  assert.deepEqual(await rows('select * from public.attendance_records order by id'),before)
+  await rows("update public.class_schedules set status='inactive' where campus is null")
+  assert.equal((await rows(sql))[0].schedule_campus,'Main Campus')
+  await rows("update public.class_schedules set status='inactive'")
+  assert.deepEqual(await rows(sql),[])
+  await rows("update public.class_schedules set status='active'")
+  await rows("update public.students set year_level='1st Year' where id=$1",[student])
+  assert.deepEqual(await rows(sql),[])
+  await rows("update public.students set year_level='2nd Year' where id=$1",[student])
+  await rows("update public.attendance_records set attendance_status='Absent' where id=$1",[first.attendanceId])
+  assert.deepEqual(await rows(sql),[])
+})
+
+test('P10 business seed matches the pilot and reruns preserve existing rows and tap history', async () => {
+  // Auth password hashing is Supabase-owned; exercise the actual business seed after Auth provisioning.
+  for(const [id,role] of [['20000000-0000-0000-0000-000000000001','teacher'],['30000000-0000-0000-0000-000000000001','student']]) {
+    await rows('insert into auth.users(id,email,raw_app_meta_data) values($1,$2,$3)',[id,`${role}@rfid.local`,JSON.stringify({role})])
+  }
+  // Keep the existing unrelated card available; the local demo uses a temporary UID.
+  await rows("update public.rfid_cards set rfid_number='00000022' where id=$1",[card])
+  await tap(undefined,'00000022')
+  const seed=await readFile(new URL('../supabase/seed.sql',import.meta.url),'utf8')
+  const business=seed.slice(seed.indexOf('insert into public.teachers')).replace(/^commit;$/m,'')
+  const history=await rows('select * from public.attendance_records order by id')
+  const sms=await rows('select * from public.sms_notifications order by id')
+  await db.exec(business)
+  const demo=(await rows("select * from public.students where student_id='2026-001'"))[0]
+  assert.equal(demo.year_level,'2nd Year');assert.equal(demo.section,'21001');assert.equal(demo.campus,'Main Campus')
+  const assignment=(await rows("select a.*,c.course_code from public.teacher_assignments a join public.courses c on c.id=a.course_id join public.teachers t on t.id=a.teacher_id where t.teacher_id='T-001'"))[0]
+  assert.equal(assignment.course_code,'CCS2105');assert.equal(assignment.section,'21001');assert.equal(assignment.year_level,'2nd Year')
+  await rows("update public.students set full_name='Edited Demo' where id=$1",[demo.id])
+  const before={}
+  for(const table of ['students','teachers','teacher_assignments','rfid_cards','programs','courses']) before[table]=await rows(`select * from public.${table} order by id`)
+  await db.exec(business)
+  for(const table of Object.keys(before)) assert.deepEqual(await rows(`select * from public.${table} order by id`),before[table])
+  assert.deepEqual(await rows('select * from public.attendance_records order by id'),history)
+  assert.deepEqual(await rows('select * from public.sms_notifications order by id'),sms)
+})
