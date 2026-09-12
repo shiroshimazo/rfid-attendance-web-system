@@ -71,7 +71,7 @@ export function AttendanceTrendChart({
   )
 
   return (
-    <Card className="@container/chart">
+    <Card className="@container/chart h-full">
       <CardHeader>
         <CardTitle>Attendance Trend</CardTitle>
         <CardDescription>{activeRange.caption}</CardDescription>

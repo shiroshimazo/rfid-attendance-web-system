@@ -6,6 +6,7 @@ import { LiveRefresh } from "@/components/live-refresh"
 import { getTeacherDirectory } from "@/features/teachers/directory"
 
 import { TeachersDirectory } from "./components/teachers-directory"
+import { KpiCards } from "./components/kpi-cards"
 import { TeachersSkeleton } from "./components/teachers-skeleton"
 
 export const metadata: Metadata = {
@@ -33,7 +34,12 @@ async function TeachersContent() {
     )
   }
 
-  return <TeachersDirectory directory={directory} />
+  return (
+    <>
+      <KpiCards teachers={directory.teachers} />
+      <TeachersDirectory directory={directory} />
+    </>
+  )
 }
 
 export default function AdminTeachersPage() {

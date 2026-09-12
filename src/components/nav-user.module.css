@@ -1,0 +1,54 @@
+/* Radix retains placement, focus handling, and exit presence. */
+.liquidMenu[data-state] {
+  --liquid-x: 0px;
+  --liquid-y: 0px;
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+}
+.liquidMenu[data-side="right"] { --liquid-x: -20px; }
+.liquidMenu[data-side="left"] { --liquid-x: 20px; }
+.liquidMenu[data-side="top"] { --liquid-y: 20px; }
+.liquidMenu[data-side="bottom"] { --liquid-y: -20px; }
+.liquidMenu[data-state="open"] {
+  animation: liquidOpen 340ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.liquidMenu[data-state="closed"] {
+  pointer-events: none;
+  animation: liquidClose 200ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+.liquidMenu[data-state="open"] > * {
+  animation: revealContent 220ms ease-out both;
+}
+.liquidMenu[data-state="closed"] > * {
+  animation: hideContent 100ms ease-out both;
+}
+@keyframes liquidOpen {
+  0% {
+    opacity: 0;
+    transform: translate(var(--liquid-x), var(--liquid-y)) scale(0.12, 0.16);
+    border-radius: 50%;
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+    border-radius: 8px;
+  }
+}
+@keyframes liquidClose {
+  from { opacity: 1; transform: scale(1); border-radius: 8px; }
+  to {
+    opacity: 0;
+    transform: translate(var(--liquid-x), var(--liquid-y)) scale(0.12, 0.16);
+    border-radius: 50%;
+  }
+}
+@keyframes revealContent {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes hideContent {
+  to { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liquidMenu[data-state],
+  .liquidMenu[data-state] > * { animation: none; }
+}
