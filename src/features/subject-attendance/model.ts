@@ -37,6 +37,7 @@ export interface SubjectAttendanceRow {
 
 export interface SubjectSchedule {
   id: number
+  roster_version: number
   program_id: number
   teacher_id: number
   course_id: number
@@ -49,6 +50,23 @@ export interface SubjectSchedule {
   status: AccountStatus
   course: { course_code: string; course_name: string } | null
   teacher: { full_name: string } | null
+}
+
+export interface SubjectEnrollment {
+  schedule_id: number
+  student_id: number
+  active: boolean
+}
+
+export interface SubjectRfidEvidence {
+  student_id: number
+  time_in: string | null
+  time_out: string | null
+}
+
+export function enrolledSubjectStudents(students: SubjectStudent[], enrollments: SubjectEnrollment[], scheduleId: number) {
+  const ids = new Set(enrollments.filter(row => row.schedule_id === scheduleId && row.active).map(row => row.student_id))
+  return students.filter(student => ids.has(student.id))
 }
 
 export interface SubjectStudent {

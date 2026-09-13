@@ -45,11 +45,34 @@ test("occupied schedule returns a clear conflict message without successful-save
   assert.deepEqual(paths, [])
 })
 test("every subject mutation authorizes before RPC or validation", async () => {
-  for (const name of ["confirmSubjectAction", "createSubjectScheduleAction", "retireSubjectScheduleAction", "editSubjectScheduleAction"]) {
+  for (const name of ["confirmSubjectAction", "createSubjectScheduleAction", "retireSubjectScheduleAction", "editSubjectScheduleAction", "saveSubjectEnrollmentAction"]) {
     const { actions, calls } = setup({ forbidden: true })
     await assert.rejects(actions[name]({}), /Forbidden/)
     assert.equal(calls.length, 1)
   }
+})
+
+test("enrollment save validates input and sends only roster IDs and expected version", async () => {
+  const { actions, calls, paths } = setup()
+  for (const invalid of [{ scheduleId:0, studentIds:[], expectedVersion:1 }, { scheduleId:1, studentIds:[-1], expectedVersion:1 }, { scheduleId:1, studentIds:[], expectedVersion:0 }]) {
+    assert.equal((await actions.saveSubjectEnrollmentAction(invalid)).ok, false)
+  }
+  assert(calls.every(call => call[0] === 'role' && call[1] === 'admin'))
+  assert.equal((await actions.saveSubjectEnrollmentAction({ scheduleId:1, studentIds:[2,2], expectedVersion:3, teacherId:99 })).ok, true)
+  assert.deepEqual(calls.at(-1), ['save_subject_enrollment', { p_schedule_id:1, p_student_ids:[2], p_expected_version:3 }])
+  assert(paths.includes('/teacher/attendance'))
+  const failed = setup({error:{message:'Enrollment changed. Refresh before saving.'}})
+  assert.equal((await failed.actions.saveSubjectEnrollmentAction({scheduleId:1,studentIds:[],expectedVersion:1})).ok,false)
+  assert.deepEqual(failed.paths,[])
+})
+
+test("roster uses enrollment independently of placement, confirmations or taps", () => {
+  const { load } = setup()
+  const { enrolledSubjectStudents } = load('src/features/subject-attendance/model.ts')
+  const students = [{id:1,section:'21001'}, {id:2,section:'21002'}, {id:3,section:'21001'}]
+  const enrollment = [{schedule_id:5,student_id:2,active:true}, {schedule_id:5,student_id:3,active:false}, {schedule_id:6,student_id:1,active:true}]
+  assert.deepEqual(enrolledSubjectStudents(students,enrollment,5),[students[1]])
+  assert.deepEqual(enrolledSubjectStudents(students,[],5),[])
 })
 test("subject schedule writes use existing assignment and reject reversed times", async () => {
   const { actions, calls } = setup()

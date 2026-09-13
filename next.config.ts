@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   // Keep Forme's Node WASM loader beside its packaged .wasm file.
   serverExternalPackages: ["@formepdf/core", "@formepdf/react"],
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    optimizePackageImports: ["lucide-react", "@hugeicons/core-free-icons"],
   },
   turbopack: {},
 

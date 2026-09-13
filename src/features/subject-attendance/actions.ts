@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { requireRole } from "@/features/auth/server"
 import { createServerSupabaseClient } from "@/services/supabase/server"
-import { confirmSubjectSchema, createSubjectScheduleSchema, editSubjectScheduleSchema, subjectScheduleIdSchema } from "@/features/subject-attendance/schema"
+import { confirmSubjectSchema, createSubjectScheduleSchema, editSubjectScheduleSchema, subjectEnrollmentSchema, subjectScheduleIdSchema } from "@/features/subject-attendance/schema"
 
 function refreshSubjectViews() {
   for (const path of ["/admin/schedules", "/admin/dashboard", "/admin/attendance", "/admin/reports", "/teacher/dashboard", "/teacher/attendance", "/teacher/reports", "/student/dashboard", "/student/my-attendance"]) revalidatePath(path)
@@ -49,6 +49,21 @@ export async function retireSubjectScheduleAction(input: unknown) {
   if (error) return { ok: false, message: error.message }
   refreshSubjectViews()
   return { ok: true, message: "Subject schedule retired; confirmations retained." }
+}
+
+export async function saveSubjectEnrollmentAction(input: unknown) {
+  await requireRole("admin")
+  const parsed = subjectEnrollmentSchema.safeParse(input)
+  if (!parsed.success) return { ok: false, message: "Choose a subject schedule and valid students, then refresh before saving." }
+  const supabase = await createServerSupabaseClient()
+  const { error } = await supabase.rpc("save_subject_enrollment", {
+    p_schedule_id: parsed.data.scheduleId,
+    p_student_ids: [...new Set(parsed.data.studentIds)],
+    p_expected_version: parsed.data.expectedVersion,
+  })
+  if (error) return { ok: false, message: error.message }
+  refreshSubjectViews()
+  return { ok: true, message: "Subject enrollment saved." }
 }
 
 export async function editSubjectScheduleAction(input: unknown) {

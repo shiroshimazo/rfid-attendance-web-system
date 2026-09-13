@@ -10,10 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { TablePagination } from "@/components/data-table"
 import { confirmSubjectAction } from "@/features/subject-attendance/actions"
-import { belongsToSubject, type SubjectAttendanceRow, type SubjectSchedule, type SubjectStudent } from "@/features/subject-attendance/model"
+import { formatClockTime } from "@/lib/format"
+import { enrolledSubjectStudents, type SubjectAttendanceRow, type SubjectEnrollment, type SubjectRfidEvidence, type SubjectSchedule, type SubjectStudent } from "@/features/subject-attendance/model"
 
-export function TeacherSubjectConsole({ schedules, students, records, date, today }: {
-  schedules: SubjectSchedule[]; students: SubjectStudent[]; records: SubjectAttendanceRow[]; date: string; today: string
+export function TeacherSubjectConsole({ schedules, students, records, enrollments, evidence, date, today }: {
+  schedules: SubjectSchedule[]; students: SubjectStudent[]; records: SubjectAttendanceRow[]; enrollments: SubjectEnrollment[]; evidence: SubjectRfidEvidence[] | null; date: string; today: string
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -22,8 +23,9 @@ export function TeacherSubjectConsole({ schedules, students, records, date, toda
   const [page, setPage] = useState(1)
   const day = new Date(`${date}T00:00:00Z`).getUTCDay()
   const available = schedules.filter(row => row.status === "active" && row.day_of_week === day)
-  const schedule = available.find(row => String(row.id) === selected)
-  const roster = schedule ? students.filter(student => belongsToSubject(student, schedule)) : []
+  const schedule = available.find(row => String(row.id) === selected) ?? available[0]
+  const roster = schedule ? enrolledSubjectStudents(students, enrollments, schedule.id) : []
+  const evidenceByStudent = new Map((evidence ?? []).map(row => [row.student_id, row]))
   const sessionRecords = records.filter(row => row.schedule_id === schedule?.id && row.attendance_date === date)
   const byStudent = new Map(sessionRecords.map(row => [row.student_id, row]))
   const unconfirmed = roster.filter(row => !byStudent.has(row.id)).length
@@ -55,7 +57,7 @@ export function TeacherSubjectConsole({ schedules, students, records, date, toda
             if (e.target.value) { setSelected(""); setPage(1); router.push(`/teacher/attendance?date=${e.target.value}`) }
           }} /></div>
         <div className="space-y-2"><Label htmlFor="subject-schedule">Scheduled subject</Label>
-          <select id="subject-schedule" className="h-9 w-full rounded-md border bg-background px-3 text-sm" value={selected} disabled={pending} onChange={e => { setSelected(e.target.value); setPage(1) }}>
+          <select id="subject-schedule" className="h-9 w-full rounded-md border bg-background px-3 text-sm" value={schedule ? String(schedule.id) : ""} disabled={pending} onChange={e => { setSelected(e.target.value); setPage(1) }}>
             <option value="">Select a subject session</option>
             {available.map(row => <option key={row.id} value={row.id}>{row.course?.course_code} · {row.section} · {row.campus} · {row.time_start}–{row.time_end}</option>)}
           </select></div>
@@ -64,9 +66,12 @@ export function TeacherSubjectConsole({ schedules, students, records, date, toda
       {schedule && <>
         <p className="text-sm">{roster.length} students · {unconfirmed} unconfirmed. Unconfirmed is not Absent.</p>
         <Input aria-label="Search subject students" placeholder="Search student name or ID" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
-        <Table><TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Current confirmation</TableHead><TableHead>Confirm after checking</TableHead></TableRow></TableHeader>
+        <Table><TableHeader><TableRow><TableHead>Student</TableHead><TableHead>RFID taps (campus)</TableHead><TableHead>Current confirmation</TableHead><TableHead>Confirm after checking</TableHead></TableRow></TableHeader>
           <TableBody>{filtered.slice((currentPage - 1) * 10, currentPage * 10).map(student => <TableRow key={student.id}>
             <TableCell>{student.full_name}<br />{student.student_id}</TableCell>
+            <TableCell>{evidence === null ? "RFID evidence unavailable" : evidenceByStudent.get(student.id)?.time_in
+              ? <><span>Tapped in</span><br /><span className="text-xs tabular-nums">In: {formatClockTime(evidenceByStudent.get(student.id)?.time_in ?? null)} · Out: {formatClockTime(evidenceByStudent.get(student.id)?.time_out ?? null)}</span></>
+              : "No tap recorded"}</TableCell>
             <TableCell>{byStudent.get(student.id)?.attendance_status ?? "Not confirmed yet"}</TableCell>
             <TableCell><div className="flex gap-2">
               <Button size="sm" variant="outline" disabled={pending || date > today || byStudent.get(student.id)?.attendance_status === "Present"} onClick={() => confirm(student.id, "Present")}>Present</Button>
@@ -75,7 +80,7 @@ export function TeacherSubjectConsole({ schedules, students, records, date, toda
             </div></TableCell>
           </TableRow>)}</TableBody>
         </Table>
-        {!filtered.length && <p className="text-sm text-muted-foreground">No matching students in this subject.</p>}
+        {!filtered.length && <p className="text-sm text-muted-foreground">{roster.length ? "No matching students in this subject." : "No active students enrolled. Ask the administrator to assign students in Schedules > Student Subject Enrollment."}</p>}
         <TablePagination page={currentPage} pageCount={pageCount} onPageChange={setPage} />
         <p role="status" className="text-sm text-muted-foreground">{pending ? "Saving confirmation…" : "A correction replaces only this student's result for this subject session."}</p>
       </>}

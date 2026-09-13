@@ -11,6 +11,7 @@ const DEFAULT_TABLES = [
   "attendance_records",
   "subject_attendance",
   "subject_schedules",
+  "subject_enrollments",
   "rfid_cards",
   "sms_notifications",
   "students",

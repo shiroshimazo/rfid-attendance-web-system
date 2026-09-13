@@ -13,6 +13,12 @@ export const createSubjectScheduleSchema = z.object({
 }).refine(value => value.end > value.start, "End time must be after start time")
 export const subjectScheduleIdSchema = id
 
+export const subjectEnrollmentSchema = z.object({
+  scheduleId: id,
+  studentIds: z.array(id),
+  expectedVersion: z.number().int().positive().safe(),
+})
+
 const requiredTime = (message: string) =>
   z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, message)
 

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "lenis/dist/lenis.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { SmoothScroll } from "@/components/smooth-scroll";
 import { Toaster } from "@/components/ui/sonner";
 import { inter } from "@/lib/fonts";
 
@@ -29,7 +31,9 @@ export default function RootLayout({
           disableTransitionOnChange
           storageKey="rfid-ui-theme"
         >
-          {children}
+          <SmoothScroll>
+            {children}
+          </SmoothScroll>
           <Toaster position="top-right" richColors closeButton />
         </ThemeProvider>
       </body>

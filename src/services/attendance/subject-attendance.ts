@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/services/supabase/server"
 import { fetchAllRows } from "@/services/supabase/pagination"
-import type { SubjectAttendanceRow, SubjectSchedule, SubjectStudent } from "@/features/subject-attendance/model"
+import type { SubjectAttendanceRow, SubjectEnrollment, SubjectRfidEvidence, SubjectSchedule, SubjectStudent } from "@/features/subject-attendance/model"
 
 export async function fetchSubjectAttendance(range: { from?: string; to?: string } = {}) {
   const supabase = await createServerSupabaseClient()
@@ -15,8 +15,22 @@ export async function fetchSubjectAttendance(range: { from?: string; to?: string
 export async function fetchSubjectSchedules() {
   const supabase = await createServerSupabaseClient()
   return fetchAllRows<SubjectSchedule>((from, to) => supabase.from("subject_schedules")
-    .select("id, program_id, teacher_id, course_id, year_level, section, campus, day_of_week, time_start, time_end, status, course:courses(course_code, course_name), teacher:teachers(full_name)")
+    .select("id, roster_version, program_id, teacher_id, course_id, year_level, section, campus, day_of_week, time_start, time_end, status, course:courses(course_code, course_name), teacher:teachers(full_name)")
     .order("day_of_week").order("time_start").order("id").range(from, to).returns<SubjectSchedule[]>())
+}
+
+export async function fetchSubjectEnrollments() {
+  const supabase = await createServerSupabaseClient()
+  return fetchAllRows<SubjectEnrollment>((from, to) => supabase.from("subject_enrollments")
+    .select("schedule_id, student_id, active").order("schedule_id").order("student_id")
+    .range(from, to).returns<SubjectEnrollment[]>())
+}
+
+export async function fetchSubjectRfidEvidence(date: string) {
+  const supabase = await createServerSupabaseClient()
+  return fetchAllRows<SubjectRfidEvidence>((from, to) => supabase.from("attendance_records")
+    .select("student_id, time_in, time_out").eq("attendance_date", date).order("student_id")
+    .range(from, to).returns<SubjectRfidEvidence[]>())
 }
 
 export async function fetchSubjectStudents() {

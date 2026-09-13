@@ -148,9 +148,24 @@
   }
 }
 
-/* Smooth scrolling for the entire page */
+/* Smooth scrolling — Lenis (see <SmoothScroll />) owns wheel smoothing on
+   the root scroller; the CSS fallback below covers reduced-motion and
+   no-JS. Mirrors https://jrmy-sh.vercel.app/ */
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  scroll-padding-top: 72px;
+}
+
+/* Let Lenis drive anchor animation when active — CSS smooth fights it. */
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* Logo carousel animation */

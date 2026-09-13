@@ -17,7 +17,7 @@ export function EmailCodeForm({ email, onBack }: { email: string; onBack: () => 
     <Card>
       <CardHeader className="text-center">
         <CardTitle>Check your email</CardTitle>
-        <CardDescription>Enter the six-digit code sent to {email}. Verification expires after 10 minutes.</CardDescription>
+        <CardDescription>Enter the six-digit code sent to {email}. The code expires after 10 minutes. After verification, this browser will not need another code for 3 days, even after signing out.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <form className="space-y-4" onSubmit={async (event) => {

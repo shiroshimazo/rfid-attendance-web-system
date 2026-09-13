@@ -51,6 +51,16 @@ beforeEach(async () => {
 
 afterEach(async () => db.exec("rollback; reset role;"))
 
+test("browser verification tokens are inaccessible to authenticated clients", async () => {
+  await db.query("insert into public.login_email_trust(token_hash,user_id,email,expires_at) values ('hash',$1,'admin@example.test',now()+interval '72 hours')", [adminId])
+  await db.exec('set local role authenticated; savepoint trust_access')
+  await assert.rejects(db.query('select * from public.login_email_trust'), /permission denied/)
+  await db.exec('rollback to savepoint trust_access')
+  await assert.rejects(db.query("insert into public.login_email_trust(token_hash,user_id,email,expires_at) values ('forged',$1,'admin@example.test',now()+interval '72 hours')", [adminId]), /permission denied/)
+  await db.exec('rollback to savepoint trust_access; reset role; set local role service_role')
+  assert.equal((await db.query('select token_hash from public.login_email_trust')).rows.length,1)
+})
+
 async function createProfile(kind, status = "active") {
   await db.query(
     "insert into auth.users (id, email, raw_app_meta_data) values ($1, $2, $3)",

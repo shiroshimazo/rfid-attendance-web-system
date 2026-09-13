@@ -49,8 +49,6 @@ async function AttendanceContent({ query }: { query: AttendancePanelQuery }) {
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
-      <TeacherSubjectPanel date={query.date} />
-      <SubjectHistoryPanel from={query.date} to={query.date} />
       <h2 className="text-lg font-semibold">Daily RFID evidence (separate from subject attendance)</h2>
       <KpiCards kpis={data.kpis} readableDate={readableDate} />
       <FiltersBar query={data.query} options={data.options} />
@@ -87,12 +85,18 @@ export default async function TeacherAttendancePage({
             Attendance
           </h1>
           <p className="text-sm text-muted-foreground text-pretty">
-            Assigned-student RFID attendance transactions for{" "}
+            Subject attendance and campus RFID evidence for{" "}
             {readableDateOf(query.date)}.
           </p>
         </div>
       </div>
 
+      <Suspense key={`subject-${query.date}`} fallback={<PanelSkeleton />}>
+        <TeacherSubjectPanel date={query.date} />
+      </Suspense>
+      <Suspense key={`history-${query.date}`} fallback={<PanelSkeleton />}>
+        <SubjectHistoryPanel from={query.date} to={query.date} />
+      </Suspense>
       <Suspense key={suspenseKey} fallback={<PanelSkeleton />}>
         <AttendanceContent query={query} />
       </Suspense>

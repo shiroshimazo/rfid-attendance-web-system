@@ -1,22 +1,38 @@
+import { UserRound } from "lucide-react"
+import { createElement, type ComponentType } from "react"
+import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  CalendarClock,
-  ClipboardCheck,
-  FileChartColumn,
-  GraduationCap,
-  LayoutDashboard,
-  ScanLine,
-  Settings,
-  UserRound,
-  UsersRound,
-  type LucideIcon,
-} from "lucide-react"
+  Analytics01Icon,
+  CalendarCheckIcon,
+  CalendarClockIcon,
+  Home04Icon,
+  ScanLineIcon,
+  Settings02Icon,
+  TeachingIcon,
+  UsersIcon,
+} from "@hugeicons/core-free-icons"
 
 import type { UserRole } from "@/features/auth/roles"
+
+function makeIcon(icon: typeof Home04Icon) {
+  return function NavIcon({ className }: { className?: string }) {
+    return createElement(HugeiconsIcon, { icon, className, "aria-hidden": true })
+  }
+}
+
+const DashboardIcon = makeIcon(Home04Icon)
+const TeachersIcon = makeIcon(TeachingIcon)
+const StudentsIcon = makeIcon(UsersIcon)
+const RfidIcon = makeIcon(ScanLineIcon)
+const AttendanceIcon = makeIcon(CalendarCheckIcon)
+const SchedulesIcon = makeIcon(CalendarClockIcon)
+const ReportsIcon = makeIcon(Analytics01Icon)
+const SettingsIcon = makeIcon(Settings02Icon)
 
 export interface NavigationItem {
   title: string
   url: string
-  icon?: LucideIcon
+  icon?: ComponentType<{ className?: string }>
   items?: Array<{ title: string; url: string }>
 }
 
@@ -51,14 +67,14 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
     {
       label: "Administration",
       items: [
-        { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
-        { title: "Manage Teachers", url: "/admin/teachers", icon: GraduationCap },
-        { title: "Manage Students", url: "/admin/students", icon: UsersRound },
-        { title: "Manage RFID Cards", url: "/admin/rfid-cards", icon: ScanLine },
-        { title: "Attendance", url: "/admin/attendance", icon: ClipboardCheck },
-        { title: "Schedules", url: "/admin/schedules", icon: CalendarClock },
-        { title: "Reports", url: "/admin/reports", icon: FileChartColumn },
-        { title: "Settings", url: "/admin/settings", icon: Settings },
+        { title: "Dashboard", url: "/admin/dashboard", icon: DashboardIcon },
+        { title: "Manage Teachers", url: "/admin/teachers", icon: TeachersIcon },
+        { title: "Manage Students", url: "/admin/students", icon: StudentsIcon },
+        { title: "Manage RFID Cards", url: "/admin/rfid-cards", icon: RfidIcon },
+        { title: "Attendance", url: "/admin/attendance", icon: AttendanceIcon },
+        { title: "Schedules", url: "/admin/schedules", icon: SchedulesIcon },
+        { title: "Reports", url: "/admin/reports", icon: ReportsIcon },
+        { title: "Settings", url: "/admin/settings", icon: SettingsIcon },
       ],
     },
   ],
@@ -66,11 +82,11 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
     {
       label: "Teaching",
       items: [
-        { title: "Dashboard", url: "/teacher/dashboard", icon: LayoutDashboard },
-        { title: "Attendance", url: "/teacher/attendance", icon: ClipboardCheck },
-        { title: "Students", url: "/teacher/students", icon: UsersRound },
-        { title: "Reports", url: "/teacher/reports", icon: FileChartColumn },
-        { title: "Settings", url: "/teacher/settings", icon: Settings },
+        { title: "Dashboard", url: "/teacher/dashboard", icon: DashboardIcon },
+        { title: "Attendance", url: "/teacher/attendance", icon: AttendanceIcon },
+        { title: "Students", url: "/teacher/students", icon: StudentsIcon },
+        { title: "Reports", url: "/teacher/reports", icon: ReportsIcon },
+        { title: "Settings", url: "/teacher/settings", icon: SettingsIcon },
       ],
     },
   ],
@@ -78,8 +94,8 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
     {
       label: "Student Portal",
       items: [
-        { title: "Dashboard", url: "/student/dashboard", icon: LayoutDashboard },
-        { title: "My Attendance", url: "/student/my-attendance", icon: ClipboardCheck },
+        { title: "Dashboard", url: "/student/dashboard", icon: DashboardIcon },
+        { title: "My Attendance", url: "/student/my-attendance", icon: AttendanceIcon },
         { title: "Profile", url: "/student/profile", icon: UserRound },
       ],
     },

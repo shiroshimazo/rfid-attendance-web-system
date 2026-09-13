@@ -7,6 +7,41 @@ RFID scan or SMS. A daily campus tap does not confirm attendance in each subject
 
 ## Data and access
 
+### Individual enrollment
+
+Apply `supabase/migrations/202609190001_subject_enrollment.sql` after the earlier
+migrations, including `202609140002_teacher_confirmed_late.sql`, before deploying
+the enrollment UI. Run `supabase/verify_subject_enrollment.sql` afterward; all six
+checks should return PASS.
+
+In **Admin > Schedules > Student Subject Enrollment**, select a subject session,
+check its students, and save. Enrollment is per scheduled session; assign students
+to each weekly session they must attend. Students may belong to a different
+section or campus from the session. Existing active class rosters are copied once
+to preserve current access. New schedules start empty. Newly registered students
+must be assigned explicitly. Removing a student retains attendance history.
+
+The teacher console automatically selects the first session for the chosen date
+and displays its active enrolled students, even without a card or tap. Teachers
+can confirm Present, Late or Absent. Campus tap indicators are separate evidence;
+an unavailable RFID query does not hide the roster or block confirmation. No tap
+and no decision remain **Not confirmed yet**. Enrollment changes never manufacture
+RFID evidence or attendance decisions. The sheet reflects current enrollment;
+saved historical confirmations remain in subject history after removal.
+
+Roster saves serialize against confirmations and reject stale roster versions.
+Only active administrators can edit enrollment. Teachers may read enrolled
+students and their daily RFID evidence only through an active teaching assignment.
+The database checks enrollment even for older application clients, which may
+still display their old placement-based roster during rollout.
+
+For rollback, run `supabase/rollback_subject_enrollment.sql` and revert the
+application release. This disables enrollment and confirmation writes while
+retaining all data and enrollment authorization. Reapply the enrollment migration
+to resume writes; reapplication does not restore removed students.
+
+### Subject schedules and confirmations
+
 `subject_schedules` adds weekday/start/end and an explicit teacher/subject/class
 to the existing Admin Schedules page. Existing `class_schedules` remain the daily
 RFID start/grace rules. Admins select an existing active pilot teaching assignment;
@@ -25,8 +60,8 @@ confirmation timestamp and subject/placement snapshots. It has no RFID timestamp
 or card fields. Scheduled times are not arrival times. Prior `attendance_records`
 and SMS/card history are untouched and are not backfilled into subject results.
 
-RPCs enforce active account/teacher, subject ownership, active matching student,
-campus/section, scheduled weekday and non-future date. Direct authenticated table
+RPCs enforce active account/teacher, subject ownership, active enrolled student,
+scheduled weekday and non-future date. Direct authenticated table
 writes are denied. Same-result retries are idempotent; corrections require the
 previous confirmation timestamp, rejecting stale edits. A replacement schedule
 cannot duplicate an already confirmed identical subject/time slot.

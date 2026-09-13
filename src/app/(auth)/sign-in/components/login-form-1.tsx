@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { cn } from "@/lib/utils"
@@ -38,6 +39,7 @@ export function LoginForm1({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const router = useRouter()
   const [verificationEmail, setVerificationEmail] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const form = useForm<LoginFormValues>({
@@ -54,6 +56,7 @@ export function LoginForm1({
     try {
       const result = await beginEmailLogin(values)
       if (result.error) { form.setError("root", { message: result.error }); return }
+      if (result.path) { form.reset(); router.replace(result.path); router.refresh(); return }
       if (result.email) { form.reset(); setVerificationEmail(result.email) }
     } catch (error) {
       form.setError("root", {
@@ -73,7 +76,7 @@ export function LoginForm1({
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Welcome back</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Sign in with your email and password. Email verification is remembered on this browser for 3 days.
           </CardDescription>
         </CardHeader>
         <CardContent>
