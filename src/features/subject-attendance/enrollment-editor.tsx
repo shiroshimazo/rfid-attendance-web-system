@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -52,10 +52,10 @@ function EnrollmentForm({ schedule, students, enrollments }: {
     startTransition(async () => {
       try {
         const result = await saveSubjectEnrollmentAction({ scheduleId: schedule.id, studentIds: [...selected], expectedVersion: schedule.roster_version })
-        if (result.ok) toast.success(result.message)
-        else toast.error(result.message)
+        if (result.ok) gooeyToast.success(result.message)
+        else gooeyToast.error(result.message)
         router.refresh()
-      } catch { toast.error("Could not save enrollment. Refresh and try again.") }
+      } catch { gooeyToast.error("Could not save enrollment. Refresh and try again.") }
     })
   }
 

@@ -11,7 +11,7 @@ import {
   RotateCcw,
   Search,
 } from "lucide-react"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 
 import {
   AccountStatusBadge,
@@ -201,13 +201,13 @@ export function SubjectSchedulesEditor({
       const result = await retireSubjectScheduleAction(row.id)
 
       if (result.ok) {
-        toast.success(result.message)
+        gooeyToast.success(result.message)
         router.refresh()
       } else {
-        toast.error(result.message)
+        gooeyToast.error(result.message)
       }
     } catch {
-      toast.error("Could not retire the subject schedule. Refresh and try again.")
+      gooeyToast.error("Could not retire the subject schedule. Refresh and try again.")
     } finally {
       setPendingId(null)
     }

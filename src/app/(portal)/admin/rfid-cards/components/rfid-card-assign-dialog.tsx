@@ -4,7 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, UserRoundCheck } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 
 import { RfidStatusBadge } from "@/components/attendance-status-badge"
 import { StudentCombobox } from "@/components/student-combobox"
@@ -103,11 +103,11 @@ export function RfidCardAssignDialog({
         form.setError(path as keyof RfidCardAssignmentValues, { message })
       }
 
-      toast.error(result.message)
+      gooeyToast.error(result.message)
       return
     }
 
-    toast.success(result.message)
+    gooeyToast.success(result.message)
     onOpenChange(false)
   }
 

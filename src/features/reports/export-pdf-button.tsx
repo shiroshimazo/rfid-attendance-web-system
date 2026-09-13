@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { FileDown, LoaderCircle } from "lucide-react"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 import { Button } from "@/components/ui/button"
 import type { ReportsRange } from "@/features/reports/panel"
 
@@ -28,7 +28,7 @@ export function ExportPdfButton({ range }: { range: ReportsRange }) {
       link.remove()
       setTimeout(() => URL.revokeObjectURL(url), 30_000)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not download the report.")
+      gooeyToast.error(error instanceof Error ? error.message : "Could not download the report.")
     } finally {
       setPending(false)
     }

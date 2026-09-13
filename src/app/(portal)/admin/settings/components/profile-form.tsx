@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, Save } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -59,13 +59,13 @@ export function ProfileForm({
         form.setError(path as keyof AdminProfileValues, { message })
       }
 
-      toast.error(result.message)
+      gooeyToast.error(result.message)
       return
     }
 
     // Reset to the saved values so the form is no longer marked as dirty.
     form.reset(values)
-    toast.success(result.message)
+    gooeyToast.success(result.message)
   }
 
   return (

@@ -4,7 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -123,11 +123,11 @@ export function ScheduleFormDialog({
         form.setError(path as keyof ScheduleDialogValues, { message })
       }
 
-      toast.error(result.message)
+      gooeyToast.error(result.message)
       return
     }
 
-    toast.success(result.message)
+    gooeyToast.success(result.message)
     onOpenChange(false)
   }
 

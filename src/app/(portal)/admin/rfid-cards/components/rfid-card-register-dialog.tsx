@@ -4,7 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, ScanLine } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 
 import { StudentCombobox } from "@/components/student-combobox"
 import { Button } from "@/components/ui/button"
@@ -89,11 +89,11 @@ export function RfidCardRegisterDialog({
         form.setError(path as keyof RfidCardFormValues, { message })
       }
 
-      toast.error(result.message)
+      gooeyToast.error(result.message)
       return
     }
 
-    toast.success(result.message)
+    gooeyToast.success(result.message)
     form.reset(emptyValues())
     onOpenChange(false)
   }

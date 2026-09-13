@@ -4,7 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Check, Loader2, Lock, Plus, Trash2 } from "lucide-react"
 import { useFieldArray, useForm, useWatch } from "react-hook-form"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 
 import { accountStatusLabels } from "@/components/account-status-badge"
 import { Button } from "@/components/ui/button"
@@ -427,11 +427,11 @@ export function TeacherFormDialog({
 
       if (owning >= 0) setStepIndex(owning)
 
-      toast.error(result.message)
+      gooeyToast.error(result.message)
       return
     }
 
-    toast.success(result.message)
+    gooeyToast.success(result.message)
     onOpenChange(false)
   }
 

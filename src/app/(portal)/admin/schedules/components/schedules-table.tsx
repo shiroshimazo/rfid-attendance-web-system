@@ -10,7 +10,7 @@ import {
   Search,
   TriangleAlert,
 } from "lucide-react"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 
 import { AccountStatusBadge } from "@/components/account-status-badge"
 import {
@@ -152,9 +152,9 @@ export function SchedulesTable({ directory }: { directory: ScheduleDirectory }) 
     setPendingKey(null)
 
     if (result.ok) {
-      toast.success(result.message)
+      gooeyToast.success(result.message)
     } else {
-      toast.error(result.message)
+      gooeyToast.error(result.message)
     }
   }
 

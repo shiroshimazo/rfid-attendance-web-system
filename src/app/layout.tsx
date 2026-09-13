@@ -4,7 +4,7 @@ import "lenis/dist/lenis.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { SmoothScroll } from "@/components/smooth-scroll";
-import { Toaster } from "@/components/ui/sonner";
+import { GooeyToaster } from "@/components/ui/goey-toaster";
 import { inter } from "@/lib/fonts";
 
 export const metadata: Metadata = {
@@ -34,7 +34,7 @@ export default function RootLayout({
           <SmoothScroll>
             {children}
           </SmoothScroll>
-          <Toaster position="top-right" richColors closeButton />
+          <GooeyToaster position="top-right" richColors closeButton />
         </ThemeProvider>
       </body>
     </html>

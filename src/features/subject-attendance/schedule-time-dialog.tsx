@@ -4,7 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -83,11 +83,11 @@ export function SubjectScheduleTimeDialog({
     })
 
     if (!result.ok) {
-      toast.error(result.message)
+      gooeyToast.error(result.message)
       return
     }
 
-    toast.success(result.message)
+    gooeyToast.success(result.message)
     onOpenChange(false)
     onSaved()
   }

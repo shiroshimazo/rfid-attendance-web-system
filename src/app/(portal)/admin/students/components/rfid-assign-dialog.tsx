@@ -4,7 +4,7 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, ScanLine } from "lucide-react"
 import { useForm } from "react-hook-form"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 
 import { RfidStatusBadge } from "@/components/attendance-status-badge"
 import { Button } from "@/components/ui/button"
@@ -90,11 +90,11 @@ export function RfidAssignDialog({
         form.setError(path as keyof RfidAssignmentValues, { message })
       }
 
-      toast.error(result.message)
+      gooeyToast.error(result.message)
       return
     }
 
-    toast.success(result.message)
+    gooeyToast.success(result.message)
     onOpenChange(false)
   }
 

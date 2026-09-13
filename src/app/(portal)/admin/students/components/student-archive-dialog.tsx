@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Loader2 } from "lucide-react"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 
 import {
   AlertDialog,
@@ -41,12 +41,12 @@ export function StudentArchiveDialog({
       )
 
       if (result.ok) {
-        toast.success(result.message)
+        gooeyToast.success(result.message)
         onOpenChange(false)
         return
       }
 
-      toast.error(result.message)
+      gooeyToast.error(result.message)
     })
   }
 

@@ -6,7 +6,7 @@ import { ModeToggle } from "@/components/mode-toggle"
 
 export function SiteHeader() {
   return (
-    <header className="flex h-(--header-height) shrink-0 items-center border-b transition-[width,height] duration-200 ease-linear">
+    <header className="flex h-(--header-height) shrink-0 items-center border-b">
       <div className="flex w-full items-center gap-2 px-4 lg:px-6">
         <SidebarTrigger className="-ml-2 size-10" />
         <Separator

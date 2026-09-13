@@ -71,6 +71,9 @@ function ChartContainer({
         <ChartStyle id={chartId} config={config} />
         <RechartsPrimitive.ResponsiveContainer
           initialDimension={initialDimension}
+          // Sidebar open/close animates content width for ~200ms; without
+          // debounce every chart re-renders each frame and the toggle janks.
+          debounce={150}
         >
           {children}
         </RechartsPrimitive.ResponsiveContainer>

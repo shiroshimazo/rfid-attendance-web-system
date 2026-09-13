@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { toast } from "sonner"
+import { gooeyToast } from "@/components/ui/goey-toaster"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -39,10 +39,10 @@ export function TeacherSubjectConsole({ schedules, students, records, enrollment
       try {
         const result = await confirmSubjectAction({ scheduleId: schedule.id, studentId, date, status,
           expectedConfirmedAt: byStudent.get(studentId)?.confirmed_at ?? null })
-        if (!result.ok) { toast.error(result.message); router.refresh(); return }
-        toast.success(result.message)
+        if (!result.ok) { gooeyToast.error(result.message); router.refresh(); return }
+        gooeyToast.success(result.message)
         router.refresh()
-      } catch { toast.error("Could not confirm attendance. Refresh and try again.") }
+      } catch { gooeyToast.error("Could not confirm attendance. Refresh and try again.") }
     })
   }
 
