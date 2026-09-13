@@ -19,6 +19,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
@@ -32,6 +33,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 
 export function AppSidebar({ role, user, ...props }: AppSidebarProps) {
   const meta = roleMeta[role]
+  const { isMobile, setOpenMobile } = useSidebar()
 
   return (
     <Sidebar {...props}>
@@ -39,7 +41,9 @@ export function AppSidebar({ role, user, ...props }: AppSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href={meta.home}>
+              <Link href={meta.home} onNavigate={() => {
+                if (isMobile) setOpenMobile(false)
+              }}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Logo size={24} className="text-current" />
                 </div>

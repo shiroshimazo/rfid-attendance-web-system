@@ -38,7 +38,7 @@ export function NavUser({
   }
   profileUrl: string
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile, setOpenMobile } = useSidebar()
   const router = useRouter()
 
   async function handleSignOut() {
@@ -94,7 +94,9 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild className="cursor-pointer">
-                <Link href={profileUrl}>
+                <Link href={profileUrl} onNavigate={() => {
+                  if (isMobile) setOpenMobile(false)
+                }}>
                   <CircleUser />
                   Profile and settings
                 </Link>

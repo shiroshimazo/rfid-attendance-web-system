@@ -18,7 +18,7 @@ import { emptySubjectFilters, filterSubjectHistory, type SubjectHistoryFilters, 
 
 function FilterSelect({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
   return <Select value={value || "__all"} onValueChange={value => onChange(value === "__all" ? "" : value)}>
-    <SelectTrigger aria-label={label} className="h-10 w-full"><SelectValue placeholder={label} /></SelectTrigger>
+    <SelectTrigger aria-label={label} className="w-full data-[size=default]:h-10"><SelectValue placeholder={label} /></SelectTrigger>
     <SelectContent><SelectItem value="__all">All {label.toLowerCase()}</SelectItem>{options.map(option => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
   </Select>
 }
@@ -69,4 +69,4 @@ export function StudentSubjectHistory({ rows }: { rows: SubjectAttendanceRow[] }
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-muted-foreground" aria-live="polite">{filtered.length} confirmed student-session{filtered.length === 1 ? "" : "s"}{active.length ? " matching filters" : ""}. Details reflect confirmation time.</p><TablePagination page={currentPage} pageCount={pageCount} onPageChange={setPage} /></div>
     </CardContent>
   </Card>
-}
+}

@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react"
-import { useRouter } from "next/navigation"
+
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -24,11 +24,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import {
-  dashboardPathByRole,
-  isUserRole,
-} from "@/features/auth/roles"
-import { createBrowserSupabaseClient } from "@/services/supabase/client"
+import { beginEmailLogin } from "@/features/auth/email-login-actions"
+import { EmailCodeForm } from "./email-code-form"
 
 const loginFormSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -41,7 +38,7 @@ export function LoginForm1({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const router = useRouter()
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -55,36 +52,9 @@ export function LoginForm1({
     form.clearErrors("root")
 
     try {
-      const supabase = createBrowserSupabaseClient()
-      const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword(values)
-
-      if (authError || !authData.user) {
-        form.setError("root", { message: "Invalid email or password." })
-        return
-      }
-
-      const { data: account, error: accountError } = await supabase
-        .from("users")
-        .select("role, status")
-        .eq("id", authData.user.id)
-        .maybeSingle()
-
-      if (
-        accountError ||
-        !account ||
-        !isUserRole(account.role) ||
-        account.status !== "active"
-      ) {
-        await supabase.auth.signOut()
-        form.setError("root", {
-          message: "This account is inactive or does not have a valid system role.",
-        })
-        return
-      }
-
-      router.replace(dashboardPathByRole[account.role])
-      router.refresh()
+      const result = await beginEmailLogin(values)
+      if (result.error) { form.setError("root", { message: result.error }); return }
+      if (result.email) { form.reset(); setVerificationEmail(result.email) }
     } catch (error) {
       form.setError("root", {
         message:
@@ -94,6 +64,8 @@ export function LoginForm1({
       })
     }
   }
+
+  if (verificationEmail) return <EmailCodeForm email={verificationEmail} onBack={() => setVerificationEmail(null)} />
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>

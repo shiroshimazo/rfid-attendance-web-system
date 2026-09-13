@@ -34,6 +34,9 @@ export const getCurrentAccount = cache(async (): Promise<CurrentAccount | null> 
 
   if (!user) return null
 
+  const { data: verified, error: verificationError } = await supabase.rpc("has_verified_email_session")
+  if (verificationError || verified !== true) return null
+
   const { data } = await supabase
     .from("users")
     .select("id, email, role, status")

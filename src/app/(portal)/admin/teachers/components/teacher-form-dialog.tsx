@@ -29,6 +29,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PhoneInput } from "@/components/ui/phone-input"
+import { ProfileImageUpload } from "@/components/profile-image-upload"
 import {
   Select,
   SelectContent,
@@ -289,6 +290,7 @@ export function TeacherFormDialog({
   const mode = teacher ? "edit" : "create"
   const departmentListId = React.useId()
   const [stepIndex, setStepIndex] = React.useState(0)
+  const [isUploading, setIsUploading] = React.useState(false)
 
   // Pilot scope: new assignments always start on BSIT 2nd Year.
   const bsitProgram = programs.find(
@@ -334,7 +336,7 @@ export function TeacherFormDialog({
 
   // Dates are recorded, never scheduled, so tomorrow is out of range.
   const today = toDateKey(new Date())
-  const isSubmitting = form.formState.isSubmitting
+  const isSubmitting = form.formState.isSubmitting || isUploading
   const step = steps[stepIndex]
   const isLastStep = stepIndex === steps.length - 1
 
@@ -343,6 +345,7 @@ export function TeacherFormDialog({
     : `${PILOT_PROGRAM_CODE} — ${PILOT_PROGRAM_NAME}`
 
   async function goNext() {
+    if (isSubmitting) return
     const valid = await form.trigger(step.fields, { shouldFocus: true })
 
     if (valid) setStepIndex((current) => Math.min(current + 1, steps.length - 1))
@@ -466,7 +469,7 @@ export function TeacherFormDialog({
 
             <div className="min-h-[20rem]">
               {step.id === "personal" ? (
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid items-start gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="fullName"
@@ -608,20 +611,21 @@ export function TeacherFormDialog({
                     render={({ field }) => (
                       <FormItem className="sm:col-span-2">
                         <FormLabel>
-                          Profile picture URL{" "}
+                          Profile picture{" "}
                           <span className="font-normal text-muted-foreground">
                             (optional)
                           </span>
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            inputMode="url"
-                            placeholder="https://example.com/photo.jpg"
+                          <ProfileImageUpload
+                            key={`${teacher?.id ?? "new"}-${open}`}
+                            onUploadingChange={setIsUploading}
+                            disabled={form.formState.isSubmitting}
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          Optional. Initials are shown when this is empty.
+                          JPG, PNG, or WebP, up to 2 MB. Initials are shown when no image is selected.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

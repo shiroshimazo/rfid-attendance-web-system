@@ -13,6 +13,8 @@ const userId = "20000000-0000-0000-0000-000000000001"
 before(async () => {
   await db.exec(`
     create role authenticated;
+    create role anon;
+    create role service_role bypassrls;
     create schema auth;
     create table auth.users (
       id uuid primary key,
@@ -41,6 +43,9 @@ beforeEach(async () => {
     insert into auth.users (id, email, raw_app_meta_data)
     values ('${adminId}', 'admin@example.test', '{"role":"admin"}');
     select set_config('request.jwt.claim.sub', '${adminId}', false);
+    select set_config('request.jwt.claims', '{"session_id":"30000000-0000-0000-0000-000000000001","role":"authenticated"}', false);
+    insert into public.email_verified_sessions(session_id, user_id)
+    values ('30000000-0000-0000-0000-000000000001', '${adminId}');
   `)
 })
 
@@ -182,8 +187,60 @@ for (const kind of ["student", "teacher"]) {
 
 test("a student session cannot change its lifecycle through the profile", async () => {
   const id = await createProfile("student")
+  await db.exec(`reset role;
+    insert into public.email_verified_sessions(session_id, user_id)
+    values ('30000000-0000-0000-0000-000000000002', '${userId}');
+    select set_config('request.jwt.claims', '{"session_id":"30000000-0000-0000-0000-000000000002","role":"authenticated"}', false);
+    set local role authenticated;`)
   await db.query("select set_config('request.jwt.claim.sub', $1, false)", [userId])
   const result = await db.query("update public.students set status = 'archived' where id = $1 returning id", [id])
   assert.equal(result.rows.length, 0)
   assert.equal(await accountStatus(), "active")
+})
+
+for (const role of ["admin", "teacher", "student"]) {
+  test(`${role} requires verification for this exact session`, async () => {
+    if (role !== "admin") await createProfile(role)
+    await db.exec("reset role")
+    const id = role === "admin" ? adminId : userId
+    await db.query("select set_config('request.jwt.claim.sub', $1, false)", [id])
+    await db.exec(`
+      select set_config('request.jwt.claims', '{"session_id":"40000000-0000-0000-0000-000000000001","role":"authenticated"}', false);
+      set local role authenticated;
+    `)
+    assert.equal((await db.query("select public.has_verified_email_session() as allowed")).rows[0].allowed, false)
+    assert.equal((await db.query("select * from public.users")).rows.length, 0)
+    await db.exec("reset role")
+    await db.query("insert into public.email_verified_sessions(session_id,user_id) values ('40000000-0000-0000-0000-000000000001',$1)", [id])
+    await db.exec("set local role authenticated")
+    assert.equal((await db.query("select public.has_verified_email_session() as allowed")).rows[0].allowed, true)
+    assert.ok((await db.query("select * from public.users")).rows.length > 0)
+    await db.exec(`select set_config('request.jwt.claims', '{"session_id":"40000000-0000-0000-0000-000000000002","role":"authenticated"}', false)`)
+    assert.equal((await db.query("select public.has_verified_email_session() as allowed")).rows[0].allowed, false)
+  })
+}
+
+test("unverified RPC requests are rejected", async () => {
+  await db.exec(`select set_config('request.jwt.claims', '{"role":"authenticated"}', false); set local role authenticated;`)
+  await assert.rejects(db.query("select public.require_verified_email_request()"), /Email verification required/)
+})
+
+test("a client cannot mark its own session verified", async () => {
+  await db.exec("set local role authenticated")
+  await assert.rejects(db.query("insert into public.email_verified_sessions(session_id,user_id) values ('40000000-0000-0000-0000-000000000001',$1)", [adminId]), /permission denied/)
+})
+
+test("email challenges stop after five attempts and expire", async () => {
+  await db.query("insert into public.login_email_challenges(token_hash,user_id,email,expires_at) values ('proof',$1,'admin@example.test',now()+interval '10 minutes'),('expired',$1,'admin@example.test',now()-interval '1 second')", [adminId])
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    assert.equal((await db.query("select * from public.claim_email_attempt('proof')")).rows[0].attempts, attempt)
+  }
+  assert.equal((await db.query("select * from public.claim_email_attempt('proof')")).rows.length, 0)
+  assert.equal((await db.query("select * from public.claim_email_attempt('expired')")).rows.length, 0)
+})
+
+test("email login service role can read account status before verification", async () => {
+  await db.exec("set local role service_role")
+  const { rows } = await db.query("select role,status from public.users where id = $1", [adminId])
+  assert.deepEqual(rows, [{ role: "admin", status: "active" }])
 })
