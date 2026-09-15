@@ -1,5 +1,7 @@
 "use server"
 
+import { auditActivity } from "@/services/audit/log"
+
 import { revalidatePath } from "next/cache"
 
 import { assertPilotProgram } from "@/features/academic/validation"
@@ -37,37 +39,39 @@ function describeError(error: { message: string; code?: string }) {
 export async function updateScheduleAction(
   input: UpdateScheduleInput
 ): Promise<ActionResult> {
-  await requireRole("admin")
+  return auditActivity("update_schedule", "class_schedules", async () => {
+    await requireRole("admin")
 
-  const parsed = updateScheduleSchema.safeParse(input)
+    const parsed = updateScheduleSchema.safeParse(input)
 
-  if (!parsed.success) {
-    return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
-  }
+    if (!parsed.success) {
+      return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
+    }
 
-  const values = parsed.data
-  const supabase = await createServerSupabaseClient()
+    const values = parsed.data
+    const supabase = await createServerSupabaseClient()
 
-  const programError = await assertPilotProgram(supabase, values.programId)
+    const programError = await assertPilotProgram(supabase, values.programId)
 
-  if (programError) return failure(programError)
+    if (programError) return failure(programError)
 
-  const { error } = await supabase.rpc("save_schedule_week", {
-    p_program_id: values.programId,
-    p_year: values.yearLevel,
-    p_section: values.section,
-    p_campus: values.campus,
-    p_days: values.days,
-    p_time: values.timeStart,
-    p_grace: values.graceMinutes,
-    p_status: values.status,
+    const { error } = await supabase.rpc("save_schedule_week", {
+      p_program_id: values.programId,
+      p_year: values.yearLevel,
+      p_section: values.section,
+      p_campus: values.campus,
+      p_days: values.days,
+      p_time: values.timeStart,
+      p_grace: values.graceMinutes,
+      p_status: values.status,
+    })
+    if (error) return failure(describeError(error))
+
+    revalidatePath(SCHEDULES_PATH)
+    revalidatePath("/admin/archives")
+
+    return success(`Section ${values.section} was updated.`)
   })
-  if (error) return failure(describeError(error))
-
-  revalidatePath(SCHEDULES_PATH)
-  revalidatePath("/admin/archives")
-
-  return success(`Section ${values.section} was updated.`)
 }
 
 /**
@@ -78,34 +82,36 @@ export async function updateScheduleAction(
 export async function setScheduleStatusAction(
   input: ScheduleStatusInput
 ): Promise<ActionResult> {
-  await requireRole("admin")
+  return auditActivity("set_schedule_status", "class_schedules", async () => {
+    await requireRole("admin")
 
-  const parsed = scheduleStatusSchema.safeParse(input)
+    const parsed = scheduleStatusSchema.safeParse(input)
 
-  if (!parsed.success) return failure("That request was not valid.")
+    if (!parsed.success) return failure("That request was not valid.")
 
-  const values = parsed.data
-  const supabase = await createServerSupabaseClient()
+    const values = parsed.data
+    const supabase = await createServerSupabaseClient()
 
-  const programError = await assertPilotProgram(supabase, values.programId)
+    const programError = await assertPilotProgram(supabase, values.programId)
 
-  if (programError) return failure(programError)
+    if (programError) return failure(programError)
 
-  const { error } = await supabase.rpc("set_schedule_week_status", {
-    p_program_id: values.programId,
-    p_year: values.yearLevel,
-    p_section: values.section,
-    p_campus: values.campus,
-    p_status: values.status,
+    const { error } = await supabase.rpc("set_schedule_week_status", {
+      p_program_id: values.programId,
+      p_year: values.yearLevel,
+      p_section: values.section,
+      p_campus: values.campus,
+      p_status: values.status,
+    })
+    if (error) return failure(describeError(error))
+
+    revalidatePath(SCHEDULES_PATH)
+    revalidatePath("/admin/archives")
+
+    return success(
+      values.status === "active"
+        ? `Section ${values.section} is now active.`
+        : `Section ${values.section} is now inactive.`
+    )
   })
-  if (error) return failure(describeError(error))
-
-  revalidatePath(SCHEDULES_PATH)
-  revalidatePath("/admin/archives")
-
-  return success(
-    values.status === "active"
-      ? `Section ${values.section} is now active.`
-      : `Section ${values.section} is now inactive.`
-  )
 }

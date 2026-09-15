@@ -19,8 +19,12 @@ before(async () => {
     create table auth.users (
       id uuid primary key,
       email text,
+      encrypted_password text,
+      raw_user_meta_data jsonb default '{}',
       raw_app_meta_data jsonb default '{}'
     );
+    create table auth.sessions(id uuid primary key,user_id uuid);
+    create table auth.audit_log_entries(id uuid,payload jsonb);
     create function auth.uid() returns uuid language sql stable as $$
       select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
     $$;
@@ -339,4 +343,62 @@ test("archive migration can be reapplied without fabricating legacy dates or cha
   await db.exec(migration.replace(/^begin;$/m, "").replace(/^commit;$/m, ""))
   assert.deepEqual((await db.query("select * from public.students order by id")).rows, before)
   assert.equal(before[0].archived_at, null)
+})
+
+
+test("system logs capture changes and archive/restore without copying personal fields", async () => {
+  const id = await createProfile("student")
+  await db.query("update public.students set full_name='PRIVATE NAME',parent_contact_number='PRIVATE PHONE',status='archived' where id=$1", [id])
+  await db.query("select public.restore_archived_record('students',$1)", [id])
+  const logs = (await db.query("select * from public.system_logs where entity='students' and record_id=$1 order by id", [String(id)])).rows
+  assert.deepEqual(logs.map(row => row.event), ['created','archived','restored'])
+  assert(logs.every(row => row.actor_id === adminId && row.outcome === 'success'))
+  assert(logs[1].details.changed_fields.includes('full_name'))
+  assert.equal(logs[1].details.after.status, 'archived')
+  assert(!JSON.stringify(logs).includes('PRIVATE NAME'))
+  assert(!JSON.stringify(logs).includes('PRIVATE PHONE'))
+  const before = (await db.query("select count(*) from public.system_logs")).rows[0].count
+  await db.exec("savepoint audit_rollback")
+  await db.query("update public.students set status='inactive' where id=$1", [id])
+  await db.exec("rollback to savepoint audit_rollback")
+  assert.equal((await db.query("select count(*) from public.system_logs")).rows[0].count,before)
+})
+
+test("system logs are admin-only and cannot be forged, edited or deleted by browser sessions", async () => {
+  await createProfile("teacher")
+  for (const statement of ["insert into public.system_logs(source,event,entity) values('application','fake','users')", "update public.system_logs set event='fake'", "delete from public.system_logs", "truncate public.system_logs"]) {
+    await db.exec("savepoint protected_log")
+    await assert.rejects(db.exec(statement), /permission|append-only/)
+    await db.exec("rollback to savepoint protected_log")
+  }
+  await db.exec("reset role")
+  await db.query("insert into public.email_verified_sessions(session_id,user_id) values('30000000-0000-0000-0000-000000000002',$1)", [userId])
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [userId])
+  await db.exec(`select set_config('request.jwt.claims','{"session_id":"30000000-0000-0000-0000-000000000002","role":"authenticated"}',false); set local role authenticated`)
+  assert.equal((await db.query("select * from public.system_logs")).rows.length,0)
+  await db.exec("reset role; savepoint immutable_logs")
+  await assert.rejects(db.exec("delete from public.system_logs"), /append-only/)
+  await db.exec("rollback to savepoint immutable_logs")
+})
+
+test("Auth audit records retain events but no password, OTP, token or raw payload", async () => {
+  await createProfile("student")
+  await db.exec("reset role")
+  await db.query("update auth.users set encrypted_password='SECRET HASH' where id=$1", [userId])
+  await db.query("insert into auth.audit_log_entries(payload) values($1::jsonb)", [JSON.stringify({action:'user_recovery_requested',actor_id:userId,password:'SECRET PASSWORD',token:'SECRET TOKEN',otp:'SECRET OTP'})])
+  await db.query("insert into public.email_verified_sessions(session_id,user_id) values('30000000-0000-0000-0000-000000000003',$1)", [userId])
+  await db.query("insert into auth.sessions(id,user_id) values('30000000-0000-0000-0000-000000000003',$1)", [userId])
+  await db.exec("delete from auth.sessions where id='30000000-0000-0000-0000-000000000003'")
+  const logs = (await db.query("select * from public.system_logs where entity='authentication'")).rows
+  for (const event of ['password_changed','user_recovery_requested','session_verified','session_ended']) assert(logs.some(row=>row.event===event),event)
+  assert(!JSON.stringify(logs).includes('SECRET'))
+})
+
+test("system log migration is idempotent and preserves audit history", async () => {
+  await createProfile("student")
+  await db.exec("reset role")
+  const before = (await db.query("select * from public.system_logs order by id")).rows
+  const sql = await readFile(new URL("../supabase/migrations/202609210001_system_logs.sql",import.meta.url),"utf8")
+  await db.exec(sql.replace(/^begin;$/m, "").replace(/^commit;$/m,""))
+  assert.deepEqual((await db.query("select * from public.system_logs order by id")).rows,before)
 })

@@ -38,6 +38,7 @@ function harness(account = { id: "teacher-user", role: "teacher", status: "activ
     return query
   } }
   const load = createSourceLoader({
+    "@/services/audit/log": { auditActivity: async (_event, _entity, operation) => operation(), auditRoute: async (_event, _entity, operation) => operation() },
     "@/features/auth/server": {
       getCurrentAccount: async () => account,
       requireRole: async role => { assert.equal(role, account.role); assert.equal(account.status, "active"); return account },

@@ -14,6 +14,7 @@ function setup({ configured = true, error = null, data = { ok: true, action: "ti
   const calls = []
   const smsCalls = []
   const load = createSourceLoader({
+    "@/services/audit/log": { auditActivity: async (_event, _entity, operation) => operation(), auditRoute: async (_event, _entity, operation) => operation() },
     "@/services/sms/philsms": { deliverArrivalSms: async id => { smsCalls.push(id) } },
     "@/services/supabase/admin": {
       isSupabaseAdminConfigured: () => configured,

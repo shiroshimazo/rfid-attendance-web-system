@@ -4,6 +4,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Analytics01Icon,
   Archive01Icon,
+  Task01Icon,
   CalendarCheckIcon,
   CalendarClockIcon,
   Home04Icon,
@@ -21,6 +22,7 @@ function makeIcon(icon: typeof Home04Icon) {
   }
 }
 
+const SystemLogsIcon = makeIcon(Task01Icon)
 const ArchivesIcon = makeIcon(Archive01Icon)
 const DashboardIcon = makeIcon(Home04Icon)
 const TeachersIcon = makeIcon(TeachingIcon)
@@ -84,6 +86,7 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
         },
         { title: "Reports", url: "/admin/reports", icon: ReportsIcon },
         { title: "Archives", url: "/admin/archives", icon: ArchivesIcon },
+        { title: "System Logs", url: "/admin/system-logs", icon: SystemLogsIcon },
         { title: "Settings", url: "/admin/settings", icon: SettingsIcon },
       ],
     },

@@ -56,6 +56,7 @@ function fixture() {
     return {access_token:`header.${Buffer.from(JSON.stringify({session_id:id})).toString('base64url')}.signature`,refresh_token:`refresh-${sessionCount}`}
   }
   const load = createSourceLoader({
+    "@/services/audit/log": { auditActivity: async (_event, _entity, operation) => operation(), auditRoute: async (_event, _entity, operation) => operation() },
     './roles':createSourceLoader()('src/features/auth/roles.ts'),
     'next/headers':{cookies:async()=>jar},
     '@/services/supabase/admin':{createAdminSupabaseClient:()=>admin},

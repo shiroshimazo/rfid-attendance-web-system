@@ -8,6 +8,7 @@ import { createSourceLoader } from "./helpers/load-typescript.mjs"
 function setup({ forbidden = false, error = null } = {}) {
   const calls = [], paths = []
   const load = createSourceLoader({
+    "@/services/audit/log": { auditActivity: async (_event, _entity, operation) => operation(), auditRoute: async (_event, _entity, operation) => operation() },
     "@/features/auth/server": { requireRole: async role => { calls.push(["role", role]); if (forbidden) throw new Error("Forbidden") } },
     "@/services/supabase/server": { createServerSupabaseClient: async () => ({ rpc: async (name, input) => { calls.push([name, input]); return { error } } }) },
     "next/cache": { revalidatePath: path => paths.push(path) },

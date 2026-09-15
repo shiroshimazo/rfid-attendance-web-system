@@ -62,6 +62,7 @@ function actionFixture() {
     }
   } }
   const source = createSourceLoader({
+    "@/services/audit/log": { auditActivity: async (_event, _entity, operation) => operation(), auditRoute: async (_event, _entity, operation) => operation() },
     "next/cache": { revalidatePath: path => paths.push(path) },
     "@/features/auth/server": { requireRole: async role => {
       assert.equal(role, "admin")

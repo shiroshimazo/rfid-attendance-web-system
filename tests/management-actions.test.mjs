@@ -46,6 +46,7 @@ function fixture(kind) {
     deleteUser: async id => { calls.push(["deleteAuth", id]); return { error: state.cleanupError } },
   } } }
   const load = createSourceLoader({
+    "@/services/audit/log": { auditActivity: async (_event, _entity, operation) => operation(), auditRoute: async (_event, _entity, operation) => operation() },
     "next/cache": { revalidatePath: path => calls.push(["revalidate", path]) },
     "@/features/auth/server": { requireRole: async role => { assert.equal(role, "admin"); if (state.denied) throw Error("Access denied") } },
     "@/services/supabase/server": { createServerSupabaseClient: async () => supabase },

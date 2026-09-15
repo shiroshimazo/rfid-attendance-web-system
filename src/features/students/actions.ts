@@ -1,5 +1,7 @@
 "use server"
 
+import { auditActivity } from "@/services/audit/log"
+
 import { revalidatePath } from "next/cache"
 
 import { assertPilotProgram } from "@/features/academic/validation"
@@ -79,166 +81,174 @@ function studentColumns(values: {
 export async function createStudentAction(
   input: CreateStudentInput
 ): Promise<ActionResult> {
-  await requireRole("admin")
+  return auditActivity("create_student", "students", async () => {
+    await requireRole("admin")
 
-  const parsed = createStudentSchema.safeParse(input)
+    const parsed = createStudentSchema.safeParse(input)
 
-  if (!parsed.success) {
-    return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
-  }
+    if (!parsed.success) {
+      return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
+    }
 
-  const values = parsed.data
-  const supabase = await createServerSupabaseClient()
+    const values = parsed.data
+    const supabase = await createServerSupabaseClient()
 
-  const programError = await assertPilotProgram(supabase, values.programId)
-  if (programError) return failure(programError)
+    const programError = await assertPilotProgram(supabase, values.programId)
+    if (programError) return failure(programError)
 
-  let admin: ReturnType<typeof createAdminSupabaseClient>
+    let admin: ReturnType<typeof createAdminSupabaseClient>
 
-  try {
-    admin = createAdminSupabaseClient()
-  } catch (error) {
-    return failure(
-      error instanceof Error
-        ? error.message
-        : "Supabase administration is not configured."
-    )
-  }
+    try {
+      admin = createAdminSupabaseClient()
+    } catch (error) {
+      return failure(
+        error instanceof Error
+          ? error.message
+          : "Supabase administration is not configured."
+      )
+    }
 
-  // The login account is created with the service role, which never leaves
-  // this server action. Everything after it runs under the admin's own
-  // session, so Row Level Security still applies.
-  const created = await admin.auth.admin.createUser({
-    email: values.email,
-    password: values.password,
-    email_confirm: true,
-    app_metadata: { role: "student" },
-    user_metadata: { full_name: values.fullName },
+    // The login account is created with the service role, which never leaves
+    // this server action. Everything after it runs under the admin's own
+    // session, so Row Level Security still applies.
+    const created = await admin.auth.admin.createUser({
+      email: values.email,
+      password: values.password,
+      email_confirm: true,
+      app_metadata: { role: "student" },
+      user_metadata: { full_name: values.fullName },
+    })
+
+    if (created.error || !created.data.user) {
+      return failure(
+        created.error?.message ?? "The login account could not be created."
+      )
+    }
+
+    const userId = created.data.user.id
+
+    const { error: studentError } = await supabase.rpc("save_student_profile", {
+      p_user_id: userId,
+      p_profile: studentColumns(values),
+    })
+
+    if (studentError) {
+      const cleanup = await cleanupFailedProfileCreation(admin, "students", userId, studentError.code)
+      return failure(describeError(studentError) + cleanup)
+    }
+
+    revalidatePath(STUDENTS_PATH)
+    revalidatePath("/admin/archives")
+    revalidatePath("/admin/rfid-cards")
+
+    return success(`${values.fullName} was added.`)
   })
-
-  if (created.error || !created.data.user) {
-    return failure(
-      created.error?.message ?? "The login account could not be created."
-    )
-  }
-
-  const userId = created.data.user.id
-
-  const { error: studentError } = await supabase.rpc("save_student_profile", {
-    p_user_id: userId,
-    p_profile: studentColumns(values),
-  })
-
-  if (studentError) {
-    const cleanup = await cleanupFailedProfileCreation(admin, "students", userId, studentError.code)
-    return failure(describeError(studentError) + cleanup)
-  }
-
-  revalidatePath(STUDENTS_PATH)
-  revalidatePath("/admin/archives")
-  revalidatePath("/admin/rfid-cards")
-
-  return success(`${values.fullName} was added.`)
 }
 
 export async function updateStudentAction(
   input: UpdateStudentInput
 ): Promise<ActionResult> {
-  await requireRole("admin")
+  return auditActivity("update_student", "students", async () => {
+    await requireRole("admin")
 
-  const parsed = updateStudentSchema.safeParse(input)
+    const parsed = updateStudentSchema.safeParse(input)
 
-  if (!parsed.success) {
-    return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
-  }
+    if (!parsed.success) {
+      return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
+    }
 
-  const values = parsed.data
-  const supabase = await createServerSupabaseClient()
+    const values = parsed.data
+    const supabase = await createServerSupabaseClient()
 
-  const programError = await assertPilotProgram(supabase, values.programId)
-  if (programError) return failure(programError)
+    const programError = await assertPilotProgram(supabase, values.programId)
+    if (programError) return failure(programError)
 
-  const { data: existing, error: existingError } = await supabase
-    .from("students")
-    .select("id, user_id, email")
-    .eq("id", values.id)
-    .maybeSingle<{ id: number; user_id: string; email: string }>()
+    const { data: existing, error: existingError } = await supabase
+      .from("students")
+      .select("id, user_id, email")
+      .eq("id", values.id)
+      .maybeSingle<{ id: number; user_id: string; email: string }>()
 
-  if (existingError) return failure(describeError(existingError))
-  if (!existing) return failure("That student record no longer exists.")
+    if (existingError) return failure(describeError(existingError))
+    if (!existing) return failure("That student record no longer exists.")
 
-  const emailChanged = existing.email.toLowerCase() !== values.email
-  let admin: ReturnType<typeof createAdminSupabaseClient> | undefined
-  if (emailChanged) {
-    try { admin = createAdminSupabaseClient() }
-    catch { return failure("Supabase administration is not configured. No changes were saved.") }
-  }
+    const emailChanged = existing.email.toLowerCase() !== values.email
+    let admin: ReturnType<typeof createAdminSupabaseClient> | undefined
+    if (emailChanged) {
+      try { admin = createAdminSupabaseClient() }
+      catch { return failure("Supabase administration is not configured. No changes were saved.") }
+    }
 
-  const { error: updateError } = await supabase.rpc("save_student_profile", {
-    p_id: values.id,
-    p_profile: studentColumns(values),
+    const { error: updateError } = await supabase.rpc("save_student_profile", {
+      p_id: values.id,
+      p_profile: studentColumns(values),
+    })
+    if (updateError) return failure(describeError(updateError))
+
+    // Non-email edits commit together. Email remains Auth-owned even if its API fails.
+    const emailResult = admin ? await changeManagedLoginEmail(admin, existing.user_id, values.email) : null
+    revalidatePath(STUDENTS_PATH)
+    revalidatePath("/admin/archives")
+    revalidatePath("/admin/rfid-cards")
+    if (emailResult) return emailResult
+
+    return success(`${values.fullName} was updated.`)
   })
-  if (updateError) return failure(describeError(updateError))
-
-  // Non-email edits commit together. Email remains Auth-owned even if its API fails.
-  const emailResult = admin ? await changeManagedLoginEmail(admin, existing.user_id, values.email) : null
-  revalidatePath(STUDENTS_PATH)
-  revalidatePath("/admin/archives")
-  revalidatePath("/admin/rfid-cards")
-  if (emailResult) return emailResult
-
-  return success(`${values.fullName} was updated.`)
 }
 
 export async function setStudentStatusAction(
   id: number,
   status: (typeof accountStatuses)[number]
 ): Promise<ActionResult> {
-  await requireRole("admin")
+  return auditActivity("set_student_status", "students", async () => {
+    await requireRole("admin")
 
-  const parsedId = studentIdSchema.safeParse(id)
+    const parsedId = studentIdSchema.safeParse(id)
 
-  if (!parsedId.success || !accountStatuses.includes(status)) {
-    return failure("That request was not valid.")
-  }
+    if (!parsedId.success || !accountStatuses.includes(status)) {
+      return failure("That request was not valid.")
+    }
 
-  const supabase = await createServerSupabaseClient()
+    const supabase = await createServerSupabaseClient()
 
-  const { data: student, error: readError } = await supabase
-    .from("students")
-    .select("id, user_id, full_name")
-    .eq("id", parsedId.data)
-    .maybeSingle<{ id: number; user_id: string; full_name: string }>()
+    const { data: student, error: readError } = await supabase
+      .from("students")
+      .select("id, user_id, full_name")
+      .eq("id", parsedId.data)
+      .maybeSingle<{ id: number; user_id: string; full_name: string }>()
 
-  if (readError) return failure(describeError(readError))
-  if (!student) return failure("That student record no longer exists.")
+    if (readError) return failure(describeError(readError))
+    if (!student) return failure("That student record no longer exists.")
 
-  // The database synchronizes account status and retires the active card
-  // atomically, just as it does when status changes through the edit dialog.
-  const { error: studentError } = await supabase
-    .from("students")
-    .update({ status })
-    .eq("id", student.id)
+    // The database synchronizes account status and retires the active card
+    // atomically, just as it does when status changes through the edit dialog.
+    const { error: studentError } = await supabase
+      .from("students")
+      .update({ status })
+      .eq("id", student.id)
 
-  if (studentError) return failure(describeError(studentError))
+    if (studentError) return failure(describeError(studentError))
 
-  revalidatePath(STUDENTS_PATH)
-  revalidatePath("/admin/archives")
-  revalidatePath("/admin/rfid-cards")
+    revalidatePath(STUDENTS_PATH)
+    revalidatePath("/admin/archives")
+    revalidatePath("/admin/rfid-cards")
 
-  return success(
-    status === "archived"
-      ? `${student.full_name} was archived.`
-      : status === "inactive"
-        ? `${student.full_name} was made inactive.`
-        : `${student.full_name} was restored.`
-  )
+    return success(
+      status === "archived"
+        ? `${student.full_name} was archived.`
+        : status === "inactive"
+          ? `${student.full_name} was made inactive.`
+          : `${student.full_name} was restored.`
+    )
+  })
 }
 
 /** Uses the same UID assignment operation as the RFID directory. */
 export async function assignRfidCardAction(input: RfidAssignmentInput): Promise<ActionResult> {
-  await requireRole("admin")
-  const parsed = rfidAssignmentSchema.safeParse(input)
-  if (!parsed.success) return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
-  return writeRfidCard({ operation: "save", ...parsed.data })
+  return auditActivity("assign_rfid_card", "students", async () => {
+    await requireRole("admin")
+    const parsed = rfidAssignmentSchema.safeParse(input)
+    if (!parsed.success) return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
+    return writeRfidCard({ operation: "save", ...parsed.data })
+  })
 }

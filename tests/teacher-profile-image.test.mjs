@@ -14,6 +14,7 @@ function setup({ role = "admin", status = "active", missing = false, uploadError
     }),
   }
   const load = createSourceLoader({
+    "@/services/audit/log": { auditActivity: async (_event, _entity, operation) => operation(), auditRoute: async (_event, _entity, operation) => operation() },
     "@/features/auth/server": { getCurrentAccount: async () => ({ id: "admin-id", role, status }) },
     "@/services/supabase/admin": { createAdminSupabaseClient: () => ({ storage }) },
   })
