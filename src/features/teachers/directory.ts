@@ -100,7 +100,7 @@ export function buildTeacherDirectory(
     ])
   }
 
-  const teachers: TeacherView[] = snapshot.teachers.map((teacher) => ({
+  const teachers: TeacherView[] = snapshot.teachers.filter((row) => row.status !== "archived").map((teacher) => ({
     id: teacher.id,
     userId: teacher.user_id,
     teacherId: teacher.teacher_id,

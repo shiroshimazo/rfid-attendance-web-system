@@ -6,7 +6,7 @@ import { createServerSupabaseClient } from "@/services/supabase/server"
 import { confirmSubjectSchema, createSubjectScheduleSchema, editSubjectScheduleSchema, subjectEnrollmentSchema, subjectScheduleIdSchema } from "@/features/subject-attendance/schema"
 
 function refreshSubjectViews() {
-  for (const path of ["/admin/schedules", "/admin/dashboard", "/admin/attendance", "/admin/reports", "/teacher/dashboard", "/teacher/attendance", "/teacher/reports", "/student/dashboard", "/student/my-attendance"]) revalidatePath(path)
+  for (const path of ["/admin/archives", "/admin/schedules/subject-schedules", "/admin/schedules/student-subject-enrollment", "/admin/dashboard", "/admin/attendance", "/admin/reports", "/teacher/dashboard", "/teacher/attendance", "/teacher/reports", "/student/dashboard", "/student/my-attendance"]) revalidatePath(path)
 }
 
 export async function confirmSubjectAction(input: unknown) {

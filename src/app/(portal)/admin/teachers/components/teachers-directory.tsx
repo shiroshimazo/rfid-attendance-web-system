@@ -318,7 +318,7 @@ export function TeachersDirectory({ directory }: { directory: TeacherDirectory }
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
-              {accountStatuses.map((option) => (
+              {accountStatuses.filter((option) => option !== "archived").map((option) => (
                 <SelectItem key={option} value={option}>
                   {accountStatusLabels[option]}
                 </SelectItem>

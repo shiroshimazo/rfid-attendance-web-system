@@ -48,16 +48,17 @@ const bundle = await build({
       return <><TeacherSubjectConsole schedules={currentSchedules} students={students} records={records} enrollments={enrollments} evidence={evidence} date="2026-09-08" today="2026-09-08"/>
         <SubjectRecords rows={records}/>
         <SubjectEnrollmentEditor schedules={currentSchedules} students={students} enrollments={enrollments}/>
-        <SubjectSchedulesEditor assignments={[{id:10,year_level:'2nd Year',section:'21001',campus:'Main Campus',teacher:{full_name:'Teacher',status:'active'},course:{course_code:'SUB1',course_name:'Subject 1'}}]} schedules={schedules}/><Toaster/></>;
+        <SubjectSchedulesEditor assignments={[{id:10,year_level:'2nd Year',section:'21001',campus:'Main Campus',teacher:{full_name:'Teacher',status:'active'},course:{course_code:'SUB1',course_name:'Subject 1'}}]} schedules={[...schedules,{...schedules[0],id:99,status:"archived",course:{course_code:"ARCHIVED_ONLY",course_name:"Archived Subject"}}]}/><Toaster/></>;
     }
     createRoot(document.getElementById('root')).render(<App/>);
   `, loader: "tsx", resolveDir: root },
   bundle: true, write: false, format: "iife", jsx: "automatic", logLevel: "silent",
   define: { "process.env.NODE_ENV": '"production"' },
   plugins: [{ name: "boundaries", setup(builder) {
+    builder.onResolve({ filter: /^@\/components\/ui\/goey-toaster$/ }, () => ({ path: "toast", namespace: "fixture" }))
     builder.onResolve({ filter: /^@\/features\/subject-attendance\/actions$/ }, () => ({ path: "actions", namespace: "fixture" }))
     builder.onResolve({ filter: /^next\/navigation$/ }, () => ({ path: "navigation", namespace: "fixture" }))
-    builder.onLoad({ filter: /.*/, namespace: "fixture" }, args => ({ contents: args.path === "navigation"
+    builder.onLoad({ filter: /.*/, namespace: "fixture" }, args => ({ resolveDir: root, contents: args.path === "toast" ? 'export { toast as gooeyToast } from "sonner";' : args.path === "navigation"
       ? 'export const useRouter=()=>({refresh(){},push(url){window.pushed=url}});'
       : 'export const saveSubjectEnrollmentAction=input=>window.enrollFixture(input); export const confirmSubjectAction=input=>window.confirmFixture(input); export const createSubjectScheduleAction=async input=>{window.scheduleSaved=input;return {ok:true,message:"Schedule saved"}}; export const editSubjectScheduleAction=async input=>{window.scheduleEdited=input;return {ok:true,message:"Schedule updated"}}; export const retireSubjectScheduleAction=async id=>{window.retired=id;return {ok:true,message:"Schedule retired"}};' }))
   } }],
@@ -74,6 +75,7 @@ try {
   const errors = []
   page.on("pageerror", error => errors.push(error.message))
   await page.goto(`http://127.0.0.1:${server.address().port}`)
+  assert.equal(await page.getByText("ARCHIVED_ONLY", { exact: true }).count(), 0)
   assert.equal(await page.getByLabel("Scheduled subject").inputValue(), '1')
   await page.getByText('No tap recorded', {exact:true}).waitFor()
   await page.getByText("Not confirmed yet", { exact: true }).waitFor()

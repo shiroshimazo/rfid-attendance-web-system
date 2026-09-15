@@ -98,6 +98,7 @@ export function buildScheduleDirectory(
   const grouped = new Map<string, ClassScheduleRow[]>()
 
   for (const row of snapshot.schedules) {
+    if (row.status === "archived") continue
     const key = keyOf(row)
     grouped.set(key, [...(grouped.get(key) ?? []), row])
   }

@@ -38,9 +38,18 @@ export async function AdminSubjectSchedulesPanel() {
   await requireRole("admin")
   let data
   try {
-    data = await Promise.all([fetchSubjectAssignments(), fetchSubjectSchedules(), fetchSubjectStudents(), fetchSubjectEnrollments()])
+    data = await Promise.all([fetchSubjectAssignments(), fetchSubjectSchedules()])
   } catch (error) { return errorPanel(error) }
-  const [assignments, schedules, students, enrollments] = data
-  return <><SubjectSchedulesEditor assignments={assignments} schedules={schedules} />
-    <SubjectEnrollmentEditor schedules={schedules} students={students} enrollments={enrollments} /></>
+  const [assignments, schedules] = data
+  return <SubjectSchedulesEditor assignments={assignments} schedules={schedules} />
+}
+
+export async function AdminSubjectEnrollmentPanel() {
+  await requireRole("admin")
+  let data
+  try {
+    data = await Promise.all([fetchSubjectSchedules(), fetchSubjectStudents(), fetchSubjectEnrollments()])
+  } catch (error) { return errorPanel(error) }
+  const [schedules, students, enrollments] = data
+  return <SubjectEnrollmentEditor schedules={schedules} students={students} enrollments={enrollments} />
 }

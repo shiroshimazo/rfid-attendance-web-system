@@ -124,11 +124,15 @@ function searchText(row: SubjectSchedule) {
 
 export function SubjectSchedulesEditor({
   assignments,
-  schedules,
+  schedules: allSchedules,
 }: {
   assignments: SubjectAssignment[]
   schedules: SubjectSchedule[]
 }) {
+  const schedules = React.useMemo(
+    () => allSchedules.filter((row) => row.status !== "archived"),
+    [allSchedules]
+  )
   const router = useRouter()
   const [search, setSearch] = React.useState("")
   const [day, setDay] = React.useState("all")
@@ -306,7 +310,7 @@ export function SubjectSchedulesEditor({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All status</SelectItem>
-                {accountStatuses.map((value) => (
+                {accountStatuses.filter((value) => value !== "archived").map((value) => (
                   <SelectItem key={value} value={value}>
                     {accountStatusLabels[value]}
                   </SelectItem>

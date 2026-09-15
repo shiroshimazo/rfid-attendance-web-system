@@ -3,6 +3,7 @@ import { createElement, type ComponentType } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Analytics01Icon,
+  Archive01Icon,
   CalendarCheckIcon,
   CalendarClockIcon,
   Home04Icon,
@@ -20,6 +21,7 @@ function makeIcon(icon: typeof Home04Icon) {
   }
 }
 
+const ArchivesIcon = makeIcon(Archive01Icon)
 const DashboardIcon = makeIcon(Home04Icon)
 const TeachersIcon = makeIcon(TeachingIcon)
 const StudentsIcon = makeIcon(UsersIcon)
@@ -72,8 +74,16 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
         { title: "Manage Students", url: "/admin/students", icon: StudentsIcon },
         { title: "Manage RFID Cards", url: "/admin/rfid-cards", icon: RfidIcon },
         { title: "Attendance", url: "/admin/attendance", icon: AttendanceIcon },
-        { title: "Schedules", url: "/admin/schedules", icon: SchedulesIcon },
+        {
+          title: "Schedules", url: "/admin/schedules", icon: SchedulesIcon,
+          items: [
+            { title: "Subject Schedules", url: "/admin/schedules/subject-schedules" },
+            { title: "Student Subject Enrollment", url: "/admin/schedules/student-subject-enrollment" },
+            { title: "Class Schedules", url: "/admin/schedules/class-schedules" },
+          ],
+        },
         { title: "Reports", url: "/admin/reports", icon: ReportsIcon },
+        { title: "Archives", url: "/admin/archives", icon: ArchivesIcon },
         { title: "Settings", url: "/admin/settings", icon: SettingsIcon },
       ],
     },

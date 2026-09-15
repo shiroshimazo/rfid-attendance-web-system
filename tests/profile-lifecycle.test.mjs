@@ -254,3 +254,89 @@ test("email login service role can read account status before verification", asy
   const { rows } = await db.query("select role,status from public.users where id = $1", [adminId])
   assert.deepEqual(rows, [{ role: "admin", status: "active" }])
 })
+
+for (const kind of ["student", "teacher"]) {
+  test(`archives restore ${kind} through existing lifecycle rules`, async () => {
+    const id = await createProfile(kind)
+    if (kind === "student") await addCards(id)
+    else await addAssignment(id)
+    await db.query(`update public.${kind}s set status='archived' where id=$1`, [id])
+    const archived = (await db.query(`select archived_at from public.${kind}s where id=$1`, [id])).rows[0]
+    assert.ok(archived.archived_at)
+    await db.query("select public.restore_archived_record($1,$2)", [`${kind}s`, id])
+    assert.equal(await accountStatus(), "active")
+    assert.equal((await db.query(`select archived_at from public.${kind}s where id=$1`, [id])).rows[0].archived_at, null)
+    if (kind === "student") assert.deepEqual(await cardStatuses(), ["Deactivated", "Lost", "Inactive", "Deactivated"])
+    else assert.deepEqual(await assignmentStatuses(), ["active"])
+    await db.exec("savepoint stale_restore")
+    await assert.rejects(db.query("select public.restore_archived_record($1,$2)", [`${kind}s`, id]), /no longer archived/)
+    await db.exec("rollback to savepoint stale_restore")
+  })
+}
+
+test("archive restore rejects non-admin identities and unsupported categories", async () => {
+  const id = await createProfile("student", "archived")
+  await db.exec("savepoint invalid_category")
+  await assert.rejects(db.query("select public.restore_archived_record('users',$1)", [id]), /supported archive category/)
+  await db.exec("rollback to savepoint invalid_category")
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [userId])
+  await db.exec("savepoint denied_restore")
+  await assert.rejects(db.query("select public.restore_archived_record('students',$1)", [id]), /Only an active administrator/)
+  await db.exec("rollback to savepoint denied_restore")
+})
+
+test("class archive restoration changes only the selected weekday", async () => {
+  await db.exec("set local role authenticated")
+  const { rows: [before] } = await db.query("select * from public.class_schedules order by id limit 1")
+  await db.query("update public.class_schedules set status='archived' where id=$1", [before.id])
+  const { rows: others } = await db.query("select * from public.class_schedules where id<>$1 order by id", [before.id])
+  await db.query("select public.restore_archived_record('class_schedules',$1)", [before.id])
+  const { rows: [after] } = await db.query("select * from public.class_schedules where id=$1", [before.id])
+  assert.equal(after.status, 'active')
+  assert.equal(after.time_start, before.time_start)
+  assert.equal(after.grace_minutes, before.grace_minutes)
+  assert.deepEqual((await db.query("select * from public.class_schedules where id<>$1 order by id", [before.id])).rows, others)
+})
+
+test("subject archive restoration retains enrollment and rejects timetable conflicts or changed assignments", async () => {
+  const teacherId = await createProfile("teacher")
+  await addAssignment(teacherId)
+  const { rows: [assignment] } = await db.query("select id from public.teacher_assignments where teacher_id=$1", [teacherId])
+  const { rows: [schedule] } = await db.query("select public.create_subject_schedule($1,1,'08:00','09:00') as id", [assignment.id])
+  await db.exec("reset role")
+  const enrolledUser = "20000000-0000-0000-0000-000000000009"
+  await db.query("insert into auth.users(id,email,raw_app_meta_data) values($1,'enrolled@example.test','{\"role\":\"student\"}')", [enrolledUser])
+  await db.exec("set local role authenticated")
+  const { rows: [enrolled] } = await db.query(`insert into public.students(user_id,student_id,full_name,email,parent_name,parent_contact_number,program_id,year_level,section,campus)
+    select $1,'ENROLLED','Enrolled Student','enrolled@example.test','Guardian','09123456789',id,'2nd Year','21001','Main Campus'
+    from public.programs where program_code='BSIT' returning id`, [enrolledUser])
+  await db.query("select public.save_subject_enrollment($1,$2::bigint[],1)", [schedule.id, [enrolled.id]])
+  await db.query("select public.retire_subject_schedule($1)", [schedule.id])
+  const { rows: enrollmentBefore } = await db.query("select * from public.subject_enrollments order by schedule_id, student_id")
+  await db.query("select public.restore_archived_record('subject_schedules',$1)", [schedule.id])
+  assert.equal((await db.query("select status from public.subject_schedules where id=$1", [schedule.id])).rows[0].status, 'active')
+  assert.deepEqual((await db.query("select * from public.subject_enrollments order by schedule_id, student_id")).rows, enrollmentBefore)
+  await db.query("select public.retire_subject_schedule($1)", [schedule.id])
+  const { rows: [replacement] } = await db.query("select public.create_subject_schedule($1,1,'08:30','09:30') as id", [assignment.id])
+  await db.exec("savepoint overlap_restore")
+  await assert.rejects(db.query("select public.restore_archived_record('subject_schedules',$1)", [schedule.id]), /conflicts/)
+  await db.exec("rollback to savepoint overlap_restore")
+  assert.equal((await db.query("select status from public.subject_schedules where id=$1", [schedule.id])).rows[0].status, 'archived')
+  await db.query("select public.retire_subject_schedule($1)", [replacement.id])
+  await db.query("update public.teacher_assignments set section='21002' where id=$1", [assignment.id])
+  await db.exec("savepoint changed_assignment")
+  await assert.rejects(db.query("select public.restore_archived_record('subject_schedules',$1)", [schedule.id]), /assignment.*changed/)
+  await db.exec("rollback to savepoint changed_assignment")
+})
+
+
+test("archive migration can be reapplied without fabricating legacy dates or changing records", async () => {
+  const id = await createProfile("student", "archived")
+  await db.query("update public.students set archived_at=null where id=$1", [id])
+  await db.exec("reset role")
+  const before = (await db.query("select * from public.students order by id")).rows
+  const migration = await readFile(new URL("../supabase/migrations/202609200001_admin_archives.sql", import.meta.url), "utf8")
+  await db.exec(migration.replace(/^begin;$/m, "").replace(/^commit;$/m, ""))
+  assert.deepEqual((await db.query("select * from public.students order by id")).rows, before)
+  assert.equal(before[0].archived_at, null)
+})

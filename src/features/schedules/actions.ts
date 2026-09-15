@@ -20,7 +20,7 @@ import {
 } from "@/features/schedules/schema"
 import { createServerSupabaseClient } from "@/services/supabase/server"
 
-const SCHEDULES_PATH = "/admin/schedules"
+const SCHEDULES_PATH = "/admin/schedules/class-schedules"
 
 function describeError(error: { message: string; code?: string }) {
   return describeDatabaseError(
@@ -65,6 +65,7 @@ export async function updateScheduleAction(
   if (error) return failure(describeError(error))
 
   revalidatePath(SCHEDULES_PATH)
+  revalidatePath("/admin/archives")
 
   return success(`Section ${values.section} was updated.`)
 }
@@ -100,6 +101,7 @@ export async function setScheduleStatusAction(
   if (error) return failure(describeError(error))
 
   revalidatePath(SCHEDULES_PATH)
+  revalidatePath("/admin/archives")
 
   return success(
     values.status === "active"

@@ -135,6 +135,7 @@ export async function createStudentAction(
   }
 
   revalidatePath(STUDENTS_PATH)
+  revalidatePath("/admin/archives")
   revalidatePath("/admin/rfid-cards")
 
   return success(`${values.fullName} was added.`)
@@ -182,6 +183,7 @@ export async function updateStudentAction(
   // Non-email edits commit together. Email remains Auth-owned even if its API fails.
   const emailResult = admin ? await changeManagedLoginEmail(admin, existing.user_id, values.email) : null
   revalidatePath(STUDENTS_PATH)
+  revalidatePath("/admin/archives")
   revalidatePath("/admin/rfid-cards")
   if (emailResult) return emailResult
 
@@ -221,6 +223,7 @@ export async function setStudentStatusAction(
   if (studentError) return failure(describeError(studentError))
 
   revalidatePath(STUDENTS_PATH)
+  revalidatePath("/admin/archives")
   revalidatePath("/admin/rfid-cards")
 
   return success(

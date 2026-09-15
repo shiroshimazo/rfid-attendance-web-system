@@ -137,6 +137,7 @@ export async function createTeacherAction(
   }
 
   revalidatePath(TEACHERS_PATH)
+  revalidatePath("/admin/archives")
 
   return success(`${values.fullName} was added.`)
 }
@@ -195,6 +196,7 @@ export async function updateTeacherAction(
 
   const emailResult = admin ? await changeManagedLoginEmail(admin, existing.user_id, values.email) : null
   revalidatePath(TEACHERS_PATH)
+  revalidatePath("/admin/archives")
   revalidatePath("/admin/schedules")
   if (emailResult) return emailResult
 
@@ -233,6 +235,7 @@ export async function setTeacherStatusAction(
   if (teacherError) return failure(describeError(teacherError))
 
   revalidatePath(TEACHERS_PATH)
+  revalidatePath("/admin/archives")
 
   return success(
     status === "archived"

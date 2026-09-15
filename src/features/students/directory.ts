@@ -83,7 +83,7 @@ export function buildStudentDirectory(
     ])
   }
 
-  const students: StudentView[] = snapshot.students.map((student) => {
+  const students: StudentView[] = snapshot.students.filter((row) => row.status !== "archived").map((student) => {
     const program = programsById.get(student.program_id)
     const cards = cardsByStudent.get(student.id) ?? []
 
