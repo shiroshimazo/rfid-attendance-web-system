@@ -1,5 +1,28 @@
 # Database migrations
 
+## Academic Setup catalog rollout
+
+Apply `202609220001_academic_catalog.sql` after the earlier migrations and
+before deploying the Academic Setup release. Manage Students, Manage Teachers,
+and the subject schedule picker read the new catalog, so those pages fail to
+load until it is applied. The migration adds `status` to `courses`, so subjects
+are archived rather than deleted, and creates `academic_sections`, the year
+level, section, and campus catalog behind the pickers. It seeds the BSIT 2nd
+Year pilot scope (sections 21001–21010 at the three pilot campuses) and every
+grouping already used by students, teacher assignments, and subject schedules.
+Student, assignment, schedule, and attendance text columns gain no foreign keys
+and are not rewritten. Rerunning the migration changes nothing.
+
+The pilot lock is unchanged: the save RPCs still accept only BSIT 2nd Year pilot
+groupings. Other programs and groupings are stored for future use and appear as
+catalog-only entries in the pickers.
+
+Local proof: `node --test tests/academic-catalog.test.mjs tests/academic-setup.test.mjs`.
+[rollback_academic_setup.sql](../rollback_academic_setup.sql) reverses the
+migration; run it only together with the previous application version. It
+drops the catalog table and the subject status column, which no history row
+references.
+
 ## P06 PhilSMS rollout
 
 Apply `202609150001_philsms_arrival_delivery.sql`, then run

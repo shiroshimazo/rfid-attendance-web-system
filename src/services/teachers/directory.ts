@@ -1,5 +1,11 @@
+import {
+  fetchAcademicSections,
+  type AcademicSectionRow,
+} from "@/services/academic/directory"
 import { fetchAllRows } from "@/services/supabase/pagination"
 import { createServerSupabaseClient } from "@/services/supabase/server"
+
+export type { AcademicSectionRow }
 
 export type AccountStatus = "active" | "inactive" | "archived"
 
@@ -44,6 +50,8 @@ export interface CourseRow {
   program_id: number
   course_code: string
   course_name: string
+  /** Archived subjects leave the assignment picker but still label old rows. */
+  status: AccountStatus
 }
 
 export interface TeacherDirectorySnapshot {
@@ -51,6 +59,8 @@ export interface TeacherDirectorySnapshot {
   assignments: TeacherAssignmentRow[]
   programs: ProgramRow[]
   courses: CourseRow[]
+  /** Class groupings behind the section and campus pickers. */
+  sections: AcademicSectionRow[]
 }
 
 const teacherColumns =
@@ -63,7 +73,7 @@ const teacherColumns =
 export async function fetchTeacherDirectorySnapshot(): Promise<TeacherDirectorySnapshot> {
   const supabase = await createServerSupabaseClient()
 
-  const [teachers, assignments, programs, courses] = await Promise.all([
+  const [teachers, assignments, programs, courses, sections] = await Promise.all([
     fetchAllRows<TeacherRow>((from, to) =>
       supabase
         .from("teachers")
@@ -93,12 +103,13 @@ export async function fetchTeacherDirectorySnapshot(): Promise<TeacherDirectoryS
     fetchAllRows<CourseRow>((from, to) =>
       supabase
         .from("courses")
-        .select("id, program_id, course_code, course_name")
+        .select("id, program_id, course_code, course_name, status")
         .order("course_code", { ascending: true })
         .range(from, to)
         .returns<CourseRow[]>()
     ),
+    fetchAcademicSections(supabase),
   ])
 
-  return { teachers, assignments, programs, courses }
+  return { teachers, assignments, programs, courses, sections }
 }

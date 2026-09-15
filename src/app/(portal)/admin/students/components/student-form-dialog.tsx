@@ -39,12 +39,16 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  PILOT_CAMPUSES,
   PILOT_PROGRAM_CODE,
   PILOT_PROGRAM_NAME,
-  PILOT_SECTIONS,
   PILOT_YEAR_LEVEL,
 } from "@/features/academic/pilot"
+import {
+  campusPickerOptions,
+  isOfferedCampus,
+  sectionPickerOptions,
+  type ClassGroupingOption,
+} from "@/features/academic/schema"
 import {
   createStudentAction,
   updateStudentAction,
@@ -111,8 +115,6 @@ const steps: WizardStep[] = [
     fields: ["password", "confirmPassword"],
   },
 ]
-
-const sessionLabels = { morning: "Morning", afternoon: "Afternoon" } as const
 
 const buttonMotion = "transition-transform active:scale-[0.96]"
 
@@ -264,12 +266,15 @@ export function StudentFormDialog({
   onOpenChange,
   student,
   programs,
+  groupings,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   /** Present when editing; absent when creating. */
   student?: StudentView | null
   programs: ProgramOption[]
+  /** Academic Setup groupings behind the section and campus pickers. */
+  groupings: ClassGroupingOption[]
 }) {
   const mode = student ? "edit" : "create"
   const [stepIndex, setStepIndex] = React.useState(0)
@@ -310,6 +315,21 @@ export function StudentFormDialog({
   const isLastStep = stepIndex === steps.length - 1
 
   const summary = useWatch({ control: form.control })
+
+  // Section and campus options come from the Academic Setup catalog.
+  const groupingScope = {
+    programId: summary.programId ? Number(summary.programId) : null,
+    yearLevel: summary.yearLevel || PILOT_YEAR_LEVEL,
+  }
+  const sectionOptions = sectionPickerOptions(groupings, {
+    ...groupingScope,
+    current: summary.section ?? "",
+  })
+  const campusOptions = campusPickerOptions(groupings, {
+    ...groupingScope,
+    section: summary.section ?? "",
+    current: summary.campus ?? "",
+  })
 
   async function goNext() {
     const valid = await form.trigger(step.fields, { shouldFocus: true })
@@ -710,7 +730,21 @@ export function StudentFormDialog({
                         <FormLabel>Section</FormLabel>
                         <Select
                           value={field.value}
-                          onValueChange={field.onChange}
+                          onValueChange={(value) => {
+                            field.onChange(value)
+                            // A campus the new section does not offer is cleared.
+                            const campus = form.getValues("campus")
+                            if (
+                              campus &&
+                              !isOfferedCampus(
+                                groupings,
+                                { ...groupingScope, section: value },
+                                campus
+                              )
+                            ) {
+                              form.setValue("campus", "")
+                            }
+                          }}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
@@ -718,13 +752,23 @@ export function StudentFormDialog({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {PILOT_SECTIONS.map((section) => (
-                              <SelectItem key={section.code} value={section.code}>
-                                {section.code} — {sessionLabels[section.session]}
+                            {sectionOptions.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                                disabled={option.disabled}
+                              >
+                                {option.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                        {sectionOptions.length === 0 ? (
+                          <FormDescription>
+                            No class groupings for this program and year level.
+                            Add them in Academic Setup.
+                          </FormDescription>
+                        ) : null}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -745,9 +789,13 @@ export function StudentFormDialog({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {PILOT_CAMPUSES.map((campus) => (
-                              <SelectItem key={campus} value={campus}>
-                                {campus}
+                            {campusOptions.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                                disabled={option.disabled}
+                              >
+                                {option.label}
                               </SelectItem>
                             ))}
                           </SelectContent>

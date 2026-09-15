@@ -651,6 +651,7 @@ export function StudentsDirectory({
         open={isAddOpen}
         onOpenChange={setAddOpen}
         programs={programs}
+        groupings={directory.groupings}
       />
       <StudentFormDialog
         key={editing?.id ?? "edit"}
@@ -660,6 +661,7 @@ export function StudentsDirectory({
         }}
         student={editing}
         programs={programs}
+        groupings={directory.groupings}
       />
       <StudentViewDialog
         student={viewing}

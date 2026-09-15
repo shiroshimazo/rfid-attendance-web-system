@@ -3,6 +3,11 @@
  * Single source of truth for every form, filter, and validation that must
  * stay inside the pilot: program locked to BSIT, year fixed to 2nd Year,
  * sections 21001-21010, three campuses, eight subjects.
+ *
+ * Picker options now come from `public.academic_sections` and
+ * `public.courses`, managed in Admin → Academic Setup. These constants still
+ * define what the pilot validations accept and seeded that catalog, so do not
+ * use them as dropdown sources.
  */
 
 export const PILOT_PROGRAM_CODE = "BSIT" as const

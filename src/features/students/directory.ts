@@ -1,4 +1,8 @@
 import {
+  toClassGroupingOptions,
+  type ClassGroupingOption,
+} from "@/features/academic/schema"
+import {
   fetchStudentDirectorySnapshot,
   type AccountStatus,
   type RfidCardStatus,
@@ -6,7 +10,7 @@ import {
 } from "@/services/students/directory"
 import type { ProgramOption } from "@/features/teachers/directory"
 
-export type { AccountStatus, ProgramOption, RfidCardStatus }
+export type { AccountStatus, ClassGroupingOption, ProgramOption, RfidCardStatus }
 
 export interface StudentCardView {
   id: number
@@ -46,6 +50,8 @@ export interface StudentView {
 export interface StudentDirectory {
   students: StudentView[]
   programs: ProgramOption[]
+  /** Academic Setup groupings behind the section and campus pickers. */
+  groupings: ClassGroupingOption[]
   yearLevels: string[]
   sections: string[]
   campuses: string[]
@@ -124,6 +130,7 @@ export function buildStudentDirectory(
         name: program.program_name,
         department: program.department,
       })),
+    groupings: toClassGroupingOptions(snapshot.sections, snapshot.programs),
     yearLevels: distinctSorted(students.map((student) => student.yearLevel)),
     sections: distinctSorted(students.map((student) => student.section)),
     campuses: distinctSorted(students.map((student) => student.campus)),

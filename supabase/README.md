@@ -7,7 +7,8 @@ The database implementation follows `rfid-docs/rfid-docs/Database Design/Databas
 - `users` for application roles and status (passwords stay in Supabase Auth)
 - `teachers` and `students` for role-specific profiles
 - `programs` for degree programs such as BSIT and BSHM
-- `courses` for subjects such as IPT, ITE, and MS101
+- `courses` for subjects such as IPT, ITE, and MS101, archived rather than deleted
+- `academic_sections` for the year level, section, and campus groupings that feed pickers
 - `teacher_assignments` for program, subject, year-level, section, and campus assignments
 - `rfid_cards`, `attendance_records`, and `sms_notifications` for the attendance workflow
 - Constraints, indexes, automatic `updated_at` triggers, Auth synchronization, and Row Level Security policies

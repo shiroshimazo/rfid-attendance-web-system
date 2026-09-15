@@ -39,12 +39,16 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import {
-  PILOT_CAMPUSES,
   PILOT_PROGRAM_CODE,
   PILOT_PROGRAM_NAME,
-  PILOT_SECTIONS,
   PILOT_YEAR_LEVEL,
 } from "@/features/academic/pilot"
+import {
+  campusPickerOptions,
+  isOfferedCampus,
+  sectionPickerOptions,
+  type ClassGroupingOption,
+} from "@/features/academic/schema"
 import {
   createTeacherAction,
   updateTeacherAction,
@@ -277,6 +281,7 @@ export function TeacherFormDialog({
   teacher,
   programs,
   courses,
+  groupings,
   departments,
 }: {
   open: boolean
@@ -285,6 +290,8 @@ export function TeacherFormDialog({
   teacher?: TeacherView | null
   programs: ProgramOption[]
   courses: CourseOption[]
+  /** Academic Setup groupings behind the section and campus pickers. */
+  groupings: ClassGroupingOption[]
   departments: string[]
 }) {
   const mode = teacher ? "edit" : "create"
@@ -730,11 +737,30 @@ export function TeacherFormDialog({
                 <div className="space-y-4">
                   <ul className="space-y-3">
                     {assignments.fields.map((assignmentField, index) => {
-                      const selectedProgram =
-                        watchedAssignments?.[index]?.programId ?? ""
+                      const watched = watchedAssignments?.[index]
+                      const selectedProgram = watched?.programId ?? ""
+                      const selectedCourse = watched?.courseId ?? ""
+                      // Archived subjects leave the picker; a saved one stays visible.
                       const programCourses = courses.filter(
-                        (course) => String(course.programId) === selectedProgram
+                        (course) =>
+                          String(course.programId) === selectedProgram &&
+                          (course.status === "active" ||
+                            String(course.id) === selectedCourse)
                       )
+                      // Section and campus options come from the Academic Setup catalog.
+                      const groupingScope = {
+                        programId: selectedProgram ? Number(selectedProgram) : null,
+                        yearLevel: watched?.yearLevel || PILOT_YEAR_LEVEL,
+                      }
+                      const sectionOptions = sectionPickerOptions(groupings, {
+                        ...groupingScope,
+                        current: watched?.section ?? "",
+                      })
+                      const campusOptions = campusPickerOptions(groupings, {
+                        ...groupingScope,
+                        section: watched?.section ?? "",
+                        current: watched?.campus ?? "",
+                      })
 
                       return (
                         <li
@@ -807,6 +833,9 @@ export function TeacherFormDialog({
                                           value={String(course.id)}
                                         >
                                           {course.code} — {course.name}
+                                          {course.status === "active"
+                                            ? ""
+                                            : ` (${accountStatusLabels[course.status].toLowerCase()})`}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
@@ -814,7 +843,8 @@ export function TeacherFormDialog({
                                   {selectedProgram &&
                                   programCourses.length === 0 ? (
                                     <FormDescription>
-                                      This program has no courses yet.
+                                      No active subjects for this program yet.
+                                      Add them in Academic Setup.
                                     </FormDescription>
                                   ) : null}
                                   <FormMessage />
@@ -846,7 +876,23 @@ export function TeacherFormDialog({
                                   <FormLabel>Section</FormLabel>
                                   <Select
                                     value={field.value}
-                                    onValueChange={field.onChange}
+                                    onValueChange={(value) => {
+                                      field.onChange(value)
+                                      // A campus the new section does not offer is cleared.
+                                      const campus = form.getValues(
+                                        `assignments.${index}.campus`
+                                      )
+                                      if (
+                                        campus &&
+                                        !isOfferedCampus(
+                                          groupings,
+                                          { ...groupingScope, section: value },
+                                          campus
+                                        )
+                                      ) {
+                                        form.setValue(`assignments.${index}.campus`, "")
+                                      }
+                                    }}
                                   >
                                     <FormControl>
                                       <SelectTrigger className="w-full">
@@ -854,19 +900,23 @@ export function TeacherFormDialog({
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      {PILOT_SECTIONS.map((option) => (
+                                      {sectionOptions.map((option) => (
                                         <SelectItem
-                                          key={option.code}
-                                          value={option.code}
+                                          key={option.value}
+                                          value={option.value}
+                                          disabled={option.disabled}
                                         >
-                                          {option.code} —{" "}
-                                          {option.session === "morning"
-                                            ? "Morning"
-                                            : "Afternoon"}
+                                          {option.label}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
                                   </Select>
+                                  {sectionOptions.length === 0 ? (
+                                    <FormDescription>
+                                      No class groupings for this program and
+                                      year level. Add them in Academic Setup.
+                                    </FormDescription>
+                                  ) : null}
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -887,9 +937,13 @@ export function TeacherFormDialog({
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                      {PILOT_CAMPUSES.map((option) => (
-                                        <SelectItem key={option} value={option}>
-                                          {option}
+                                      {campusOptions.map((option) => (
+                                        <SelectItem
+                                          key={option.value}
+                                          value={option.value}
+                                          disabled={option.disabled}
+                                        >
+                                          {option.label}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>

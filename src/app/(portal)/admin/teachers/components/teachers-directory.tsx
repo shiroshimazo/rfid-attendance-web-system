@@ -538,6 +538,7 @@ export function TeachersDirectory({ directory }: { directory: TeacherDirectory }
         onOpenChange={setAddOpen}
         programs={programs}
         courses={courses}
+        groupings={directory.groupings}
         departments={departments}
       />
       <TeacherFormDialog
@@ -549,6 +550,7 @@ export function TeachersDirectory({ directory }: { directory: TeacherDirectory }
         teacher={editing}
         programs={programs}
         courses={courses}
+        groupings={directory.groupings}
         departments={departments}
       />
       <TeacherViewDialog

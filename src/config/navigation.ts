@@ -8,6 +8,7 @@ import {
   CalendarCheckIcon,
   CalendarClockIcon,
   Home04Icon,
+  Mortarboard01Icon,
   ScanLineIcon,
   Settings02Icon,
   TeachingIcon,
@@ -30,6 +31,7 @@ const StudentsIcon = makeIcon(UsersIcon)
 const RfidIcon = makeIcon(ScanLineIcon)
 const AttendanceIcon = makeIcon(CalendarCheckIcon)
 const SchedulesIcon = makeIcon(CalendarClockIcon)
+const AcademicIcon = makeIcon(Mortarboard01Icon)
 const ReportsIcon = makeIcon(Analytics01Icon)
 const SettingsIcon = makeIcon(Settings02Icon)
 
@@ -76,6 +78,7 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
         { title: "Manage Students", url: "/admin/students", icon: StudentsIcon },
         { title: "Manage RFID Cards", url: "/admin/rfid-cards", icon: RfidIcon },
         { title: "Attendance", url: "/admin/attendance", icon: AttendanceIcon },
+        { title: "Academic Setup", url: "/admin/academic", icon: AcademicIcon },
         {
           title: "Schedules", url: "/admin/schedules", icon: SchedulesIcon,
           items: [

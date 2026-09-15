@@ -63,13 +63,15 @@ const emptyValues: SubjectScheduleDialogValues = {
 }
 
 /**
- * Only assignments with an active teacher and an explicit class placement can
- * be scheduled; the server rejects the rest anyway.
+ * Only assignments with an active teacher, an active subject, and an explicit
+ * class placement can be scheduled. The server rejects missing placements;
+ * archived subjects keep their existing schedules but are offered no new ones.
  */
 export function schedulableAssignments(assignments: SubjectAssignment[]) {
   return assignments.filter(
     (row) =>
       row.teacher?.status === "active" &&
+      row.course?.status === "active" &&
       row.year_level &&
       row.section &&
       row.campus

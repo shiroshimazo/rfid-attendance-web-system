@@ -46,12 +46,12 @@ export interface SubjectAssignment {
   section: string | null
   campus: string | null
   teacher: { full_name: string; status: string } | null
-  course: { course_code: string; course_name: string } | null
+  course: { course_code: string; course_name: string; status: string } | null
 }
 
 export async function fetchSubjectAssignments() {
   const supabase = await createServerSupabaseClient()
   return fetchAllRows<SubjectAssignment>((from, to) => supabase.from("teacher_assignments")
-    .select("id, year_level, section, campus, teacher:teachers(full_name, status), course:courses(course_code, course_name)")
+    .select("id, year_level, section, campus, teacher:teachers(full_name, status), course:courses(course_code, course_name, status)")
     .eq("status", "active").order("id").range(from, to).returns<SubjectAssignment[]>())
 }

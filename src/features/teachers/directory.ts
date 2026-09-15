@@ -1,10 +1,14 @@
 import {
+  toClassGroupingOptions,
+  type ClassGroupingOption,
+} from "@/features/academic/schema"
+import {
   fetchTeacherDirectorySnapshot,
   type AccountStatus,
   type TeacherDirectorySnapshot,
 } from "@/services/teachers/directory"
 
-export type { AccountStatus }
+export type { AccountStatus, ClassGroupingOption }
 
 export interface AssignmentView {
   id: number
@@ -50,12 +54,16 @@ export interface CourseOption {
   programId: number
   code: string
   name: string
+  /** Only active subjects are offered for new assignments. */
+  status: AccountStatus
 }
 
 export interface TeacherDirectory {
   teachers: TeacherView[]
   programs: ProgramOption[]
   courses: CourseOption[]
+  /** Academic Setup groupings behind the section and campus pickers. */
+  groupings: ClassGroupingOption[]
   /** Distinct department values already in use, for the filter and datalist. */
   departments: string[]
 }
@@ -137,7 +145,9 @@ export function buildTeacherDirectory(
       programId: course.program_id,
       code: course.course_code,
       name: course.course_name,
+      status: course.status,
     })),
+    groupings: toClassGroupingOptions(snapshot.sections, snapshot.programs),
     departments,
   }
 }

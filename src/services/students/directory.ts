@@ -1,8 +1,12 @@
+import {
+  fetchAcademicSections,
+  type AcademicSectionRow,
+} from "@/services/academic/directory"
 import { fetchAllRows } from "@/services/supabase/pagination"
 import { createServerSupabaseClient } from "@/services/supabase/server"
 import type { AccountStatus, ProgramRow } from "@/services/teachers/directory"
 
-export type { AccountStatus, ProgramRow }
+export type { AcademicSectionRow, AccountStatus, ProgramRow }
 
 export type RfidCardStatus = "Active" | "Inactive" | "Lost" | "Deactivated"
 
@@ -40,6 +44,8 @@ export interface StudentDirectorySnapshot {
   students: StudentRow[]
   cards: RfidCardRow[]
   programs: ProgramRow[]
+  /** Class groupings behind the section and campus pickers. */
+  sections: AcademicSectionRow[]
 }
 
 const studentColumns =
@@ -52,7 +58,7 @@ const studentColumns =
 export async function fetchStudentDirectorySnapshot(): Promise<StudentDirectorySnapshot> {
   const supabase = await createServerSupabaseClient()
 
-  const [students, cards, programs] = await Promise.all([
+  const [students, cards, programs, sections] = await Promise.all([
     fetchAllRows<StudentRow>((from, to) =>
       supabase
         .from("students")
@@ -77,7 +83,8 @@ export async function fetchStudentDirectorySnapshot(): Promise<StudentDirectoryS
         .range(from, to)
         .returns<ProgramRow[]>()
     ),
+    fetchAcademicSections(supabase),
   ])
 
-  return { students, cards, programs }
+  return { students, cards, programs, sections }
 }

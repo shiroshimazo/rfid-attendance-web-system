@@ -16,7 +16,7 @@ for (const kind of ["students", "teachers"]) {
     const records = ["active", "inactive", "archived"].map((status, id) => ({
       id, status, full_name: status, section: status, year_level: "2nd Year", campus: status, department: status,
     }))
-    const snapshot = { [kind]: records, programs: [], cards: [], courses: [], assignments: [] }
+    const snapshot = { [kind]: records, programs: [], cards: [], courses: [], assignments: [], sections: [] }
     const build = kind === "students" ? buildStudentDirectory : buildTeacherDirectory
     const result = build(snapshot)
     assert.deepEqual(result[kind].map(row => row.status), ["active", "inactive"])
