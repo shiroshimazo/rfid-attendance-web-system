@@ -16,7 +16,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { PILOT_PROGRAM_CODE, PILOT_YEAR_LEVEL } from "@/features/academic/pilot"
 import type { AcademicKpis } from "@/features/academic/schema"
 import { formatNumber } from "@/lib/format"
 
@@ -59,25 +58,25 @@ export function KpiCards({ kpis }: { kpis: AcademicKpis }) {
         label="Active Programs"
         value={<SlidingNumber value={kpis.activePrograms} />}
         icon={GraduationCap}
-        detail={`${formatNumber(kpis.archivedPrograms)} archived. Only ${PILOT_PROGRAM_CODE} can be assigned during the pilot.`}
+        detail={`${formatNumber(kpis.archivedPrograms)} archived. Active programs are available for assignment.`}
       />
       <KpiCard
         label="Active Subjects"
         value={<SlidingNumber value={kpis.activeCourses} />}
         icon={BookOpen}
-        detail={`${formatNumber(kpis.pilotCourses)} under ${PILOT_PROGRAM_CODE}, offered to teacher assignments and schedules.`}
+        detail={`${formatNumber(kpis.assignableCourses)} under active programs, offered to teacher assignments and schedules.`}
       />
       <KpiCard
         label="Class Groupings"
         value={<SlidingNumber value={kpis.activeSections} />}
         icon={Layers}
-        detail={`${formatNumber(kpis.assignableSections)} can be assigned in the ${PILOT_PROGRAM_CODE} ${PILOT_YEAR_LEVEL} pilot.`}
+        detail={`${formatNumber(kpis.assignableSections)} can be assigned to students and teachers.`}
       />
       <KpiCard
-        label="Catalog Only"
-        value={<SlidingNumber value={kpis.catalogOnly} />}
+        label="Unavailable Entries"
+        value={<SlidingNumber value={kpis.unavailableEntries} />}
         icon={Library}
-        detail="Active programs, subjects, and groupings stored for future use. They cannot be assigned until the pilot is retired."
+        detail="Active subjects and groupings whose programs are inactive or archived."
       />
     </section>
   )

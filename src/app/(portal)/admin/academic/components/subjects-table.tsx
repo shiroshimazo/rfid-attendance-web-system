@@ -300,7 +300,7 @@ export function SubjectsTable({
                       <TableCell className="px-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium">{course.code}</span>
-                          <ScopeBadge assignable={course.isPilot} />
+                          <ScopeBadge assignable={course.status === "active" && course.programStatus === "active"} />
                         </div>
                         <p className="max-w-80 text-xs whitespace-normal text-muted-foreground">
                           {course.name}

@@ -284,7 +284,10 @@ enabled. `node tests/student-picker.browser.mjs` passed actual registration and
 reassignment form interactions with fixture students and mocked save boundaries:
 mouse selection/submitted student ID, search by student ID/program, keyboard
 selection, clear, Escape dismissal, scrolling at a 390px viewport, and background
-focus containment. Production build and TypeScript passed; focused lint reported 0 errors and the
+focus containment. That picker later moved to Manage Students, where the same
+dialog-scoped combobox now selects a registered card, covered by
+`node tests/card-picker.browser.mjs`.
+Production build and TypeScript passed; focused lint reported 0 errors and the
 existing unused `children` warning in `src/components/ui/combobox.tsx:278`.
 No database migration is required for this form fix. The user subsequently
 confirmed successful assignment and completion of the requested P03 checks.

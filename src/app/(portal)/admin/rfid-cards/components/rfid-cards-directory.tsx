@@ -4,11 +4,11 @@ import * as React from "react"
 import {
   Eye,
   MoreHorizontal,
+  PencilLine,
   Plus,
   ScanLine,
   Search,
   ShieldCheck,
-  UserRoundCheck,
 } from "lucide-react"
 
 import { RfidStatusBadge } from "@/components/attendance-status-badge"
@@ -60,7 +60,7 @@ import { rfidCardStatuses } from "@/features/rfid/schema"
 import { formatDateValue, formatNumber } from "@/lib/format"
 import { normalizeRfidUid } from "@/lib/rfid-uid"
 
-import { RfidCardAssignDialog } from "./rfid-card-assign-dialog"
+import { RfidCardEditDialog } from "./rfid-card-edit-dialog"
 import { RfidCardRegisterDialog } from "./rfid-card-register-dialog"
 import { RfidCardStatusDialog } from "./rfid-card-status-dialog"
 import { RfidCardViewDialog } from "./rfid-card-view-dialog"
@@ -140,7 +140,7 @@ export function RfidCardsDirectory({
 }: {
   directory: RfidCardDirectory
 }) {
-  const { cards, students, programs, stats } = directory
+  const { cards, programs, stats } = directory
 
   const [query, setQuery] = React.useState("")
   const [status, setStatus] = React.useState("all")
@@ -153,7 +153,7 @@ export function RfidCardsDirectory({
 
   const [isRegisterOpen, setRegisterOpen] = React.useState(false)
   const [viewing, setViewing] = React.useState<RfidCardView | null>(null)
-  const [assigning, setAssigning] = React.useState<RfidCardView | null>(null)
+  const [editing, setEditing] = React.useState<RfidCardView | null>(null)
   const [changingStatus, setChangingStatus] =
     React.useState<RfidCardView | null>(null)
 
@@ -195,7 +195,8 @@ export function RfidCardsDirectory({
         <CardTitle>Registered RFID cards</CardTitle>
         <CardDescription>
           {formatNumber(stats.total)} card{stats.total === 1 ? "" : "s"}{" "}
-          registered, {formatNumber(stats.active)} active
+          stored, {formatNumber(stats.active)} active,{" "}
+          {formatNumber(stats.unassigned)} unassigned
           {stats.lost > 0 ? `, ${formatNumber(stats.lost)} reported lost` : ""}.
           {stats.withoutActiveCard > 0
             ? ` ${formatNumber(stats.withoutActiveCard)} active student${
@@ -270,7 +271,7 @@ export function RfidCardsDirectory({
           <EmptyState
             icon={ScanLine}
             title="No RFID cards yet"
-            description="Register the first card to let a student tap in at the reader."
+            description="Register the first card, then assign it to a student in Manage Students."
           />
         ) : rows.length === 0 ? (
           <EmptyState
@@ -344,7 +345,7 @@ export function RfidCardsDirectory({
                     <TableCell className="px-3">
                       <div className="min-w-0">
                         <p className="font-medium">
-                          {card.student?.fullName ?? "Unknown student"}
+                          {card.student?.fullName ?? "Unassigned"}
                         </p>
                         <p className="text-xs text-muted-foreground md:hidden">
                           {card.student?.studentId ?? "—"} ·{" "}
@@ -390,9 +391,9 @@ export function RfidCardsDirectory({
                             <Eye aria-hidden />
                             View card details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => setAssigning(card)}>
-                            <UserRoundCheck aria-hidden />
-                            Assign or reassign
+                          <DropdownMenuItem onSelect={() => setEditing(card)}>
+                            <PencilLine aria-hidden />
+                            Edit card details
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -434,7 +435,6 @@ export function RfidCardsDirectory({
       <RfidCardRegisterDialog
         open={isRegisterOpen}
         onOpenChange={setRegisterOpen}
-        students={students}
       />
       <RfidCardViewDialog
         card={viewing}
@@ -442,11 +442,10 @@ export function RfidCardsDirectory({
           if (!open) setViewing(null)
         }}
       />
-      <RfidCardAssignDialog
-        card={assigning}
-        students={students}
+      <RfidCardEditDialog
+        card={editing}
         onOpenChange={(open) => {
-          if (!open) setAssigning(null)
+          if (!open) setEditing(null)
         }}
       />
       <RfidCardStatusDialog

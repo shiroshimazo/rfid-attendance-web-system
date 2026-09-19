@@ -5,42 +5,30 @@ import {
   requiredDate,
   rfidCardStatuses,
   rfidNumberField,
-  selectedId,
 } from "@/features/shared/schema"
 
 export { rfidCardStatuses }
 
-const issuedOn = requiredDate("Choose the date the card was issued")
+const issuedOn = requiredDate("Choose the date the card was recorded")
 
-/** Fields shared by the browser form and the authoritative server schema. */
+/**
+ * This directory stores cards; it never picks a holder. Fields are shared by
+ * the browser form and the authoritative server schema.
+ */
 const cardFields = {
   rfidNumber: rfidNumberField,
   cardStatus: z.enum(rfidCardStatuses),
   assignedDate: issuedOn,
 }
 
-/** The combobox holds the student id as a string, so the form stays flat. */
-export const rfidCardFormSchema = z.object({
+export const rfidCardFormSchema = z.object(cardFields)
+
+export const registerRfidCardSchema = z.object(cardFields)
+
+/** Editing a stored card covers its printed UID, status, and date. */
+export const editRfidCardSchema = z.object({
   ...cardFields,
-  studentId: z.string().min(1, "Select a student"),
-})
-
-export const registerRfidCardSchema = z.object({
-  ...cardFields,
-  studentId: selectedId("Select a student"),
-})
-
-export const rfidCardAssignmentFormSchema = z.object({
-  studentId: z.string().min(1, "Select a student"),
-  cardStatus: z.enum(rfidCardStatuses),
-  assignedDate: issuedOn,
-})
-
-export const rfidCardAssignmentSchema = z.object({
   id: databaseIdSchema,
-  studentId: selectedId("Select a student"),
-  cardStatus: z.enum(rfidCardStatuses),
-  assignedDate: issuedOn,
 })
 
 export const rfidCardStatusFormSchema = z.object({
@@ -53,10 +41,7 @@ export const rfidCardStatusSchema = z.object({
 })
 
 export type RfidCardFormValues = z.infer<typeof rfidCardFormSchema>
-export type RfidCardAssignmentValues = z.infer<
-  typeof rfidCardAssignmentFormSchema
->
 export type RfidCardStatusValues = z.infer<typeof rfidCardStatusFormSchema>
 export type RegisterRfidCardInput = z.input<typeof registerRfidCardSchema>
-export type RfidCardAssignmentInput = z.input<typeof rfidCardAssignmentSchema>
+export type EditRfidCardInput = z.input<typeof editRfidCardSchema>
 export type RfidCardStatusInput = z.input<typeof rfidCardStatusSchema>

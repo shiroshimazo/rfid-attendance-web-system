@@ -4,7 +4,7 @@ import { auditActivity } from "@/services/audit/log"
 
 import { revalidatePath } from "next/cache"
 
-import { assertPilotAssignments } from "@/features/academic/validation"
+import { assertActiveAssignments } from "@/features/academic/validation"
 import { changeManagedLoginEmail, cleanupFailedProfileCreation } from "@/features/shared/management"
 import { requireRole } from "@/features/auth/server"
 import {
@@ -82,7 +82,7 @@ export async function createTeacherAction(
     const values = parsed.data
     const supabase = await createServerSupabaseClient()
 
-    const assignmentValidation = await assertPilotAssignments(supabase, values.assignments)
+    const assignmentValidation = await assertActiveAssignments(supabase, values.assignments)
     if (assignmentValidation) return failure(assignmentValidation)
 
     let admin: ReturnType<typeof createAdminSupabaseClient>
@@ -161,7 +161,7 @@ export async function updateTeacherAction(
     const values = parsed.data
     const supabase = await createServerSupabaseClient()
 
-    const assignmentValidation = await assertPilotAssignments(supabase, values.assignments)
+    const assignmentValidation = await assertActiveAssignments(supabase, values.assignments)
     if (assignmentValidation) return failure(assignmentValidation)
 
     const { data: existing, error: existingError } = await supabase

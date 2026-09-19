@@ -13,7 +13,7 @@ const inputs = {
 
 function fixture(kind) {
   const calls = []
-  const state = { program: "BSIT", courseProgram: 1, existingEmail: "old@example.test", rpcError: null,
+  const state = { program: "BSIT", programStatus: "active", courseProgram: 1, existingEmail: "old@example.test", rpcError: null,
     emailError: null, emailThrows: false, configThrows: false, profileFound: false, profileReadError: null,
     cleanupError: null, denied: false }
   const supabase = {
@@ -21,14 +21,14 @@ function fixture(kind) {
       select: () => ({
         eq: () => ({ maybeSingle: async () => {
           calls.push(["read", table])
-          if (table === "programs") return { data: { id: 1, program_code: state.program }, error: null }
+          if (table === "programs") return { data: { id: 1, program_code: state.program, status: state.programStatus }, error: null }
           assert.equal(table, `${kind}s`)
           if (calls.some(call => call[0] === "createAuth")) return {
             data: state.profileFound ? { id: 1 } : null, error: state.profileReadError,
           }
           return { data: { id: 1, user_id: "target-user", email: state.existingEmail }, error: null }
         } }),
-        in: async () => ({ data: [{ id: 2, program_id: state.courseProgram }], error: null }),
+        in: async () => ({ data: [{ id: 2, program_id: state.courseProgram, status: "active" }], error: null }),
       }),
     }),
     rpc: async (name, payload) => { calls.push(["rpc", name, payload]); return { data: 1, error: state.rpcError } },
@@ -58,15 +58,27 @@ function fixture(kind) {
 }
 
 for (const kind of ["teacher", "student"]) {
-  test(`${kind}: non-BSIT catalog ID rejected before any Auth creation or write`, async () => {
+  test(`${kind}: inactive program rejected before any Auth creation or write`, async () => {
     const f = fixture(kind)
-    f.state.program = "BSHM"
+    f.state.programStatus = "inactive"
     for (const action of [f.create, f.update]) {
       const result = await action(inputs[kind])
       assert.equal(result.ok, false)
-      assert.match(result.message, /BSIT/)
+      assert.match(result.message, /active program/)
     }
     assert(!f.calls.some(call => ["rpc", "createAuth", "updateAuth"].includes(call[0])))
+  })
+
+  test(`${kind}: another active program accepts catalog placement on create and edit`, async () => {
+    const f = fixture(kind)
+    f.state.program = "BSHM"
+    const placement = { yearLevel: "1st Year", section: "HM-1", campus: "New Campus" }
+    const input = kind === "student" ? { ...inputs[kind], ...placement }
+      : { ...inputs[kind], assignments: [{ ...inputs.teacher.assignments[0], ...placement }] }
+    assert.equal((await f.create(input)).ok, true)
+    const edit = fixture(kind)
+    edit.state.program = "BSHM"
+    assert.equal((await edit.update(input)).ok, true)
   })
 
   test(`${kind}: RPC failure leaves login email untouched`, async () => {
@@ -183,7 +195,7 @@ test("teacher requires explicit year, section and campus in both schemas", async
 test("teacher rejects a subject from another program before Auth account creation", async () => {
   const f = fixture("teacher")
   f.state.courseProgram = 999
-  assert.match((await f.create(inputs.teacher)).message, /subject does not belong/)
+  assert.match((await f.create(inputs.teacher)).message, /subject belonging/)
   assert(!f.calls.some(call => call[0] === "createAuth"))
 })
 

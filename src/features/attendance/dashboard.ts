@@ -247,6 +247,8 @@ function buildRfidStatusMap(cards: DashboardSnapshot["cards"]) {
   const byStudent = new Map<number, StudentRfidStatus>()
 
   for (const card of cards) {
+    // Stored cards without a holder belong to no student's status.
+    if (card.student_id === null) continue
     // An active card always wins over a lost or deactivated one.
     if (byStudent.get(card.student_id) === "Active") continue
     byStudent.set(card.student_id, card.card_status)

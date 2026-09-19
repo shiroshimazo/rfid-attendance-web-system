@@ -1,6 +1,5 @@
 import { z } from "zod"
 
-import { isPilotCampus, isPilotSection, PILOT_YEAR_LEVEL } from "@/features/academic/pilot"
 import {
   accountStatuses,
   applyCredentialRules,
@@ -15,7 +14,6 @@ import {
   requiredDate,
   requiredText,
   rfidCardStatuses,
-  rfidNumberField,
   selectedId,
 } from "@/features/shared/schema"
 
@@ -39,24 +37,11 @@ const studentFields = {
     .trim()
     .min(7, "Parent or guardian contact number is required")
     .max(32),
-  // Academic (BSIT 2nd Year pilot scope)
+  // Academic placement is checked against the catalog when saving.
   studentId: requiredText(40, "Student ID is required"),
-  yearLevel: requiredText(40, "Year level is required").refine(
-    (value): boolean => value === PILOT_YEAR_LEVEL,
-    { message: `Only ${PILOT_YEAR_LEVEL} is supported in the pilot` }
-  ),
-  section: requiredText(40, "Section is required").refine(
-    (value): boolean => isPilotSection(value),
-    {
-      message: "Section must be a pilot section (21001-21010)",
-    }
-  ),
-  campus: requiredText(80, "Campus is required").refine(
-    (value): boolean => isPilotCampus(value),
-    {
-      message: "Campus must be Main Campus, MV Campus, or Bulacan Campus",
-    }
-  ),
+  yearLevel: requiredText(40, "Year level is required"),
+  section: requiredText(40, "Section is required"),
+  campus: requiredText(80, "Campus is required"),
   status: z.enum(accountStatuses),
 }
 
@@ -87,20 +72,29 @@ export const updateStudentSchema = studentProfileSchema.extend({
   id: databaseIdSchema,
 })
 
-export const rfidAssignmentFormSchema = z.object({
-  rfidNumber: rfidNumberField,
+/** Cards are registered in Manage RFID Cards; this only picks a stored one. */
+export const cardAssignmentFormSchema = z.object({
+  cardId: z.string().min(1, "Select a registered card"),
   cardStatus: z.enum(rfidCardStatuses),
   assignedDate: requiredDate("Choose the date the card was issued"),
 })
 
-export const rfidAssignmentSchema = rfidAssignmentFormSchema.extend({
+export const cardAssignmentSchema = z.object({
   studentId: databaseIdSchema,
+  cardId: selectedId("Select a registered card"),
+  cardStatus: z.enum(rfidCardStatuses),
+  assignedDate: requiredDate("Choose the date the card was issued"),
+})
+
+export const cardReleaseSchema = z.object({
+  cardId: databaseIdSchema,
 })
 
 export const studentIdSchema = databaseIdSchema
 
 export type StudentDialogValues = z.infer<typeof studentDialogSchema>
-export type RfidAssignmentValues = z.infer<typeof rfidAssignmentFormSchema>
+export type CardAssignmentValues = z.infer<typeof cardAssignmentFormSchema>
 export type CreateStudentInput = z.input<typeof createStudentSchema>
 export type UpdateStudentInput = z.input<typeof updateStudentSchema>
-export type RfidAssignmentInput = z.input<typeof rfidAssignmentSchema>
+export type CardAssignmentInput = z.input<typeof cardAssignmentSchema>
+export type CardReleaseInput = z.input<typeof cardReleaseSchema>

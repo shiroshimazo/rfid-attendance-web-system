@@ -138,7 +138,7 @@ export function buildAcademicCatalog(
         sectionCode: section.section_code,
         campus: section.campus,
         status: section.status,
-        assignable: isAssignableGrouping({
+        assignable: section.status === "active" && program?.status === "active" && isAssignableGrouping({
           programCode: program?.program_code ?? "",
           yearLevel: section.year_level,
           sectionCode: section.section_code,
@@ -168,13 +168,10 @@ export function buildAcademicCatalog(
       activePrograms: activePrograms.length,
       archivedPrograms: programs.filter((row) => row.status === "archived").length,
       activeCourses: activeCourses.length,
-      pilotCourses: activeCourses.filter((row) => row.isPilot).length,
+      assignableCourses: activeCourses.filter((row) => row.programStatus === "active").length,
       activeSections: activeSections.length,
       assignableSections: activeSections.filter((row) => row.assignable).length,
-      catalogOnly:
-        activePrograms.filter((row) => !row.isPilot).length +
-        activeCourses.filter((row) => !row.isPilot).length +
-        activeSections.filter((row) => !row.assignable).length,
+      unavailableEntries: activeCourses.filter((row) => row.programStatus !== "active").length + activeSections.filter((row) => !row.assignable).length,
     },
     yearLevels: distinctSorted(snapshot.sections.map((row) => row.year_level)),
     campuses: distinctSorted(snapshot.sections.map((row) => row.campus)),

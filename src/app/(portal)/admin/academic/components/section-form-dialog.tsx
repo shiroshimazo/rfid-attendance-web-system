@@ -42,24 +42,14 @@ import {
   catalogFormStatuses,
   catalogSpelling,
   isAssignableGrouping,
-  pilotGroupingScope,
-  sectionFormSchema,
   sectionStatusFormSchema,
   type ProgramView,
-  type SectionFormValues,
   type SectionStatusFormValues,
   type SectionView,
 } from "@/features/academic/schema"
 import { cn } from "@/lib/utils"
 
-import { LockedField, PilotNotice } from "./catalog-parts"
-
-const fixedIdentityReason =
-  "Section code, year level, and campus are fixed once created. Student, schedule, and attendance records store them as text, so renaming would silently orphan those records. To change one, archive this grouping and add a new one."
-
-function blankValues(programId: string): SectionFormValues {
-  return { programId, yearLevel: "", sectionCode: "", campus: "" }
-}
+import { PilotNotice } from "./catalog-parts"
 
 function StatusField({ form }: { form: UseFormReturn<SectionStatusFormValues> }) {
   return (
@@ -93,12 +83,13 @@ function StatusField({ form }: { form: UseFormReturn<SectionStatusFormValues> })
   )
 }
 
-function CreateSectionForm({
+function SectionEditor({
   open,
   programs,
   yearLevels,
   campuses,
   defaultProgramId,
+  section,
   onDone,
 }: {
   open: boolean
@@ -106,14 +97,22 @@ function CreateSectionForm({
   yearLevels: string[]
   campuses: string[]
   defaultProgramId: string
+  section?: SectionView | null
   onDone: () => void
 }) {
   const yearListId = React.useId()
   const campusListId = React.useId()
 
-  const form = useForm<SectionFormValues>({
-    resolver: zodResolver(sectionFormSchema),
-    defaultValues: blankValues(defaultProgramId),
+  const initial = React.useCallback((): SectionStatusFormValues => ({
+    programId: section ? String(section.programId) : defaultProgramId,
+    yearLevel: section?.yearLevel ?? "",
+    sectionCode: section?.sectionCode ?? "",
+    campus: section?.campus ?? "",
+    status: section?.status === "inactive" ? "inactive" : "active",
+  }), [section, defaultProgramId])
+  const form = useForm<SectionStatusFormValues>({
+    resolver: zodResolver(sectionStatusFormSchema),
+    defaultValues: initial(),
     mode: "onTouched",
   })
 
@@ -121,8 +120,8 @@ function CreateSectionForm({
   React.useEffect(() => {
     if (!open) return
 
-    form.reset(blankValues(defaultProgramId))
-  }, [open, defaultProgramId, form])
+    form.reset(initial())
+  }, [open, initial, form])
 
   const values = useWatch({ control: form.control })
   const program = programs.find((row) => String(row.id) === values.programId)
@@ -143,12 +142,14 @@ function CreateSectionForm({
     })
   const isSubmitting = form.formState.isSubmitting
 
-  async function onSubmit(submitted: SectionFormValues) {
-    const result = await createSectionAction(submitted)
+  async function onSubmit(submitted: SectionStatusFormValues) {
+    const result = section
+      ? await updateSectionAction({ ...submitted, id: section.id })
+      : await createSectionAction(submitted)
 
     if (!result.ok) {
       for (const [path, message] of Object.entries(result.fieldErrors ?? {})) {
-        form.setError(path as keyof SectionFormValues, { message })
+        form.setError(path as keyof SectionStatusFormValues, { message })
       }
 
       gooeyToast.error(result.message)
@@ -162,17 +163,18 @@ function CreateSectionForm({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Add Class Grouping</DialogTitle>
+        <DialogTitle>{section ? `Edit Class Grouping - Section ${section.sectionCode}` : "Add Class Grouping"}</DialogTitle>
         <DialogDescription className="text-pretty">
-          One year level, section, and campus combination for the student and
-          teacher pickers.
+          {section
+            ? "Update the program, year level, section, campus, or status."
+            : "One year level, section, and campus combination for the student and teacher pickers."}
         </DialogDescription>
       </DialogHeader>
 
       <PilotNotice>
-        Only {pilotGroupingScope} can be assigned to students, teachers, and
-        schedules during the pilot. Other groupings are stored in the catalog
-        only.
+        {section
+          ? "Changes update current students, teaching assignments, and schedules together. Recorded attendance keeps its original details. Moving programs requires matching subject codes in the destination program."
+          : "Active groupings under active programs are available to students and teachers."}
       </PilotNotice>
 
       <Form {...form}>
@@ -197,7 +199,7 @@ function CreateSectionForm({
                     {programs.map((row) => (
                       <SelectItem key={row.id} value={String(row.id)}>
                         {row.code} — {row.name}
-                        {row.isPilot ? "" : " (catalog only)"}
+
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -272,13 +274,14 @@ function CreateSectionForm({
                   ))}
                 </datalist>
                 <FormDescription>
-                  Section code, year level, and campus cannot be edited after
-                  the grouping is created.
+                  Use the campus name offered to students and teachers.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+
+          {section ? <StatusField form={form} /> : null}
 
           {complete ? (
             <p
@@ -291,8 +294,8 @@ function CreateSectionForm({
               )}
             >
               {assignable
-                ? "Inside the pilot: students, teachers, and schedules can use this grouping."
-                : "Catalog only: stored for future use and shown as unavailable in the pickers."}
+                ? "Students and teachers can use this grouping when its program is active."
+                : "Complete all fields to make this grouping available."}
             </p>
           ) : null}
 
@@ -307,101 +310,7 @@ function CreateSectionForm({
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? <Loader2 aria-hidden className="animate-spin" /> : null}
-              Add class grouping
-            </Button>
-          </DialogFooter>
-        </form>
-      </Form>
-    </>
-  )
-}
-
-function EditSectionForm({
-  open,
-  section,
-  onDone,
-}: {
-  open: boolean
-  section: SectionView
-  onDone: () => void
-}) {
-  const initial = React.useCallback(
-    (): SectionStatusFormValues => ({
-      status: section.status === "inactive" ? "inactive" : "active",
-    }),
-    [section]
-  )
-
-  const form = useForm<SectionStatusFormValues>({
-    resolver: zodResolver(sectionStatusFormSchema),
-    defaultValues: initial(),
-    mode: "onTouched",
-  })
-
-  // Reopening the dialog for another grouping must not show stale values.
-  React.useEffect(() => {
-    if (!open) return
-
-    form.reset(initial())
-  }, [open, initial, form])
-
-  const isSubmitting = form.formState.isSubmitting
-
-  async function onSubmit(values: SectionStatusFormValues) {
-    const result = await updateSectionAction({ id: section.id, status: values.status })
-
-    if (!result.ok) {
-      for (const [path, message] of Object.entries(result.fieldErrors ?? {})) {
-        form.setError(path as keyof SectionStatusFormValues, { message })
-      }
-
-      gooeyToast.error(result.message)
-      return
-    }
-
-    gooeyToast.success(result.message)
-    onDone()
-  }
-
-  return (
-    <>
-      <DialogHeader>
-        <DialogTitle>Edit Class Grouping · Section {section.sectionCode}</DialogTitle>
-        <DialogDescription className="text-pretty">
-          Only the status can change here.
-        </DialogDescription>
-      </DialogHeader>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <LockedField label="Program" value={section.programCode} />
-        <LockedField label="Year level" value={section.yearLevel} />
-        <LockedField label="Section code" value={section.sectionCode} />
-        <LockedField label="Campus" value={section.campus} />
-      </div>
-      <p className="text-sm text-muted-foreground text-pretty">
-        {fixedIdentityReason}
-      </p>
-
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-4"
-          noValidate
-        >
-          <StatusField form={form} />
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onDone}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 aria-hidden className="animate-spin" /> : null}
-              Save changes
+              {section ? "Save changes" : "Add class grouping"}
             </Button>
           </DialogFooter>
         </form>
@@ -432,22 +341,15 @@ export function SectionFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
-        {section ? (
-          <EditSectionForm
-            open={open}
-            section={section}
-            onDone={() => onOpenChange(false)}
-          />
-        ) : (
-          <CreateSectionForm
-            open={open}
-            programs={programs}
-            yearLevels={yearLevels}
-            campuses={campuses}
-            defaultProgramId={defaultProgramId}
-            onDone={() => onOpenChange(false)}
-          />
-        )}
+        <SectionEditor
+          open={open}
+          section={section}
+          programs={programs}
+          yearLevels={yearLevels}
+          campuses={campuses}
+          defaultProgramId={defaultProgramId}
+          onDone={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
   )

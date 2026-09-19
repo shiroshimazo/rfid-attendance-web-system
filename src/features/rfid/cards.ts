@@ -34,29 +34,18 @@ export interface RfidCardView {
   student: CardHolderView | null
 }
 
-/** One entry per student for the assignment combobox. */
-export interface StudentCardOption {
-  id: number
-  studentId: string
-  fullName: string
-  programCode: string
-  section: string
-  status: AccountStatus
-  /** The number the student already taps with, when a card is active. */
-  activeCardNumber: string | null
-}
-
 export interface RfidCardDirectoryStats {
   total: number
   active: number
   lost: number
+  /** Stored cards no student holds yet. */
+  unassigned: number
   /** Active students who cannot tap in yet, so the gap is visible. */
   withoutActiveCard: number
 }
 
 export interface RfidCardDirectory {
   cards: RfidCardView[]
-  students: StudentCardOption[]
   programs: ProgramOption[]
   stats: RfidCardDirectoryStats
 }
@@ -97,10 +86,10 @@ export function buildRfidCardDirectory(
     ])
   )
 
-  const activeNumberByStudent = new Map(
+  const activeHolders = new Set(
     snapshot.cards
-      .filter((card) => card.card_status === "Active")
-      .map((card) => [card.student_id, card.rfid_number])
+      .filter((card) => card.card_status === "Active" && card.student_id !== null)
+      .map((card) => card.student_id)
   )
 
   const cards: RfidCardView[] = snapshot.cards.map((card) => ({
@@ -110,22 +99,14 @@ export function buildRfidCardDirectory(
     assignedDate: card.assigned_date,
     createdAt: card.created_at,
     updatedAt: card.updated_at,
-    student: holdersById.get(card.student_id) ?? null,
-  }))
-
-  const students: StudentCardOption[] = snapshot.students.map((student) => ({
-    id: student.id,
-    studentId: student.student_id,
-    fullName: student.full_name,
-    programCode: programsById.get(student.program_id)?.program_code ?? "—",
-    section: student.section,
-    status: student.status,
-    activeCardNumber: activeNumberByStudent.get(student.id) ?? null,
+    student:
+      card.student_id === null
+        ? null
+        : (holdersById.get(card.student_id) ?? null),
   }))
 
   return {
     cards,
-    students,
     programs: snapshot.programs
       .filter((program) => program.status === "active")
       .map((program) => ({
@@ -138,8 +119,9 @@ export function buildRfidCardDirectory(
       total: cards.length,
       active: cards.filter((card) => card.cardStatus === "Active").length,
       lost: cards.filter((card) => card.cardStatus === "Lost").length,
-      withoutActiveCard: students.filter(
-        (student) => student.status === "active" && !student.activeCardNumber
+      unassigned: snapshot.cards.filter((card) => card.student_id === null).length,
+      withoutActiveCard: snapshot.students.filter(
+        (student) => student.status === "active" && !activeHolders.has(student.id)
       ).length,
     },
   }

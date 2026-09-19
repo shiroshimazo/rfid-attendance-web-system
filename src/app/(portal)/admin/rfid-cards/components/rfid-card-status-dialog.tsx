@@ -66,6 +66,10 @@ export function RfidCardStatusDialog({
 
   const isSubmitting = form.formState.isSubmitting
   const nextStatus = useWatch({ control: form.control, name: "cardStatus" })
+  // Only a card a student already holds can be activated.
+  const statusOptions = card?.student
+    ? rfidCardStatuses
+    : rfidCardStatuses.filter((option) => option !== "Active")
 
   async function onSubmit(values: RfidCardStatusValues) {
     if (!card) return
@@ -91,7 +95,9 @@ export function RfidCardStatusDialog({
           <DialogTitle>Update card status</DialogTitle>
           <DialogDescription className="text-pretty">
             {card
-              ? `${card.rfidNumber} is held by ${card.student?.fullName ?? "an unknown student"}.`
+              ? card.student
+                ? `${card.rfidNumber} is held by ${card.student.fullName}.`
+                : `${card.rfidNumber} is stored and not assigned to a student yet.`
               : ""}
           </DialogDescription>
         </DialogHeader>
@@ -122,7 +128,7 @@ export function RfidCardStatusDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {rfidCardStatuses.map((option) => (
+                      {statusOptions.map((option) => (
                         <SelectItem key={option} value={option}>
                           {option}
                         </SelectItem>
@@ -134,6 +140,12 @@ export function RfidCardStatusDialog({
                 </FormItem>
               )}
             />
+
+            {card && !card.student ? (
+              <p className="text-sm text-muted-foreground text-pretty">
+                Assign this card to a student in Manage Students to activate it.
+              </p>
+            ) : null}
 
             {nextStatus === "Active" ? (
               <p

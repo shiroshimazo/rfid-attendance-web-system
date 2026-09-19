@@ -1,11 +1,6 @@
 import { z } from "zod"
 
 import {
-  isPilotCampus,
-  isPilotSection,
-  PILOT_YEAR_LEVEL,
-} from "@/features/academic/pilot"
-import {
   accountStatuses,
   applyCredentialRules,
   civilStatusOptions,
@@ -41,18 +36,9 @@ const teacherFields = {
 const assignmentFields = {
   assignmentId: z.number().int().positive().optional(),
   // Explicit placement prevents NULL assignment dimensions granting wildcard access.
-  yearLevel: requiredText(40, "Year level is required").refine(
-    (value): boolean => value === PILOT_YEAR_LEVEL,
-    { message: `Only ${PILOT_YEAR_LEVEL} is supported in the pilot` }
-  ),
-  section: requiredText(40, "Section is required").refine(
-    (value): boolean => isPilotSection(value),
-    { message: "Section must be a pilot section (21001-21010)" }
-  ),
-  campus: requiredText(80, "Campus is required").refine(
-    (value): boolean => isPilotCampus(value),
-    { message: "Campus must be Main Campus, MV Campus, or Bulacan Campus" }
-  ),
+  yearLevel: requiredText(40, "Year level is required"),
+  section: requiredText(40, "Section is required"),
+  campus: requiredText(80, "Campus is required"),
 }
 
 /** Browser shape: every control, including the selects, holds a string. */

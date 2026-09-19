@@ -34,7 +34,8 @@ export interface StudentRow {
 
 export interface RfidCardRow {
   id: number
-  student_id: number
+  /** Null while the card is stored but not given to a student. */
+  student_id: number | null
   rfid_number: string
   card_status: RfidCardStatus
   assigned_date: string

@@ -1,3 +1,80 @@
+## RFID card inventory and student assignment
+
+Apply `202609250001_rfid_card_inventory.sql` after the P03 migration and before
+deploying the split panels. Manage RFID Cards now only stores cards: register a
+UID, correct stored details, and retire a lost card. Manage Students gives a
+stored card to a student, and returns it to the card list.
+
+`rfid_cards.student_id` becomes nullable so a card can sit on the shelf, and a
+new `rfid_cards_active_requires_holder` check keeps an unassigned card out of
+the Active state. Existing rows all have a holder, so nothing is rewritten and
+no attendance or SMS row is touched. `save_rfid_card` gains `release` and takes
+`save` requests without a student: `save` writes UID, status, and date and never
+changes the holder; `assign` moves a stored card to a student; `release` returns
+it to the card list.
+
+Every earlier protection still applies. The normalized UID index, the
+one-active-card rule per student, and the active-holder eligibility check are
+unchanged. Attendance history still refuses to move a card to another student or
+to replace its UID, and now also refuses to unassign it, because the attendance
+foreign key names the card together with its holder; deactivate such a card
+instead. Registering the same UID twice updates the stored card so an uncertain
+retry stays safe, and a UID another student holds is refused.
+
+### RFID card inventory rollback only if needed
+
+Redeploy the previous application first. Assign or delete every stored card that
+has no holder, otherwise the column cannot become `not null` again and the
+statement fails without changing anything. Then run this rollback migration and
+reapply `202609110001_atomic_rfid_assignment.sql` to restore the earlier
+`save_rfid_card`, which registers a card and its holder in one request.
+
+<!-- inventory-rollback:start -->
+```sql
+begin;
+alter table public.rfid_cards drop constraint if exists rfid_cards_active_requires_holder;
+alter table public.rfid_cards alter column student_id set not null;
+commit;
+```
+<!-- inventory-rollback:end -->
+
+Local proof: `node --test tests/rfid-assignment.test.mjs` covers storing,
+editing, assigning, releasing, both documented rollbacks, history and holder
+refusals, and both admin screens through the actual server actions.
+
+## Editable class groupings
+
+Apply `202609240001_edit_academic_groupings.sql` after the academic program
+assignment migration and before deploying the editable grouping dialog.
+Program, year level, section, campus, and status can now be edited. The atomic
+RPC updates non-archived student placements, teaching assignments, and schedules.
+Assignment and schedule IDs remain stable, preserving explicit enrollments.
+Recorded attendance and archived placements retain their historical details.
+
+Moving a grouping to another program maps subjects by matching code and requires
+active destination subjects. Duplicate groupings and timetable conflicts reject
+the whole edit. Shared all-campus schedules remain available to other groupings;
+the edited grouping receives a campus-specific copy when needed.
+
+To revert the UI capability, deploy the previous application and drop
+`public.update_academic_section(bigint, bigint, text, text, text, public.account_status)`.
+This removes the RPC without changing data; completed edits remain in place.
+
+## Assignable academic programs
+
+Apply `202609230001_assignable_academic_programs.sql` before deploying the updated
+student and teacher forms. Active programs now accept active catalog groupings
+at any year level and campus. Add groupings in Academic Setup, and add subjects
+for teaching assignments. Existing profiles and assignment IDs are preserved.
+The existing BSIT gate lateness rules remain unchanged.
+
+The migration replaces placement validation and teacher/subject schedule saves;
+it does not rewrite data. To revert, first redeploy the previous application,
+then restore `assert_pilot_placement` from `202609100001_atomic_management_saves.sql`,
+`save_teacher_profile` from `202609170001_link_assignment_schedules.sql`, and
+`create_subject_schedule` from `202609120001_subject_attendance.sql`. New non-BSIT
+placements remain stored but cannot be edited through the previous application.
+
 # Database migrations
 
 ## Academic Setup catalog rollout

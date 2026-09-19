@@ -55,6 +55,10 @@ function refreshCatalogViews() {
     "/admin/students",
     "/admin/teachers",
     "/admin/schedules/subject-schedules",
+    "/admin/schedules/class-schedules",
+    "/admin/schedules",
+    "/teacher",
+    "/student",
   ]) {
     revalidatePath(path)
   }
@@ -139,9 +143,7 @@ export async function createProgramAction(
     refreshCatalogViews()
 
     return success(
-      isPilotProgramCode(values.programCode)
-        ? `${values.programCode} was added.`
-        : `${values.programCode} was added to the catalog. Only ${PILOT_PROGRAM_CODE} can be assigned during the pilot.`
+      `${values.programCode} was added. Add class groupings and subjects to assign it to students and teachers.`
     )
   })
 }
@@ -355,7 +357,7 @@ export async function createSectionAction(
         campus,
       })
         ? `${label} was added.`
-        : `${label} was added to the catalog. It cannot be assigned during the pilot.`
+        : `${label} was added to the catalog. Complete the grouping before assigning it.`
     )
   })
 }
@@ -375,30 +377,20 @@ export async function updateSectionAction(
     const values = parsed.data
     const supabase = await createServerSupabaseClient()
 
-    const { data: existing, error: readError } = await supabase
-      .from("academic_sections")
-      .select("id, section_code, campus, status")
-      .eq("id", values.id)
-      .maybeSingle<{ id: number; section_code: string; campus: string; status: AccountStatus }>()
+    const { error } = await supabase.rpc("update_academic_section", {
+      p_id: values.id,
+      p_program_id: values.programId,
+      p_year_level: values.yearLevel,
+      p_section_code: values.sectionCode,
+      p_campus: values.campus,
+      p_status: values.status,
+    })
 
-    if (readError) return failure(readError.message)
-    if (!existing) return failure("That class grouping no longer exists.")
-    if (existing.status === "archived") {
-      return failure("Restore this class grouping before editing it.")
-    }
-
-    // Only status changes. Students, schedules, and attendance store the section
-    // as text, so renaming its code, year level, or campus would orphan them.
-    const { error } = await supabase
-      .from("academic_sections")
-      .update({ status: values.status })
-      .eq("id", values.id)
-
-    if (error) return failure(describeDatabaseError(error))
+    if (error) return describeError(error, "sectionCode")
 
     refreshCatalogViews()
 
-    return success(`Section ${existing.section_code} (${existing.campus}) was updated.`)
+    return success(`Section ${values.sectionCode} (${values.campus}) was updated.`)
   })
 }
 

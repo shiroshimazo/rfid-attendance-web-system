@@ -43,7 +43,8 @@ export interface ReportProgramRow {
 export interface ReportRfidCardRow {
   id: number
   rfid_number: string
-  student_id: number
+  /** Null while the card is stored but not given to a student. */
+  student_id: number | null
   card_status: RfidCardStatus
 }
 

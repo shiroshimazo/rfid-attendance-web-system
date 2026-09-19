@@ -45,7 +45,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { PILOT_PROGRAM_CODE } from "@/features/academic/pilot"
 import {
   matchesStatusFilter,
   programArchiveBlocker,
@@ -149,9 +148,7 @@ export function ProgramsTable({ programs }: { programs: ProgramView[] }) {
       <CardHeader>
         <CardTitle>Programs</CardTitle>
         <CardDescription className="text-pretty">
-          Degree programs in the catalog. Only {PILOT_PROGRAM_CODE} can be
-          assigned to students, teachers, and schedules during the pilot; other
-          programs are stored for future use.
+          Active programs can be assigned to students and teachers. Add class groupings and subjects to configure placements.
         </CardDescription>
         <CardAction>
           <Button size="sm" onClick={() => setAdding(true)}>
@@ -248,7 +245,7 @@ export function ProgramsTable({ programs }: { programs: ProgramView[] }) {
                       <TableCell className="px-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium">{program.code}</span>
-                          <ScopeBadge assignable={program.isPilot} />
+                          <ScopeBadge assignable={program.status === "active"} />
                         </div>
                         <p className="max-w-64 truncate text-xs text-muted-foreground md:hidden">
                           {program.name}

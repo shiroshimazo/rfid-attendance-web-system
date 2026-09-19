@@ -6,8 +6,6 @@ import {
   PILOT_SECTION_CODES,
   PILOT_SECTIONS,
   PILOT_YEAR_LEVEL,
-  isPilotCampus,
-  isPilotSection,
 } from "@/features/academic/pilot"
 import {
   accountStatuses,
@@ -135,12 +133,13 @@ export const createSectionSchema = sectionFormSchema.extend({
   programId: selectedId("Select a program"),
 })
 
-/** Program, year level, section code, and campus are fixed once created. */
-export const sectionStatusFormSchema = z.object({
+/** Editing a grouping also updates its current placements atomically. */
+export const sectionStatusFormSchema = sectionFormSchema.extend({
   status: z.enum(catalogFormStatuses),
 })
 
 export const updateSectionSchema = sectionStatusFormSchema.extend({
+  programId: selectedId("Select a program"),
   id: databaseIdSchema,
 })
 
@@ -166,7 +165,7 @@ export function isPilotProgramCode(code: string) {
   return code.trim().toUpperCase() === PILOT_PROGRAM_CODE
 }
 
-/** Inside the pilot scope, so the student, teacher, and schedule saves accept it. */
+/** A complete grouping; callers also check the program and grouping status. */
 export function isAssignableGrouping(grouping: {
   programCode: string
   yearLevel: string
@@ -174,10 +173,7 @@ export function isAssignableGrouping(grouping: {
   campus: string
 }) {
   return (
-    isPilotProgramCode(grouping.programCode) &&
-    grouping.yearLevel === PILOT_YEAR_LEVEL &&
-    isPilotSection(grouping.sectionCode) &&
-    isPilotCampus(grouping.campus)
+    Boolean(grouping.programCode && grouping.yearLevel && grouping.sectionCode && grouping.campus)
   )
 }
 
@@ -272,7 +268,7 @@ export interface ProgramView {
   name: string
   department: string | null
   status: AccountStatus
-  /** The one program students, teachers, and schedules may use during the pilot. */
+  /** Identifies the seeded pilot program for its existing gate attendance rules. */
   isPilot: boolean
   usage: ProgramUsage
 }
@@ -283,7 +279,7 @@ export interface CourseView {
   programCode: string
   programName: string
   programStatus: AccountStatus
-  /** Offered to teacher assignments and subject schedules during the pilot. */
+  /** Whether this subject belongs to the seeded pilot program. */
   isPilot: boolean
   code: string
   name: string
@@ -312,11 +308,11 @@ export interface AcademicKpis {
   activePrograms: number
   archivedPrograms: number
   activeCourses: number
-  pilotCourses: number
+  assignableCourses: number
   activeSections: number
   assignableSections: number
-  /** Active entries the pilot cannot assign yet. */
-  catalogOnly: number
+  /** Active entries whose parent program is unavailable. */
+  unavailableEntries: number
 }
 
 export interface AcademicCatalog {
@@ -347,7 +343,7 @@ export function toClassGroupingOptions(
     campus: string
     status: AccountStatus
   }[],
-  programs: readonly { id: number; program_code: string }[]
+  programs: readonly { id: number; program_code: string; status: AccountStatus }[]
 ): ClassGroupingOption[] {
   const programCodes = new Map(
     programs.map((program) => [program.id, program.program_code])
@@ -359,7 +355,7 @@ export function toClassGroupingOptions(
     sectionCode: row.section_code,
     campus: row.campus,
     status: row.status,
-    assignable: isAssignableGrouping({
+    assignable: row.status === "active" && programs.some((program) => program.id === row.program_id && program.status === "active") && isAssignableGrouping({
       programCode: programCodes.get(row.program_id) ?? "",
       yearLevel: row.year_level,
       sectionCode: row.section_code,
@@ -416,8 +412,7 @@ function withCurrent(options: PickerOption[], current: string, known: boolean) {
 }
 
 /**
- * Active sections for one program and year level. Catalog-only groupings stay
- * visible but disabled, because the pilot saves would reject them.
+ * Active sections for one program and year level. Unavailable programs disable their groupings.
  */
 export function sectionPickerOptions(
   groupings: readonly ClassGroupingOption[],
@@ -438,7 +433,7 @@ export function sectionPickerOptions(
     return {
       value: code,
       label: !assignable
-        ? `${code} — Catalog only`
+        ? `${code} — Program unavailable`
         : session
           ? `${code} — ${sessionLabels[session]}`
           : code,
@@ -473,7 +468,7 @@ export function campusPickerOptions(
 
     return {
       value: campus,
-      label: assignable ? campus : `${campus} — Catalog only`,
+      label: assignable ? campus : `${campus} — Program unavailable`,
       disabled: !assignable,
     }
   })

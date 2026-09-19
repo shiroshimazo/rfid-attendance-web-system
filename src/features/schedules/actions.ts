@@ -4,7 +4,7 @@ import { auditActivity } from "@/services/audit/log"
 
 import { revalidatePath } from "next/cache"
 
-import { assertPilotProgram } from "@/features/academic/validation"
+import { assertActiveProgram } from "@/features/academic/validation"
 import { requireRole } from "@/features/auth/server"
 import {
   describeError as describeDatabaseError,
@@ -51,7 +51,7 @@ export async function updateScheduleAction(
     const values = parsed.data
     const supabase = await createServerSupabaseClient()
 
-    const programError = await assertPilotProgram(supabase, values.programId)
+    const programError = await assertActiveProgram(supabase, values.programId)
 
     if (programError) return failure(programError)
 
@@ -92,7 +92,7 @@ export async function setScheduleStatusAction(
     const values = parsed.data
     const supabase = await createServerSupabaseClient()
 
-    const programError = await assertPilotProgram(supabase, values.programId)
+    const programError = await assertActiveProgram(supabase, values.programId)
 
     if (programError) return failure(programError)
 

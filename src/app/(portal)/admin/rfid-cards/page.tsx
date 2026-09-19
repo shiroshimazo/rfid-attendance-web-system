@@ -46,8 +46,8 @@ export default function AdminRfidCardsPage() {
             Manage RFID Cards
           </h1>
           <p className="text-sm text-muted-foreground text-pretty">
-            Register cards, assign them to students, and control which card the
-            reader accepts. Only one card can stay active per student.
+            Register and store cards, correct their details, and retire the ones
+            that are lost. Assign a stored card to a student in Manage Students.
           </p>
         </div>
       </div>

@@ -24,7 +24,11 @@ function fakeSupabase(respond) {
     }
     return builder
   }
-  return { client: { from }, calls }
+  return { client: { from, rpc: async (name, payload) => {
+    const query = { operation: "rpc", table: name, payload }
+    calls.push(query)
+    return respond(query)
+  } }, calls }
 }
 
 function loadActions(respond, { denied = false } = {}) {
@@ -135,7 +139,7 @@ test("editing a subject writes only its catalog row, never its program or attend
   assert(revalidated.includes("/admin/teachers"))
 })
 
-test("a new class grouping reuses the catalog's spelling and says when it is catalog only", async () => {
+test("a new class grouping reuses the catalog's spelling and becomes assignable", async () => {
   const { actions, calls } = loadActions((query) => {
     if (query.table === "programs") return program("BSIT")
     if (query.table === "academic_sections" && query.range) {
@@ -148,7 +152,7 @@ test("a new class grouping reuses the catalog's spelling and says when it is cat
   assert.equal(result.ok, true)
   assert.deepEqual(calls.find((call) => call.operation === "insert").payload,
     { program_id: 1, year_level: "2nd Year", section_code: "21011", campus: "Main Campus" })
-  assert.match(result.message, /cannot be assigned during the pilot/)
+  assert.match(result.message, /was added/)
 })
 
 test("every catalog action checks the administrator role before touching the database", async () => {
@@ -167,7 +171,7 @@ const model = createSourceLoader({ "@/services/academic/directory": {} })
 const { buildAcademicCatalog } = model("src/features/academic/catalog.ts")
 const schema = model("src/features/academic/schema.ts")
 
-test("catalog usage ignores archived history and flags what the pilot cannot assign", () => {
+test("catalog usage ignores archived history and offers active catalog placements", () => {
   const placement = { year_level: "2nd Year", section: "21001", campus: "Main Campus" }
   const result = buildAcademicCatalog({
     programs: [
@@ -194,28 +198,28 @@ test("catalog usage ignores archived history and flags what the pilot cannot ass
   assert.deepEqual(result.courses.map((row) => [row.code, row.isPilot, row.assignments, row.schedules]),
     [["HM101", false, 0, 0], ["CCS2207", true, 1, 0], ["OLD1", true, 0, 0]])
   assert.deepEqual(result.sections.map((row) => [row.sectionCode, row.assignable, row.students]),
-    [["21001", true, 1], ["21011", false, 0]])
-  assert.deepEqual(result.kpis, { activePrograms: 2, archivedPrograms: 0, activeCourses: 2, pilotCourses: 1,
-    activeSections: 2, assignableSections: 1, catalogOnly: 3 })
+    [["21001", true, 1], ["21011", true, 0]])
+  assert.deepEqual(result.kpis, { activePrograms: 2, archivedPrograms: 0, activeCourses: 2, assignableCourses: 2,
+    activeSections: 2, assignableSections: 2, unavailableEntries: 0 })
 })
 
-test("pickers offer catalog groupings, disable catalog-only ones, and keep saved values", () => {
+test("pickers offer catalog groupings, allow new sections, and keep saved values", () => {
   const groupings = schema.toClassGroupingOptions([
     { program_id: 1, year_level: "2nd Year", section_code: "21001", campus: "Main Campus", status: "active" },
     { program_id: 1, year_level: "2nd Year", section_code: "21001", campus: "MV Campus", status: "archived" },
     { program_id: 1, year_level: "2nd Year", section_code: "21011", campus: "Main Campus", status: "active" },
-  ], [{ id: 1, program_code: "BSIT" }])
+  ], [{ id: 1, program_code: "BSIT", status: "active" }])
   const scope = { programId: 1, yearLevel: "2nd Year" }
 
   assert.deepEqual(schema.sectionPickerOptions(groupings, { ...scope, current: "" }), [
     { value: "21001", label: "21001 — Morning", disabled: false },
-    { value: "21011", label: "21011 — Catalog only", disabled: true },
+    { value: "21011", label: "21011", disabled: false },
   ])
   assert.deepEqual(
     schema.campusPickerOptions(groupings, { ...scope, section: "21001", current: "MV Campus" }).map((option) => option.label),
     ["Main Campus", "MV Campus — No longer offered"]
   )
-  assert.equal(schema.isOfferedCampus(groupings, { ...scope, section: "21011" }, "Main Campus"), false)
+  assert.equal(schema.isOfferedCampus(groupings, { ...scope, section: "21011" }, "Main Campus"), true)
   assert.deepEqual(schema.sectionPickerOptions(groupings, { programId: null, yearLevel: "2nd Year", current: "" }), [])
 })
 
@@ -228,4 +232,30 @@ test("usage sentences name what still depends on an entry", () => {
   assert.equal(schema.usageSentence([[0, "student", "students"]], "this grouping"), "")
   assert.equal(schema.parseAcademicTab("Subjects"), "subjects")
   assert.equal(schema.parseAcademicTab(["nope"]), "programs")
+})
+
+
+test("grouping edits submit every field through one atomic RPC", async () => {
+  const { actions, calls, revalidated } = loadActions((query) => {
+    assert.equal(query.operation, "rpc")
+    return { error: null }
+  })
+  const result = await actions.updateSectionAction({ id: 9, programId: "2", yearLevel: " 3rd  Year ", sectionCode: " hm-3 ", campus: "New Campus", status: "inactive" })
+  assert.equal(result.ok, true)
+  assert.deepEqual(calls, [{ operation: "rpc", table: "update_academic_section", payload: {
+    p_id: 9, p_program_id: 2, p_year_level: "3rd Year", p_section_code: "HM-3", p_campus: "New Campus", p_status: "inactive",
+  } }])
+  for (const path of ["/admin/academic", "/admin/students", "/admin/teachers", "/admin/schedules/class-schedules"]) assert(revalidated.includes(path))
+})
+
+test("duplicate grouping edit reports a field error and invalid fields never write", async () => {
+  const { actions, calls } = loadActions(() => ({ error: { code: "23505", message: "duplicate" } }))
+  const input = { id: 9, programId: "2", yearLevel: "3rd Year", sectionCode: "HM-3", campus: "New Campus", status: "active" }
+  const result = await actions.updateSectionAction(input)
+  assert.equal(result.ok, false)
+  assert.match(result.fieldErrors.sectionCode, /already exists/)
+  for (const field of ["programId", "yearLevel", "sectionCode", "campus", "status"]) {
+    assert.equal((await actions.updateSectionAction({ ...input, [field]: "" })).ok, false)
+  }
+  assert.equal(calls.length, 1)
 })

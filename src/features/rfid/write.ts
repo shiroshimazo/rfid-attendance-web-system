@@ -4,12 +4,19 @@ import type { RfidCardStatus } from "@/services/rfid/cards"
 import { createServerSupabaseClient } from "@/services/supabase/server"
 
 type CardWrite = {
-  operation: "save" | "assign" | "status"
+  operation: "save" | "assign" | "release" | "status"
   studentId?: number
   rfidNumber?: string
   id?: number
   cardStatus: RfidCardStatus
   assignedDate?: string
+}
+
+const savedMessage: Record<CardWrite["operation"], string> = {
+  save: "RFID card saved.",
+  assign: "RFID card assigned.",
+  release: "The card was returned to the card list.",
+  status: "",
 }
 
 /** Callers authorize and parse input; the RPC repeats authorization and owns
@@ -27,12 +34,14 @@ export async function writeRfidCard(values: CardWrite): Promise<ActionResult> {
   if (error) {
     const message = error.code === "23505" && !error.message.startsWith("That UID belongs")
       ? "That UID is already registered or another card became active. Reload before retrying."
-      : error.code === "23503"
+      : error.code === "23503" && !error.message.startsWith("Attendance history")
         ? "The card or student no longer exists, or attendance history prevents changing the holder."
         : error.message
     return failure(message)
   }
   revalidatePath("/admin/rfid-cards")
   revalidatePath("/admin/students")
-  return success(values.operation === "status" ? `Card is now ${values.cardStatus.toLowerCase()}.` : "RFID card assignment saved.")
+  return success(values.operation === "status"
+    ? `Card is now ${values.cardStatus.toLowerCase()}.`
+    : savedMessage[values.operation])
 }

@@ -4,7 +4,7 @@ import { auditActivity } from "@/services/audit/log"
 
 import { revalidatePath } from "next/cache"
 
-import { assertPilotProgram } from "@/features/academic/validation"
+import { assertActiveProgram } from "@/features/academic/validation"
 import { changeManagedLoginEmail, cleanupFailedProfileCreation } from "@/features/shared/management"
 import { requireRole } from "@/features/auth/server"
 import { writeRfidCard } from "@/features/rfid/write"
@@ -19,12 +19,14 @@ import {
 } from "@/features/shared/actions"
 import { accountStatuses } from "@/features/shared/schema"
 import {
+  cardAssignmentSchema,
+  cardReleaseSchema,
   createStudentSchema,
-  rfidAssignmentSchema,
   studentIdSchema,
   updateStudentSchema,
+  type CardAssignmentInput,
+  type CardReleaseInput,
   type CreateStudentInput,
-  type RfidAssignmentInput,
   type UpdateStudentInput,
 } from "@/features/students/schema"
 import { createAdminSupabaseClient } from "@/services/supabase/admin"
@@ -93,7 +95,7 @@ export async function createStudentAction(
     const values = parsed.data
     const supabase = await createServerSupabaseClient()
 
-    const programError = await assertPilotProgram(supabase, values.programId)
+    const programError = await assertActiveProgram(supabase, values.programId)
     if (programError) return failure(programError)
 
     let admin: ReturnType<typeof createAdminSupabaseClient>
@@ -160,7 +162,7 @@ export async function updateStudentAction(
     const values = parsed.data
     const supabase = await createServerSupabaseClient()
 
-    const programError = await assertPilotProgram(supabase, values.programId)
+    const programError = await assertActiveProgram(supabase, values.programId)
     if (programError) return failure(programError)
 
     const { data: existing, error: existingError } = await supabase
@@ -243,12 +245,23 @@ export async function setStudentStatusAction(
   })
 }
 
-/** Uses the same UID assignment operation as the RFID directory. */
-export async function assignRfidCardAction(input: RfidAssignmentInput): Promise<ActionResult> {
+/** Gives a card stored in Manage RFID Cards to this student. */
+export async function assignRfidCardAction(input: CardAssignmentInput): Promise<ActionResult> {
   return auditActivity("assign_rfid_card", "students", async () => {
     await requireRole("admin")
-    const parsed = rfidAssignmentSchema.safeParse(input)
+    const parsed = cardAssignmentSchema.safeParse(input)
     if (!parsed.success) return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
-    return writeRfidCard({ operation: "save", ...parsed.data })
+    const { cardId, studentId, cardStatus, assignedDate } = parsed.data
+    return writeRfidCard({ operation: "assign", id: cardId, studentId, cardStatus, assignedDate })
+  })
+}
+
+/** Returns the card to the card list. Attendance history keeps it assigned. */
+export async function releaseRfidCardAction(input: CardReleaseInput): Promise<ActionResult> {
+  return auditActivity("release_rfid_card", "students", async () => {
+    await requireRole("admin")
+    const parsed = cardReleaseSchema.safeParse(input)
+    if (!parsed.success) return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
+    return writeRfidCard({ operation: "release", id: parsed.data.cardId, cardStatus: "Inactive" })
   })
 }

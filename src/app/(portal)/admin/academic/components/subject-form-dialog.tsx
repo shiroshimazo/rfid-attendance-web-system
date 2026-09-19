@@ -3,7 +3,7 @@
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
-import { useForm, useWatch } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { gooeyToast } from "@/components/ui/goey-toaster"
 
 import { accountStatusLabels } from "@/components/account-status-badge"
@@ -37,7 +37,6 @@ import {
   createCourseAction,
   updateCourseAction,
 } from "@/features/academic/actions"
-import { PILOT_PROGRAM_CODE } from "@/features/academic/pilot"
 import {
   catalogFormStatuses,
   courseFormSchema,
@@ -46,7 +45,7 @@ import {
   type ProgramView,
 } from "@/features/academic/schema"
 
-import { LockedField, PilotNotice } from "./catalog-parts"
+import { LockedField } from "./catalog-parts"
 
 function defaultValues(
   course: CourseView | null | undefined,
@@ -88,15 +87,6 @@ export function SubjectFormDialog({
     form.reset(defaultValues(course, defaultProgramId))
   }, [open, course, defaultProgramId, form])
 
-  const programId = useWatch({ control: form.control, name: "programId" })
-  const selected = programs.find((program) => String(program.id) === programId)
-  const catalogOnlyProgram = course
-    ? course.isPilot
-      ? null
-      : course.programCode
-    : selected && !selected.isPilot
-      ? selected.code
-      : null
   const isSubmitting = form.formState.isSubmitting
 
   async function onSubmit(values: CourseFormValues) {
@@ -136,13 +126,6 @@ export function SubjectFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {catalogOnlyProgram ? (
-          <PilotNotice>
-            Only {PILOT_PROGRAM_CODE} subjects can be assigned to teachers and
-            schedules during the pilot. Subjects under {catalogOnlyProgram} are
-            stored in the catalog only.
-          </PilotNotice>
-        ) : null}
 
         <Form {...form}>
           <form
@@ -173,7 +156,7 @@ export function SubjectFormDialog({
                         {programs.map((program) => (
                           <SelectItem key={program.id} value={String(program.id)}>
                             {program.code} — {program.name}
-                            {program.isPilot ? "" : " (catalog only)"}
+
                           </SelectItem>
                         ))}
                       </SelectContent>

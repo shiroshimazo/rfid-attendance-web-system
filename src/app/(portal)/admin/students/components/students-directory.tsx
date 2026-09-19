@@ -540,7 +540,7 @@ export function StudentsDirectory({
                           >
                             <ScanLine aria-hidden />
                             {student.activeCard
-                              ? "Re-issue RFID card"
+                              ? "Change RFID card"
                               : "Assign RFID card"}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -671,6 +671,7 @@ export function StudentsDirectory({
       />
       <RfidAssignDialog
         student={assigning}
+        cards={directory.cards}
         onOpenChange={(open) => {
           if (!open) setAssigning(null)
         }}

@@ -45,11 +45,11 @@ export function PilotNotice({ children }: { children: ReactNode }) {
 export function ScopeBadge({ assignable }: { assignable: boolean }) {
   return assignable ? (
     <Badge variant="outline" className="border-primary/25 bg-primary/5">
-      Pilot
+      Assignable
     </Badge>
   ) : (
     <Badge variant="outline" className="border-dashed text-muted-foreground">
-      Catalog only
+      Unavailable
     </Badge>
   )
 }

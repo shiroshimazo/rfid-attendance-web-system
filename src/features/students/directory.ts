@@ -19,6 +19,12 @@ export interface StudentCardView {
   assignedDate: string
 }
 
+/** Every stored card, so the assignment dialog can offer the free ones. */
+export interface StoredCardView extends StudentCardView {
+  /** Null while the card is stored but not given to a student. */
+  studentId: number | null
+}
+
 export interface StudentView {
   id: number
   userId: string
@@ -49,6 +55,8 @@ export interface StudentView {
 
 export interface StudentDirectory {
   students: StudentView[]
+  /** The card inventory registered in Manage RFID Cards. */
+  cards: StoredCardView[]
   programs: ProgramOption[]
   /** Academic Setup groupings behind the section and campus pickers. */
   groupings: ClassGroupingOption[]
@@ -83,6 +91,7 @@ export function buildStudentDirectory(
   const cardsByStudent = new Map<number, StudentCardView[]>()
 
   for (const card of snapshot.cards) {
+    if (card.student_id === null) continue
     cardsByStudent.set(card.student_id, [
       ...(cardsByStudent.get(card.student_id) ?? []),
       toCardView(card),
@@ -122,6 +131,10 @@ export function buildStudentDirectory(
 
   return {
     students,
+    cards: snapshot.cards.map((card) => ({
+      ...toCardView(card),
+      studentId: card.student_id,
+    })),
     programs: snapshot.programs
       .filter((program) => program.status === "active")
       .map((program) => ({

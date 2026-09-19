@@ -2,12 +2,11 @@
 
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Loader2, UserRoundCheck } from "lucide-react"
-import { useForm, useWatch } from "react-hook-form"
+import { Loader2, PencilLine } from "lucide-react"
+import { useForm } from "react-hook-form"
 import { gooeyToast } from "@/components/ui/goey-toaster"
 
 import { RfidStatusBadge } from "@/components/attendance-status-badge"
-import { StudentCombobox } from "@/components/student-combobox"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -27,6 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { DatePicker, toDateKey } from "@/components/ui/date-picker"
+import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
@@ -34,35 +34,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { assignRfidCardAction } from "@/features/rfid/actions"
-import type { RfidCardView, StudentCardOption } from "@/features/rfid/cards"
+import { editRfidCardAction } from "@/features/rfid/actions"
+import type { RfidCardView } from "@/features/rfid/cards"
 import {
-  rfidCardAssignmentFormSchema,
+  rfidCardFormSchema,
   rfidCardStatuses,
-  type RfidCardAssignmentValues,
+  type RfidCardFormValues,
 } from "@/features/rfid/schema"
 import { formatDateValue } from "@/lib/format"
 
-function defaultValues(card: RfidCardView | null): RfidCardAssignmentValues {
+function defaultValues(card: RfidCardView | null): RfidCardFormValues {
   return {
-    studentId: card?.student ? String(card.student.id) : "",
-    cardStatus: card?.cardStatus ?? "Active",
+    rfidNumber: card?.rfidNumber ?? "",
+    cardStatus: card?.cardStatus ?? "Inactive",
     assignedDate: card?.assignedDate ?? new Date().toISOString().slice(0, 10),
   }
 }
 
-export function RfidCardAssignDialog({
+export function RfidCardEditDialog({
   card,
-  students,
   onOpenChange,
 }: {
   /** Null closes the dialog; a card opens it for that record. */
   card: RfidCardView | null
-  students: StudentCardOption[]
   onOpenChange: (open: boolean) => void
 }) {
-  const form = useForm<RfidCardAssignmentValues>({
-    resolver: zodResolver(rfidCardAssignmentFormSchema),
+  const form = useForm<RfidCardFormValues>({
+    resolver: zodResolver(rfidCardFormSchema),
     defaultValues: defaultValues(card),
     mode: "onBlur",
   })
@@ -74,33 +72,19 @@ export function RfidCardAssignDialog({
   // Dates are recorded, never scheduled, so tomorrow is out of range.
   const today = toDateKey(new Date())
   const isSubmitting = form.formState.isSubmitting
-  const selectedId = useWatch({ control: form.control, name: "studentId" })
-  const cardStatus = useWatch({ control: form.control, name: "cardStatus" })
+  // Only a card that already has a holder can stay active.
+  const statusOptions = card?.student
+    ? rfidCardStatuses
+    : rfidCardStatuses.filter((option) => option !== "Active")
 
-  const holder = students.find((student) => String(student.id) === selectedId)
-  const isMoving = Boolean(
-    card?.student && holder && holder.id !== card.student.id
-  )
-  const replacesCard =
-    cardStatus === "Active" &&
-    holder?.activeCardNumber &&
-    holder.activeCardNumber !== card?.rfidNumber
-      ? holder.activeCardNumber
-      : null
-
-  async function onSubmit(values: RfidCardAssignmentValues) {
+  async function onSubmit(values: RfidCardFormValues) {
     if (!card) return
 
-    const result = await assignRfidCardAction({
-      id: card.id,
-      studentId: Number(values.studentId),
-      cardStatus: values.cardStatus,
-      assignedDate: values.assignedDate,
-    })
+    const result = await editRfidCardAction({ ...values, id: card.id })
 
     if (!result.ok) {
       for (const [path, message] of Object.entries(result.fieldErrors ?? {})) {
-        form.setError(path as keyof RfidCardAssignmentValues, { message })
+        form.setError(path as keyof RfidCardFormValues, { message })
       }
 
       gooeyToast.error(result.message)
@@ -115,10 +99,10 @@ export function RfidCardAssignDialog({
     <Dialog open={Boolean(card)} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Assign RFID card</DialogTitle>
+          <DialogTitle>Edit RFID card</DialogTitle>
           <DialogDescription className="text-pretty">
-            Hand this card to another student, or re-issue it to the same one
-            with a new date or status.
+            Correct the stored UID, status, or date. The holder is changed in
+            Manage Students.
           </DialogDescription>
         </DialogHeader>
 
@@ -129,9 +113,9 @@ export function RfidCardAssignDialog({
               <RfidStatusBadge status={card.cardStatus} />
             </div>
             <p className="text-muted-foreground text-pretty">
-              Currently held by {card.student?.fullName ?? "an unknown student"}
-              {card.student ? ` (${card.student.studentId})` : ""} since{" "}
-              {formatDateValue(card.assignedDate)}.
+              {card.student
+                ? `Held by ${card.student.fullName} (${card.student.studentId}) since ${formatDateValue(card.assignedDate)}.`
+                : `Stored on ${formatDateValue(card.assignedDate)} and not assigned to a student yet.`}
             </p>
           </div>
         ) : null}
@@ -144,21 +128,22 @@ export function RfidCardAssignDialog({
           >
             <FormField
               control={form.control}
-              name="studentId"
-              render={({ field, fieldState }) => (
+              name="rfidNumber"
+              render={({ field }) => (
                 <FormItem>
-                  <FormLabel htmlFor="assign-card-student">Student</FormLabel>
-                  <StudentCombobox
-                    id="assign-card-student"
-                    students={students}
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={isSubmitting}
-                    aria-invalid={Boolean(fieldState.error)}
-                  />
+                  <FormLabel>RFID card UID</FormLabel>
+                  <FormControl>
+                    <Input
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder="00:00:00:11"
+                      className="font-mono tabular-nums"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormDescription>
-                    A card that already has attendance records cannot change
-                    hands. Register a new card for that student instead.
+                    Enter the hexadecimal UID reported by your reader. A card
+                    that already has attendance records keeps its UID.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -179,13 +164,18 @@ export function RfidCardAssignDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {rfidCardStatuses.map((option) => (
+                        {statusOptions.map((option) => (
                           <SelectItem key={option} value={option}>
                             {option}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {card?.student ? null : (
+                      <FormDescription>
+                        Assign this card in Manage Students before activating it.
+                      </FormDescription>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -195,7 +185,7 @@ export function RfidCardAssignDialog({
                 name="assignedDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Assigned on</FormLabel>
+                    <FormLabel>Recorded on</FormLabel>
                     <FormControl>
                       <DatePicker
                         value={field.value}
@@ -203,7 +193,7 @@ export function RfidCardAssignDialog({
                         onBlur={field.onBlur}
                         max={today}
                         clearable={false}
-                        placeholder="Select the issue date"
+                        placeholder="Select the date"
                       />
                     </FormControl>
                     <FormMessage />
@@ -211,17 +201,6 @@ export function RfidCardAssignDialog({
                 )}
               />
             </div>
-
-            {replacesCard ? (
-              <p
-                aria-live="polite"
-                className="rounded-md border border-amber-600/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:border-amber-400/25 dark:text-amber-300"
-              >
-                {holder?.fullName} already taps with{" "}
-                <span className="font-mono">{replacesCard}</span>. Saving this
-                card as active will deactivate the old one.
-              </p>
-            ) : null}
 
             <DialogFooter>
               <Button
@@ -236,9 +215,9 @@ export function RfidCardAssignDialog({
                 {isSubmitting ? (
                   <Loader2 aria-hidden className="animate-spin" />
                 ) : (
-                  <UserRoundCheck aria-hidden />
+                  <PencilLine aria-hidden />
                 )}
-                {isMoving ? "Reassign card" : "Save assignment"}
+                Save card
               </Button>
             </DialogFooter>
           </form>

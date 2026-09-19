@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, Loader2, Lock, Plus, Trash2 } from "lucide-react"
+import { Check, Loader2, Plus, Trash2 } from "lucide-react"
 import { useFieldArray, useForm, useWatch } from "react-hook-form"
 import { gooeyToast } from "@/components/ui/goey-toaster"
 
@@ -27,7 +27,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { PhoneInput } from "@/components/ui/phone-input"
 import { ProfileImageUpload } from "@/components/profile-image-upload"
 import {
@@ -40,7 +39,6 @@ import {
 import { Separator } from "@/components/ui/separator"
 import {
   PILOT_PROGRAM_CODE,
-  PILOT_PROGRAM_NAME,
   PILOT_YEAR_LEVEL,
 } from "@/features/academic/pilot"
 import {
@@ -106,7 +104,7 @@ const steps: WizardStep[] = [
     label: "Assignments",
     title: "Teaching Assignments",
     description:
-      "BSIT 2nd Year pilot classes. A teacher can handle several without duplicating the profile.",
+      "Classes from Academic Setup. A teacher can handle several without duplicating the profile.",
     fields: ["assignments"],
   },
   {
@@ -244,28 +242,6 @@ function Stepper({ current, onStepChange, disabled = false }: {
   )
 }
 
-/** Read-only pilot value, shown so the lock is visible rather than implied. */
-function LockedField({
-  label,
-  value,
-  description,
-}: {
-  label: string
-  value: string
-  description: string
-}) {
-  return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="flex h-9 items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 text-sm">
-        <span className="truncate">{value}</span>
-        <Lock aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
-      </div>
-      <p className="text-sm text-muted-foreground text-pretty">{description}</p>
-    </div>
-  )
-}
-
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2">
@@ -299,7 +275,7 @@ export function TeacherFormDialog({
   const [stepIndex, setStepIndex] = React.useState(0)
   const [isUploading, setIsUploading] = React.useState(false)
 
-  // Pilot scope: new assignments always start on BSIT 2nd Year.
+  // Default new assignments to the existing program.
   const bsitProgram = programs.find(
     (program) => program.code === PILOT_PROGRAM_CODE
   )
@@ -317,7 +293,7 @@ export function TeacherFormDialog({
   })
 
   // Reopening the dialog for another teacher must not show stale values.
-  // Create mode always starts locked to the BSIT pilot, on step one.
+  // Create mode starts on step one.
   React.useEffect(() => {
     if (!open) return
 
@@ -346,10 +322,6 @@ export function TeacherFormDialog({
   const isSubmitting = form.formState.isSubmitting || isUploading
   const step = steps[stepIndex]
   const isLastStep = stepIndex === steps.length - 1
-
-  const programLabel = bsitProgram
-    ? `${bsitProgram.code} — ${bsitProgram.name}`
-    : `${PILOT_PROGRAM_CODE} — ${PILOT_PROGRAM_NAME}`
 
   async function goNext() {
     if (isSubmitting) return
@@ -791,14 +763,30 @@ export function TeacherFormDialog({
                               name={`assignments.${index}.programId`}
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormControl>
-                                    <input type="hidden" {...field} />
-                                  </FormControl>
-                                  <LockedField
-                                    label="Program"
-                                    value={programLabel}
-                                    description="Locked to the BSIT pilot."
-                                  />
+                                  <FormLabel>Program</FormLabel>
+                                  <Select
+                                    value={field.value}
+                                    onValueChange={(value) => {
+                                      field.onChange(value)
+                                      form.setValue(`assignments.${index}.courseId`, "")
+                                      form.setValue(`assignments.${index}.yearLevel`, "")
+                                      form.setValue(`assignments.${index}.section`, "")
+                                      form.setValue(`assignments.${index}.campus`, "")
+                                    }}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select program" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {programs.map((program) => (
+                                        <SelectItem key={program.id} value={String(program.id)}>
+                                          {program.code} - {program.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -856,14 +844,41 @@ export function TeacherFormDialog({
                               name={`assignments.${index}.yearLevel`}
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormControl>
-                                    <input type="hidden" {...field} />
-                                  </FormControl>
-                                  <LockedField
-                                    label="Year level"
-                                    value={field.value || PILOT_YEAR_LEVEL}
-                                    description="Fixed to the 2nd Year pilot."
-                                  />
+                                  <FormLabel>Year level</FormLabel>
+                                  <Select
+                                    value={field.value}
+                                    onValueChange={(value) => {
+                                      field.onChange(value)
+                                      form.setValue(`assignments.${index}.section`, "")
+                                      form.setValue(`assignments.${index}.campus`, "")
+                                    }}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select year level" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {[...new Set(
+                                        groupings
+                                          .filter((row) =>
+                                            String(row.programId) === selectedProgram &&
+                                            row.status === "active" && row.assignable
+                                          )
+                                          .map((row) => row.yearLevel)
+                                          .concat(field.value ? [field.value] : [])
+                                      )].sort().map((year) => (
+                                        <SelectItem key={year} value={year}>{year}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {selectedProgram && !groupings.some((row) =>
+                                    String(row.programId) === selectedProgram && row.status === "active" && row.assignable
+                                   ) ? (
+                                    <FormDescription>
+                                      Add an active class grouping for this program in Academic Setup.
+                                    </FormDescription>
+                                  ) : null}
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -1062,7 +1077,17 @@ export function TeacherFormDialog({
                         label="Phone"
                         value={summary.phoneNumber || "(not set)"}
                       />
-                      <SummaryRow label="Program" value={programLabel} />
+                      <SummaryRow
+                        label="Programs"
+                        value={
+                          [...new Set((watchedAssignments ?? [])
+                            .map((assignment) => programs.find((program) =>
+                              String(program.id) === assignment.programId
+                            )?.code)
+                            .filter(Boolean)
+                          )].join(", ") || "(not selected)"
+                        }
+                      />
                       <SummaryRow
                         label="Assignments"
                         value={

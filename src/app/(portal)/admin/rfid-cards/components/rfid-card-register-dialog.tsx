@@ -3,10 +3,10 @@
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, ScanLine } from "lucide-react"
-import { useForm, useWatch } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { gooeyToast } from "@/components/ui/goey-toaster"
 
-import { StudentCombobox } from "@/components/student-combobox"
+import { RfidUidScanner } from "@/components/rfid-uid-scanner"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -35,18 +35,19 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { registerRfidCardAction } from "@/features/rfid/actions"
-import type { StudentCardOption } from "@/features/rfid/cards"
 import {
   rfidCardFormSchema,
   rfidCardStatuses,
   type RfidCardFormValues,
 } from "@/features/rfid/schema"
 
+// A stored card has no holder yet, and only an assigned card can be active.
+const storedStatuses = rfidCardStatuses.filter((option) => option !== "Active")
+
 function emptyValues(): RfidCardFormValues {
   return {
     rfidNumber: "",
-    studentId: "",
-    cardStatus: "Active",
+    cardStatus: "Inactive",
     assignedDate: new Date().toISOString().slice(0, 10),
   }
 }
@@ -54,11 +55,9 @@ function emptyValues(): RfidCardFormValues {
 export function RfidCardRegisterDialog({
   open,
   onOpenChange,
-  students,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  students: StudentCardOption[]
 }) {
   const form = useForm<RfidCardFormValues>({
     resolver: zodResolver(rfidCardFormSchema),
@@ -68,21 +67,11 @@ export function RfidCardRegisterDialog({
 
   // Dates are recorded, never scheduled, so tomorrow is out of range.
   const today = toDateKey(new Date())
-  const isSubmitting = form.formState.isSubmitting
-  const selectedId = useWatch({ control: form.control, name: "studentId" })
-  const cardStatus = useWatch({ control: form.control, name: "cardStatus" })
-
-  const holder = students.find((student) => String(student.id) === selectedId)
-  const replacesCard =
-    cardStatus === "Active" && holder?.activeCardNumber
-      ? holder.activeCardNumber
-      : null
+  const [isScanning, setScanning] = React.useState(false)
+  const isBusy = form.formState.isSubmitting || isScanning
 
   async function onSubmit(values: RfidCardFormValues) {
-    const result = await registerRfidCardAction({
-      ...values,
-      studentId: Number(values.studentId),
-    })
+    const result = await registerRfidCardAction(values)
 
     if (!result.ok) {
       for (const [path, message] of Object.entries(result.fieldErrors ?? {})) {
@@ -110,8 +99,8 @@ export function RfidCardRegisterDialog({
         <DialogHeader>
           <DialogTitle>Register RFID card</DialogTitle>
           <DialogDescription className="text-pretty">
-            Record the UID reported by the reader and assign it to the student who
-            will tap it. Only one card can stay active per student.
+            Record the UID reported by the reader. Hand the card to a student in
+            Manage Students; the reader accepts it once it is assigned.
           </DialogDescription>
         </DialogHeader>
 
@@ -137,31 +126,20 @@ export function RfidCardRegisterDialog({
                     />
                   </FormControl>
                   <FormDescription>
-                    Enter the hexadecimal UID reported by your reader. Colons,
-                    hyphens, or spaces between bytes are accepted. Keep leading zeros.
+                    Enter the hexadecimal UID reported by your reader, or scan the
+                    card over USB. Colons, hyphens, or spaces between bytes are
+                    accepted. Keep leading zeros.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="studentId"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel htmlFor="register-card-student">Student</FormLabel>
-                  <StudentCombobox
-                    id="register-card-student"
-                    students={students}
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={isSubmitting}
-                    aria-invalid={Boolean(fieldState.error)}
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
+            <RfidUidScanner
+              onScan={(uid) =>
+                form.setValue("rfidNumber", uid, { shouldValidate: true })
+              }
+              onBusyChange={setScanning}
             />
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -178,13 +156,16 @@ export function RfidCardRegisterDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {rfidCardStatuses.map((option) => (
+                        {storedStatuses.map((option) => (
                           <SelectItem key={option} value={option}>
                             {option}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription>
+                      A card becomes active when Manage Students assigns it.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -194,7 +175,7 @@ export function RfidCardRegisterDialog({
                 name="assignedDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Assigned on</FormLabel>
+                    <FormLabel>Recorded on</FormLabel>
                     <FormControl>
                       <DatePicker
                         value={field.value}
@@ -202,7 +183,7 @@ export function RfidCardRegisterDialog({
                         onBlur={field.onBlur}
                         max={today}
                         clearable={false}
-                        placeholder="Select the issue date"
+                        placeholder="Select the date"
                       />
                     </FormControl>
                     <FormMessage />
@@ -211,28 +192,17 @@ export function RfidCardRegisterDialog({
               />
             </div>
 
-            {replacesCard ? (
-              <p
-                aria-live="polite"
-                className="rounded-md border border-amber-600/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:border-amber-400/25 dark:text-amber-300"
-              >
-                {holder?.fullName} already taps with{" "}
-                <span className="font-mono">{replacesCard}</span>. Saving this
-                card as active will deactivate the old one.
-              </p>
-            ) : null}
-
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
+                disabled={isBusy}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" disabled={isBusy}>
+                {form.formState.isSubmitting ? (
                   <Loader2 aria-hidden className="animate-spin" />
                 ) : (
                   <ScanLine aria-hidden />

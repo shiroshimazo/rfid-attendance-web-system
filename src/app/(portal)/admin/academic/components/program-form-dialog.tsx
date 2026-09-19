@@ -118,9 +118,7 @@ export function ProgramFormDialog({
 
         {!locked ? (
           <PilotNotice>
-            Only {PILOT_PROGRAM_CODE} can be assigned to students, teachers, and
-            schedules during the pilot. Other programs are stored in the catalog
-            only.
+            Active programs are available in student and teacher forms. Add class groupings for student placement and subjects for teaching assignments.
           </PilotNotice>
         ) : null}
 

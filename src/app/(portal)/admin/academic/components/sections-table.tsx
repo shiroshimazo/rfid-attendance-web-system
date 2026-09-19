@@ -47,7 +47,6 @@ import {
 } from "@/components/ui/table"
 import {
   matchesStatusFilter,
-  pilotGroupingScope,
   usageSentence,
   type CatalogStatusFilter,
   type ProgramView,
@@ -198,8 +197,7 @@ export function SectionsTable({
         <CardTitle>Class Groupings</CardTitle>
         <CardDescription className="text-pretty">
           Year level, section, and campus combinations offered in the student
-          and teacher pickers. During the pilot only {pilotGroupingScope} can be
-          assigned; other groupings are stored for future use.
+          and teacher pickers. Active groupings under active programs can be assigned.
         </CardDescription>
         <CardAction>
           <Button

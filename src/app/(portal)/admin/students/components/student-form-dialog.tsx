@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, Loader2, Lock } from "lucide-react"
+import { Check, Loader2 } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
 import { gooeyToast } from "@/components/ui/goey-toaster"
 
@@ -27,7 +27,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { PhoneInput } from "@/components/ui/phone-input"
 import {
   Select,
@@ -40,7 +39,6 @@ import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import {
   PILOT_PROGRAM_CODE,
-  PILOT_PROGRAM_NAME,
   PILOT_YEAR_LEVEL,
 } from "@/features/academic/pilot"
 import {
@@ -103,7 +101,7 @@ const steps: WizardStep[] = [
     label: "Academic",
     title: "Academic Information",
     description:
-      "BSIT 2nd Year pilot placement. Used by attendance, reports, and teacher access.",
+      "Academic program and class placement. Used by attendance, reports, and teacher access.",
     fields: ["studentId", "programId", "yearLevel", "section", "campus", "status"],
   },
   {
@@ -230,28 +228,6 @@ function Stepper({ current, onStepChange, disabled = false }: {
   )
 }
 
-/** Read-only pilot value, shown so the lock is visible rather than implied. */
-function LockedField({
-  label,
-  value,
-  description,
-}: {
-  label: string
-  value: string
-  description: string
-}) {
-  return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      <div className="flex h-9 items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 text-sm">
-        <span>{value}</span>
-        <Lock aria-hidden className="size-3.5 text-muted-foreground" />
-      </div>
-      <p className="text-sm text-muted-foreground text-pretty">{description}</p>
-    </div>
-  )
-}
-
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2">
@@ -279,7 +255,7 @@ export function StudentFormDialog({
   const mode = student ? "edit" : "create"
   const [stepIndex, setStepIndex] = React.useState(0)
 
-  // Pilot scope: program is always BSIT. Resolve its id from the directory.
+  // Keep the existing program as the default; all active programs are selectable.
   const bsitProgram = programs.find(
     (program) => program.code === PILOT_PROGRAM_CODE
   )
@@ -291,7 +267,7 @@ export function StudentFormDialog({
   })
 
   // Reopening the dialog for another student must not show stale values.
-  // Create mode always starts locked to the BSIT pilot program, on step one.
+  // Create mode starts on step one.
   React.useEffect(() => {
     if (!open) return
 
@@ -419,9 +395,8 @@ export function StudentFormDialog({
     onOpenChange(false)
   }
 
-  const programLabel = bsitProgram
-    ? `${bsitProgram.code} — ${bsitProgram.name}`
-    : `${PILOT_PROGRAM_CODE} — ${PILOT_PROGRAM_NAME}`
+  const selectedProgram = programs.find((program) => String(program.id) === summary.programId)
+  const programLabel = selectedProgram ? `${selectedProgram.code} - ${selectedProgram.name}` : "Select program"
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -689,18 +664,29 @@ export function StudentFormDialog({
                     name="programId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormControl>
-                          <input type="hidden" {...field} />
-                        </FormControl>
-                        <LockedField
-                          label="Program"
-                          value={programLabel}
-                          description={
-                            bsitProgram
-                              ? "Locked to the BSIT pilot."
-                              : "Locked to the BSIT pilot. The BSIT program is missing; run the database migrations."
-                          }
-                        />
+                        <FormLabel>Program</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value)
+                            form.setValue("yearLevel", "")
+                            form.setValue("section", "")
+                            form.setValue("campus", "")
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select program" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {programs.map((program) => (
+                              <SelectItem key={program.id} value={String(program.id)}>
+                                {program.code} - {program.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -710,14 +696,41 @@ export function StudentFormDialog({
                     name="yearLevel"
                     render={({ field }) => (
                       <FormItem>
-                        <FormControl>
-                          <input type="hidden" {...field} />
-                        </FormControl>
-                        <LockedField
-                          label="Year level"
-                          value={PILOT_YEAR_LEVEL}
-                          description="Fixed to the 2nd Year pilot."
-                        />
+                        <FormLabel>Year level</FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value)
+                            form.setValue("section", "")
+                            form.setValue("campus", "")
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select year level" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {[...new Set(
+                              groupings
+                                .filter((row) =>
+                                  String(row.programId) === summary.programId &&
+                                  row.status === "active" && row.assignable
+                                )
+                                .map((row) => row.yearLevel)
+                                .concat(field.value ? [field.value] : [])
+                            )].sort().map((year) => (
+                              <SelectItem key={year} value={year}>{year}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {summary.programId && !groupings.some((row) =>
+                          String(row.programId) === summary.programId && row.status === "active" && row.assignable
+                         ) ? (
+                          <FormDescription>
+                            Add an active class grouping for this program in Academic Setup.
+                          </FormDescription>
+                        ) : null}
                         <FormMessage />
                       </FormItem>
                     )}

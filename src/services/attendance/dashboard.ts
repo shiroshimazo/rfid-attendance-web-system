@@ -30,7 +30,8 @@ export interface AttendanceRow {
 }
 
 export interface RfidCardRow {
-  student_id: number
+  /** Null while the card is stored but not given to a student. */
+  student_id: number | null
   card_status: RfidCardStatus
 }
 

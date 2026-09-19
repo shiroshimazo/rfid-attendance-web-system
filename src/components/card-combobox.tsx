@@ -10,31 +10,32 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/components/ui/combobox"
-import type { StudentCardOption } from "@/features/rfid/cards"
+import type { StoredCardView } from "@/features/students/directory"
+import { formatDateValue } from "@/lib/format"
 
-interface StudentItem {
+interface CardItem {
   value: string
   label: string
-  option: StudentCardOption
+  option: StoredCardView
 }
 
 /**
- * Type-ahead picker for students. Values are student ids as strings so the
- * surrounding form stays a plain string record, and the label carries the
- * student ID and program so both are searchable.
+ * Type-ahead picker for registered cards. Values are card ids as strings so the
+ * surrounding form stays a plain string record, and the label carries the UID
+ * and status so both are searchable.
  */
-export function StudentCombobox({
+export function CardCombobox({
   id,
-  students,
+  cards,
   value,
   onChange,
   disabled,
-  placeholder = "Search by name, student ID, or program",
+  placeholder = "Search by RFID card number",
   "aria-invalid": ariaInvalid,
   "aria-describedby": ariaDescribedBy,
 }: {
   id?: string
-  students: StudentCardOption[]
+  cards: StoredCardView[]
   value: string
   onChange: (value: string) => void
   disabled?: boolean
@@ -48,14 +49,14 @@ export function StudentCombobox({
   const attachInput = React.useCallback((node: HTMLInputElement | null) => {
     setContainer(node?.closest<HTMLElement>('[data-slot="dialog-content"]') ?? null)
   }, [])
-  const items = React.useMemo<StudentItem[]>(
+  const items = React.useMemo<CardItem[]>(
     () =>
-      students.map((option) => ({
+      cards.map((option) => ({
         value: String(option.id),
-        label: `${option.fullName} — ${option.studentId} — ${option.programCode} ${option.section}`,
+        label: `${option.rfidNumber} — ${option.cardStatus}`,
         option,
       })),
-    [students]
+    [cards]
   )
 
   const selected = items.find((item) => item.value === value) ?? null
@@ -64,7 +65,7 @@ export function StudentCombobox({
     <Combobox
       items={items}
       value={selected}
-      onValueChange={(item: StudentItem | null) => onChange(item?.value ?? "")}
+      onValueChange={(item: CardItem | null) => onChange(item?.value ?? "")}
       disabled={disabled}
     >
       <ComboboxInput
@@ -77,21 +78,20 @@ export function StudentCombobox({
         showClear={Boolean(selected)}
       />
       <ComboboxContent container={container}>
-        <ComboboxEmpty>No matching student.</ComboboxEmpty>
+        <ComboboxEmpty>No matching card.</ComboboxEmpty>
         <ComboboxList>
-          {(item: StudentItem) => (
+          {(item: CardItem) => (
             <ComboboxItem key={item.value} value={item}>
               <span className="flex min-w-0 flex-col">
-                <span className="truncate">{item.option.fullName}</span>
+                <span className="truncate font-mono tabular-nums">
+                  {item.option.rfidNumber}
+                </span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {item.option.studentId} · {item.option.programCode} ·{" "}
-                  {item.option.section}
-                  {item.option.activeCardNumber
-                    ? ` · holds ${item.option.activeCardNumber}`
-                    : ""}
-                  {item.option.status !== "active"
-                    ? ` · ${item.option.status}`
-                    : ""}
+                  {item.option.cardStatus} ·{" "}
+                  {item.option.studentId === null
+                    ? "Unassigned"
+                    : "Held by this student"}{" "}
+                  · {formatDateValue(item.option.assignedDate)}
                 </span>
               </span>
             </ComboboxItem>
