@@ -91,14 +91,14 @@ export default async function TeacherAttendancePage({
         </div>
       </div>
 
-      <Suspense key={`subject-${query.date}`} fallback={<PanelSkeleton />}>
-        <TeacherSubjectPanel date={query.date} />
+      <Suspense key={suspenseKey} fallback={<PanelSkeleton />}>
+        <AttendanceContent query={query} />
       </Suspense>
       <Suspense key={`history-${query.date}`} fallback={<PanelSkeleton />}>
         <SubjectHistoryPanel from={query.date} to={query.date} />
       </Suspense>
-      <Suspense key={suspenseKey} fallback={<PanelSkeleton />}>
-        <AttendanceContent query={query} />
+      <Suspense key={`subject-${query.date}`} fallback={<PanelSkeleton />}>
+        <TeacherSubjectPanel date={query.date} />
       </Suspense>
     </div>
   )

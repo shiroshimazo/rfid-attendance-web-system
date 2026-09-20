@@ -17,7 +17,7 @@ export async function SubjectHistoryPanel({ from, to, summaryOnly = false }: { f
   let rows
   try { rows = await fetchSubjectAttendance({ from, to }) }
   catch (error) { return errorPanel(error) }
-  if (account.role === "student" && !summaryOnly) return <StudentSubjectHistory rows={rows} />
+  if (!summaryOnly) return <StudentSubjectHistory rows={rows} studentView={account.role === "student"} />
   return <SubjectRecords rows={rows} summaryOnly={summaryOnly} />
 }
 

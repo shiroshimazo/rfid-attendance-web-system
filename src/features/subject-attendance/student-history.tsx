@@ -23,7 +23,7 @@ function FilterSelect({ label, value, options, onChange }: { label: string; valu
   </Select>
 }
 
-export function StudentSubjectHistory({ rows }: { rows: SubjectAttendanceRow[] }) {
+export function StudentSubjectHistory({ rows, studentView = true }: { rows: SubjectAttendanceRow[]; studentView?: boolean }) {
   const id = useId()
   const [filters, setFilters] = useState<SubjectHistoryFilters>(emptySubjectFilters)
   const [sort, setSort] = useState<SortState<SubjectHistorySort>>({ column: "date", direction: "desc" })
@@ -63,7 +63,7 @@ export function StudentSubjectHistory({ rows }: { rows: SubjectAttendanceRow[] }
             <TableCell className="align-top"><div>{row.program_code} · {row.year_level}</div><div className="mt-1 text-xs text-muted-foreground">{row.section} · {row.campus}</div></TableCell>
             <TableCell className="align-top"><AttendanceStatusBadge status={row.attendance_status} /><div className="mt-1 text-xs text-muted-foreground">Teacher confirmed</div></TableCell>
             <TableCell className="align-top text-muted-foreground">— / —<div className="mt-1 max-w-32 whitespace-normal text-xs">Confirmation creates no RFID tap</div></TableCell>
-          </TableRow>)}{visible.length === 0 && <TableRow><TableCell colSpan={6} className="h-32 whitespace-normal text-center text-muted-foreground">{rows.length ? "No confirmations match these filters. Adjust or clear the filters." : "No teacher confirmations yet. This does not mean you are absent."}</TableCell></TableRow>}</TableBody>
+          </TableRow>)}{visible.length === 0 && <TableRow><TableCell colSpan={6} className="h-32 whitespace-normal text-center text-muted-foreground">{rows.length ? "No confirmations match these filters. Adjust or clear the filters." : studentView ? "No teacher confirmations yet. This does not mean you are absent." : "No teacher confirmations in this scope. This does not mean students are absent."}</TableCell></TableRow>}</TableBody>
         </Table>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-muted-foreground" aria-live="polite">{filtered.length} confirmed student-session{filtered.length === 1 ? "" : "s"}{active.length ? " matching filters" : ""}. Details reflect confirmation time.</p><TablePagination page={currentPage} pageCount={pageCount} onPageChange={setPage} /></div>
