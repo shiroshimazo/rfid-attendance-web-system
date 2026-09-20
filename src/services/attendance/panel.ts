@@ -8,7 +8,7 @@ export type { AttendanceStatus }
  * Roster filters, not database statuses: "NoRecord" selects students with no
  * stored row for the date, so it is applied after the rows are read.
  */
-export type AttendanceFilterStatus = AttendanceStatus | "NoRecord" | "all"
+export type AttendanceFilterStatus = AttendanceStatus | "NoRecord" | "Attended" | "all"
 
 export interface AttendancePanelFilters {
   date: string

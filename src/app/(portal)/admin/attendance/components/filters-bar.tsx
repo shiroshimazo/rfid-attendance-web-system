@@ -134,6 +134,7 @@ export function FiltersBar({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All statuses</SelectItem>
+          <SelectItem value="Attended">Present and late</SelectItem>
           {attendanceRowStatuses.map((status) => (
             <SelectItem key={status} value={status}>
               {attendanceStatusLabel(status)}

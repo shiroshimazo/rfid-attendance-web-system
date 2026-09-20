@@ -88,7 +88,9 @@ function compareRows(
 
 export function AttendanceHistoryTable({
   rows,
+  filtered = false,
 }: {
+  filtered?: boolean
   rows: StudentAttendanceRow[]
 }) {
   const [sort, setSort] = React.useState<SortState<SortColumn>>({
@@ -132,8 +134,8 @@ export function AttendanceHistoryTable({
         {visible.length === 0 ? (
           <EmptyState
             icon={CalendarX2}
-            title="No attendance records yet"
-            description="History appears here once the first RFID tap is recorded."
+            title={filtered ? "No matching attendance records" : "No attendance records yet"}
+            description={filtered ? "No records match this status. Select Show all records to view your full history." : "History appears here once the first RFID tap is recorded."}
           />
         ) : (
           <div className="rounded-lg border">

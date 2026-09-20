@@ -40,6 +40,7 @@ export const NO_RECORD_LABEL = "No tap recorded yet"
  * plain string so filter values read straight off a select can be labelled.
  */
 export function attendanceStatusLabel(status: string) {
+  if (status === "Attended") return "Present and late"
   if (status === "LegacyRecord") return "Historical record"
   return status === "NoRecord" ? NO_RECORD_LABEL : status
 }
@@ -73,6 +74,8 @@ function readDate(value: string, now: Date) {
 
 function readStatus(value: string): AttendanceFilterStatus {
   const candidate = value.trim()
+
+  if (candidate === "Attended") return candidate
 
   return attendanceRowStatuses.find((status) => status === candidate) ?? "all"
 }

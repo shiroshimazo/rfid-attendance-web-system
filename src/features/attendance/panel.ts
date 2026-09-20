@@ -107,7 +107,9 @@ export function buildAttendancePanelData(
     rows:
       query.status === "all"
         ? cohort
-        : cohort.filter((row) => row.status === query.status),
+        : cohort.filter((row) =>
+            query.status === "Attended" ? isAttended(row.status) : row.status === query.status
+          ),
     cohortSize: totalStudents,
     options: {
       programs: programs.map((program) => ({

@@ -74,6 +74,7 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
       label: "Administration",
       items: [
         { title: "Dashboard", url: "/admin/dashboard", icon: DashboardIcon },
+        { title: "Live Monitoring", url: "/admin/live-monitoring", icon: RfidIcon },
         { title: "Manage Teachers", url: "/admin/teachers", icon: TeachersIcon },
         { title: "Manage Students", url: "/admin/students", icon: StudentsIcon },
         { title: "Manage RFID Cards", url: "/admin/rfid-cards", icon: RfidIcon },

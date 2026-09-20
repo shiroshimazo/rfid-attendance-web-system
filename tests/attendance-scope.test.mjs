@@ -132,3 +132,20 @@ test('teacher daily history honors the requested past date and student search', 
   assert.deepEqual(data.rows.map(row=>row.studentId),['S-2'])
   assert.equal(data.rows[0].timeIn,'06:16:00')
 })
+
+for (const role of ["admin", "teacher"]) {
+  test(`${role}: dashboard present shortcut includes late arrivals without changing the Present filter`, () => {
+    const feature = load(`src/features/attendance/${role === "admin" ? "panel" : "teacher-attendance"}.ts`)
+    const build = (status) => {
+      const filteredQuery = { ...query, status }
+      return role === "admin"
+        ? feature.buildAttendancePanelData({ ...snapshot, query: filteredQuery }, date)
+        : feature.buildTeacherAttendancePanelData(snapshot, filteredQuery)
+    }
+    assert.equal(schema.parseAttendancePanelQuery({ status: "Attended" }).status, "Attended")
+    assert.deepEqual(build("Attended").rows.map(row => row.status), ["Present", "Late"])
+    assert.equal(build("Attended").rows.length, build("Attended").kpis.present)
+    assert.deepEqual(build("Present").rows.map(row => row.status), ["Present"])
+    assert.deepEqual(build("Absent").rows.map(row => row.status), ["Absent"])
+  })
+}
