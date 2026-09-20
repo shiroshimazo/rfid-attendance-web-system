@@ -100,6 +100,7 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
       label: "Teaching",
       items: [
         { title: "Dashboard", url: "/teacher/dashboard", icon: DashboardIcon },
+        { title: "My Schedule", url: "/teacher/my-schedule", icon: SchedulesIcon },
         { title: "Attendance", url: "/teacher/attendance", icon: AttendanceIcon },
         { title: "Students", url: "/teacher/students", icon: StudentsIcon },
         { title: "Reports", url: "/teacher/reports", icon: ReportsIcon },
