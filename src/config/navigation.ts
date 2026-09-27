@@ -114,6 +114,7 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
       label: "Student Portal",
       items: [
         { title: "Dashboard", url: "/student/dashboard", icon: DashboardIcon },
+        { title: "Current Enrollment", url: "/student/current-enrollment", icon: AcademicIcon },
         { title: "My Attendance", url: "/student/my-attendance", icon: AttendanceIcon },
         { title: "Profile", url: "/student/profile", icon: UserRound },
       ],
