@@ -15,6 +15,17 @@ export function weekdayLabel(day: number) {
   return weekdays[day] ?? "—"
 }
 
+/** Prefer today's sheet; on a day off, open the most recent scheduled day. */
+export function latestSubjectDate(schedules: SubjectSchedule[], today: string) {
+  const days = new Set(schedules.filter(row => row.status === "active").map(row => row.day_of_week))
+  const date = new Date(`${today}T00:00:00Z`)
+  for (let offset = 0; offset < 7; offset++) {
+    if (days.has(date.getUTCDay())) return date.toISOString().slice(0, 10)
+    date.setUTCDate(date.getUTCDate() - 1)
+  }
+  return today
+}
+
 export interface SubjectAttendanceRow {
   id: number
   schedule_id: number

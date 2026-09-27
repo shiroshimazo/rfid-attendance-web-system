@@ -1,6 +1,7 @@
 import { DataErrorCard } from "@/components/data-error-card"
 import { requireCurrentAccount, requireRole } from "@/features/auth/server"
 import { schoolDateKey } from "@/lib/school-time"
+import { latestSubjectDate } from "@/features/subject-attendance/model"
 import { fetchSubjectAttendance, fetchSubjectAssignments, fetchSubjectEnrollments, fetchSubjectRfidEvidence, fetchSubjectSchedules, fetchSubjectStudents } from "@/services/attendance/subject-attendance"
 import { SubjectRecords } from "@/features/subject-attendance/records"
 import { StudentSubjectHistory } from "@/features/subject-attendance/student-history"
@@ -21,11 +22,14 @@ export async function SubjectHistoryPanel({ from, to, summaryOnly = false }: { f
   return <SubjectRecords rows={rows} summaryOnly={summaryOnly} />
 }
 
-export async function TeacherSubjectPanel({ date }: { date: string }) {
+export async function TeacherSubjectPanel({ date, automaticDate = false }: { date: string; automaticDate?: boolean }) {
   await requireRole("teacher")
   let data
   try {
-    data = await Promise.all([fetchSubjectSchedules(), fetchSubjectStudents(), fetchSubjectAttendance({ from: date, to: date }), fetchSubjectEnrollments()])
+    const schedules = await fetchSubjectSchedules()
+    if (automaticDate) date = latestSubjectDate(schedules, date)
+    const [students, records, enrollments] = await Promise.all([fetchSubjectStudents(), fetchSubjectAttendance({ from: date, to: date }), fetchSubjectEnrollments()])
+    data = [schedules, students, records, enrollments] as const
   } catch (error) { return errorPanel(error) }
   const [schedules, students, records, enrollments] = data
   // RFID failure must not prevent a teacher from marking the class roster.

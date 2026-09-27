@@ -102,7 +102,14 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
       items: [
         { title: "Dashboard", url: "/teacher/dashboard", icon: DashboardIcon },
         { title: "My Schedule", url: "/teacher/my-schedule", icon: SchedulesIcon },
-        { title: "Attendance", url: "/teacher/attendance", icon: AttendanceIcon },
+        {
+          title: "Attendance", url: "/teacher/attendance", icon: AttendanceIcon,
+          items: [
+            { title: "Attendance", url: "/teacher/attendance/daily" },
+            { title: "Subject Attendance", url: "/teacher/attendance/subjects" },
+            { title: "Confirm Attendance by Subject", url: "/teacher/attendance/confirm" },
+          ],
+        },
         { title: "Students", url: "/teacher/students", icon: StudentsIcon },
         { title: "Reports", url: "/teacher/reports", icon: ReportsIcon },
         { title: "Settings", url: "/teacher/settings", icon: SettingsIcon },

@@ -14,11 +14,11 @@ export function ScheduleTable({ schedules }: { schedules: SubjectSchedule[] }) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle>Weekly classes</CardTitle>
           <Badge variant="secondary" className="tabular-nums">
-            {schedules.length} {schedules.length === 1 ? "session" : "sessions"} per week
+            {schedules.filter(schedule => schedule.status === "active").length} active sessions per week
           </Badge>
         </div>
         <CardDescription className="text-pretty">
-          Your active classes, Monday through Sunday. All times are Philippine time (PHT).
+          Your active and inactive classes, Monday through Sunday. All times are Philippine time (PHT).
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -38,6 +38,7 @@ export function ScheduleTable({ schedules }: { schedules: SubjectSchedule[] }) {
                   <TableHead scope="col" className="px-4">Section</TableHead>
                   <TableHead scope="col" className="px-4">Campus</TableHead>
                   <TableHead scope="col" className="px-4">Class Time</TableHead>
+                  <TableHead scope="col" className="px-4">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -57,6 +58,11 @@ export function ScheduleTable({ schedules }: { schedules: SubjectSchedule[] }) {
                     <TableCell className="px-4 py-4">{schedule.campus}</TableCell>
                     <TableCell className="px-4 py-4 tabular-nums">
                       {formatClockTime(schedule.time_start)} – {formatClockTime(schedule.time_end)}
+                    </TableCell>
+                    <TableCell className="px-4 py-4">
+                      <Badge variant={schedule.status === "active" ? "secondary" : "outline"}>
+                        {schedule.status === "active" ? "Active" : "Inactive"}
+                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -16,16 +16,17 @@ function setup(rows, authorize = async () => ({ role: "teacher" })) {
   return { ...load("src/features/schedules/teacher-schedule.ts"), reads: () => reads }
 }
 
-test("weekly schedule excludes inactive sessions and sorts Monday to Sunday, then time", async () => {
+test("weekly schedule includes inactive sessions, excludes archives, and sorts Monday to Sunday, then time", async () => {
   const rows = [
     { id: 1, day_of_week: 0, time_start: "08:00:00", status: "active" },
     { id: 2, day_of_week: 1, time_start: "13:00:00", status: "active" },
     { id: 3, day_of_week: 1, time_start: "08:00:00", status: "active" },
     { id: 4, day_of_week: 2, time_start: "08:00:00", status: "inactive" },
     { id: 5, day_of_week: 6, time_start: "08:00:00", status: "active" },
+    { id: 6, day_of_week: 3, time_start: "08:00:00", status: "archived" },
   ]
   const original = structuredClone(rows)
-  assert.deepEqual((await setup(rows).getTeacherSchedule()).map(row => row.id), [3, 2, 5, 1])
+  assert.deepEqual((await setup(rows).getTeacherSchedule()).map(row => row.id), [3, 2, 4, 5, 1])
   assert.deepEqual(rows, original)
   assert.deepEqual(await setup([]).getTeacherSchedule(), [])
 })

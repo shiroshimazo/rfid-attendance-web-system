@@ -46,6 +46,12 @@ export const PILOT_SECTION_CODES: readonly string[] = PILOT_SECTIONS.map(
   (section) => section.code
 )
 
+/** Fixed classroom assignment for the pilot sections, shared across campuses. */
+export function roomForSection(section: string): string | null {
+  const code = section.trim()
+  return PILOT_SECTION_CODES.includes(code) ? `ROOM ${Number(code) - 20800}` : null
+}
+
 export const PILOT_CAMPUSES = [
   "Main Campus",
   "MV Campus",
