@@ -2,6 +2,7 @@ import { schoolDateKey } from "@/lib/school-time"
 
 export const smsStatuses = ["Pending", "Sent", "Failed"] as const
 export type SmsStatus = typeof smsStatuses[number]
+export type SmsNotificationType = "arrival" | "departure"
 export type SmsLogParams = Record<string, string | string[] | undefined>
 export interface SmsLogQuery { status: SmsStatus | "all"; from: string; to: string; page: number }
 const first = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] ?? "" : value ?? ""
@@ -26,6 +27,10 @@ export function smsLogPageUrl(query: SmsLogQuery, page: number) {
 
 export function smsStatusLabel(status: SmsStatus) {
   return status === "Failed" ? "Failed (Not Sent)" : status
+}
+
+export function smsTypeLabel(type: SmsNotificationType) {
+  return type === "departure" ? "Departure (Time Out)" : "Arrival (Time In)"
 }
 
 export function deliveryResultLabel(result: string | null, enabled: boolean) {

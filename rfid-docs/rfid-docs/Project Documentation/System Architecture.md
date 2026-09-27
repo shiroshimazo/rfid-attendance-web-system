@@ -184,6 +184,7 @@ Stores:
 2.  System identifies the existing attendance record.
 3.  Time-out is recorded.
 4.  Dashboards update.
+5.  Departure SMS ("going home") is sent to the parent or guardian.
 
 ------------------------------------------------------------------------
 

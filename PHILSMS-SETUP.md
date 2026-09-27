@@ -28,10 +28,16 @@ In Supabase SQL Editor, run:
 
 1. [202609150001_philsms_arrival_delivery.sql](supabase/migrations/202609150001_philsms_arrival_delivery.sql)
 2. [verify_philsms_delivery.sql](supabase/verify_philsms_delivery.sql) — expect **five PASS rows**.
+3. [202609270002_guardian_departure_sms.sql](supabase/migrations/202609270002_guardian_departure_sms.sql)
+4. [verify_departure_sms.sql](supabase/verify_departure_sms.sql) — expect **five PASS rows**.
 
-The migration preserves all existing SMS/attendance records. Old notifications
-are not eligible for automatic sending. Only new P04 arrivals can be claimed.
-Do not run rollback scripts during setup.
+The migrations preserve all existing SMS/attendance records. Old notifications
+are not eligible for automatic sending. Only new arrivals and departures can be
+claimed. Do not run rollback scripts during setup.
+
+Every Time Out now also sends one guardian SMS such as
+`Juan Dela Cruz has left Main Campus on 2026-09-08 at 16:30:00 PHT and is going home.`
+Plan for about two messages per student per school day when buying credits.
 
 ## 3. Configure the web server
 
@@ -106,11 +112,19 @@ uncertain. `attempt_started` without a final result may mean the process stopped
 or the database completion save failed. Check PhilSMS's log before any manual
 correction; **do not clear the attempt marker to retry blindly**.
 
-## 7. Check duplicate protection and networks
+## 7. Check the departure message
+
+Tap the same card again with a fresh request ID. The tap should return
+`action: time_out`, and the guardian phone should receive the "has left … and is
+going home" message. In Admin > SMS Logs the row's Type reads **Departure (Time
+Out)**.
+
+## 8. Check duplicate protection and networks
 
 Repeat the successful arrival's original request ID as in the P04 test. It must
-not send another SMS. A distinct second tap records Time Out without another
-arrival message. Test Smart, Globe and DITO with recipients you control, and verify
+not send another SMS. Repeating the departure's request ID must not send another
+departure message either, and a third tap on the same day is rejected without
+any SMS. Test Smart, Globe and DITO with recipients you control, and verify
 the actual phone receives the message before marking live acceptance complete.
 
 Also verify messages contain the correct student/campus for your three campuses.
@@ -120,18 +134,25 @@ cases across your test recipients instead of repeatedly resending.
 
 ## Delivery limits and recovery
 
-Each arrival has one durable send attempt. The documented API does not specify an
+Each arrival and each departure has one durable send attempt. The documented API does not specify an
 idempotency key, so a timeout or crash must not cause automatic resending. Such
 records remain Pending for provider-log reconciliation; the application does not
 claim guaranteed delivery. Sent records are not later reconciled with delivery
 receipts in this implementation.
 
-Unclaimed new arrivals can be attempted through a retry of their original Time In
-request within ten minutes of creation. There is no backlog worker or automatic
+Unclaimed new arrivals and departures can be attempted through a retry of their
+original Time In or Time Out request within ten minutes of creation. There is no backlog worker or automatic
 historical send. If configuration was missing, fix it and test a new arrival.
-Failed or uncertain attempts are not retried automatically. Duplicate notification
-rows for an attendance ID are rejected for review rather than sending both.
+Failed or uncertain attempts are not retried automatically. Duplicate arrival (or
+duplicate departure) rows for an attendance ID are rejected for review rather than
+sending both.
 
 Optional rollback: disable PHILSMS first, then run
 `supabase/rollback_philsms_delivery.sql` to revoke the sender RPC access. It keeps
 all data and attempt markers. Reapply the migration to restore access.
+
+To stop only departure messages, redeploy the previous application, run
+`supabase/rollback_departure_sms.sql`, then reapply
+`202609140001_rfid_tap_processing.sql` so Time Out stops queueing departure rows.
+Arrival messages keep working and all stored notifications are kept. Reapply
+`202609270002_guardian_departure_sms.sql` to turn departures back on.

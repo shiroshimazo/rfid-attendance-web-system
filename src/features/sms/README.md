@@ -1,6 +1,7 @@
 # SMS
 
-P06 uses the existing guardian arrival messages and Pending/Sent/Failed displays.
+P06 sends a guardian arrival message at Time In and a departure ("going home")
+message at Time Out, using the existing Pending/Sent/Failed displays.
 The sender is `src/services/sms/philsms.ts`; installation and acceptance are in
 `PHILSMS-SETUP.md`. Sent means provider API acceptance, not handset delivery.
 

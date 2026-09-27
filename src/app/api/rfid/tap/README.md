@@ -54,7 +54,8 @@ The service-role-only `record_rfid_tap` RPC atomically validates card/account/st
 serializes the student's writes, updates existing `attendance_records`, stores a
 retry receipt in `rfid_tap_requests`, and inserts one **Pending** arrival SMS in
 `sms_notifications`. The guardian number, student name and campus are captured
-at arrival. Time Out and retries create no extra SMS. A Pending row is not proof
+at arrival. Time Out inserts one **Pending** departure SMS telling the guardian the
+student has left campus and is going home; retries create no extra SMS. A Pending row is not proof
 of delivery: **P06 now supplies the PhilSMS sender and Sent/Failed updates; configure it using PHILSMS-SETUP.md**.
 
 The receipt table is private, RLS-enabled and has no portal access. The RPC is
@@ -102,7 +103,7 @@ firmware mode for USB enrollment so registering a card does not record attendanc
    ```
 
 5. Run with no `-RequestId` for the second distinct test tap: Time Out is saved.
-   A third fresh ID is rejected. Verify only one Pending arrival notification and
+   A third fresh ID is rejected. Verify exactly one arrival and one departure notification and
    unchanged subject confirmations. Test teacher Present/Late/Absent separately.
    UIDs 00:00:00:11 through 00:00:00:55 are authorized temporary test values, not
    verified physical card identities. Avoid a student/day with existing tap data

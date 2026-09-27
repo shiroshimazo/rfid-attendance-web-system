@@ -1,5 +1,5 @@
 import { requireRole } from "@/features/auth/server"
-import type { SmsLogQuery, SmsStatus } from "@/features/sms-logs/query"
+import type { SmsLogQuery, SmsNotificationType, SmsStatus } from "@/features/sms-logs/query"
 import { createServerSupabaseClient } from "@/services/supabase/server"
 
 export interface SmsLogRow {
@@ -7,6 +7,7 @@ export interface SmsLogRow {
   attendance_id: number
   parent_contact_number: string
   message: string
+  notification_type: SmsNotificationType
   sms_status: SmsStatus
   created_at: string
   sent_at: string | null
@@ -28,7 +29,7 @@ export async function fetchSmsLogs(query: SmsLogQuery) {
   await requireRole("admin")
   const supabase = await createServerSupabaseClient()
   let request = supabase.from("sms_notifications").select(
-    "id, attendance_id, parent_contact_number, message, sms_status, created_at, sent_at, delivery_enabled, delivery_started_at, delivery_result, provider_message_id, student:students(full_name, student_id), attendance:attendance_records!sms_attendance_belongs_to_student_fk(attendance_date, campus, card:rfid_cards(rfid_number))",
+    "id, attendance_id, parent_contact_number, message, notification_type, sms_status, created_at, sent_at, delivery_enabled, delivery_started_at, delivery_result, provider_message_id, student:students(full_name, student_id), attendance:attendance_records!sms_attendance_belongs_to_student_fk(attendance_date, campus, card:rfid_cards(rfid_number))",
     { count: "exact" }
   ).gte("created_at", `${query.from}T00:00:00+08:00`)
     .lt("created_at", new Date(Date.parse(`${query.to}T00:00:00+08:00`) + 86400000).toISOString())

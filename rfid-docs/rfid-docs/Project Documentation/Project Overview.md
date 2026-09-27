@@ -27,6 +27,9 @@ Example SMS:
 "Juan Dela Cruz has successfully arrived at BestLink College of the
 Philippines - Main Campus."
 
+When the student taps out, the parent or guardian receives a second SMS
+saying the student has left campus and is going home.
+
 Supported campuses: - Main Campus - MV Campus - Bulacan Campus
 
 ------------------------------------------------------------------------

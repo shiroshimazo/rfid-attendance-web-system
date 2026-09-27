@@ -9,6 +9,7 @@ import {
   CardHeader,
 } from "@/components/ui/card"
 import type { ParentSmsInfo } from "@/features/attendance/student-dashboard"
+import { smsTypeLabel } from "@/features/sms-logs/query"
 import { formatTimestamp } from "@/lib/format"
 
 export function SmsStatusCard({ sms }: { sms: ParentSmsInfo }) {
@@ -30,6 +31,12 @@ export function SmsStatusCard({ sms }: { sms: ParentSmsInfo }) {
       <CardContent>
         {sms.status ? (
           <dl className="space-y-2">
+            {sms.type ? (
+              <div className="flex items-baseline justify-between gap-2">
+                <dt className="text-sm text-muted-foreground">Latest</dt>
+                <dd className="text-sm font-medium">{smsTypeLabel(sms.type)}</dd>
+              </div>
+            ) : null}
             <div className="flex items-baseline justify-between gap-2">
               <dt className="text-sm text-muted-foreground">Status</dt>
               <dd className="text-sm font-medium">{sms.status}</dd>
@@ -45,8 +52,8 @@ export function SmsStatusCard({ sms }: { sms: ParentSmsInfo }) {
           </dl>
         ) : (
           <p className="text-sm text-muted-foreground text-pretty">
-            A notification is sent to the parent contact after the first tap of
-            the day.
+            A notification is sent to the parent contact when you tap in and
+            again when you tap out to go home.
           </p>
         )}
       </CardContent>

@@ -8,6 +8,7 @@ import { createServerSupabaseClient } from "@/services/supabase/server"
 export type { AttendanceStatus, RfidCardStatus }
 
 export type SmsStatus = "Pending" | "Sent" | "Failed"
+export type SmsNotificationType = "arrival" | "departure"
 
 export interface StudentDashboardStudentRow {
   id: number
@@ -35,6 +36,7 @@ export interface StudentDashboardCardRow {
 export interface StudentDashboardSmsRow {
   sms_status: SmsStatus
   sent_at: string | null
+  notification_type: SmsNotificationType
 }
 
 export interface StudentDashboardHistoryRow {
@@ -118,7 +120,7 @@ export async function fetchStudentDashboardSnapshot({
   if (attendance) {
     const { data: smsRow, error: smsError } = await supabase
       .from("sms_notifications")
-      .select("sms_status, sent_at")
+      .select("sms_status, sent_at, notification_type")
       .eq("attendance_id", attendance.id)
       .order("created_at", { ascending: false }).order("id", { ascending: false })
       .limit(1)

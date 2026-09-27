@@ -40,19 +40,30 @@ export async function sendPhilSms(config: { token: string; sender: string; endpo
   } catch { return { result: "unknown" } }
 }
 
-/** Only called after a device-authenticated, committed arrival. Never throws to the tap route. */
-export async function deliverArrivalSms(attendanceId: number) {
+/** Only called after a device-authenticated, committed tap. Never throws to the tap route. */
+async function deliverTapSms(claim: "claim_arrival_sms" | "claim_departure_sms", attendanceId: number) {
   const config = configuration()
   if (!config || !Number.isSafeInteger(attendanceId) || attendanceId <= 0) return
   try {
     const supabase = createAdminSupabaseClient()
     const attempt = randomUUID()
-    const { data, error } = await supabase.rpc("claim_arrival_sms", { p_attendance_id: attendanceId, p_attempt: attempt })
+    const { data, error } = await supabase.rpc(claim, { p_attendance_id: attendanceId, p_attempt: attempt })
     if (error || !data) return
     const recipient = normalizePhilippineMobile(data.recipient)
     const outcome = recipient ? await sendPhilSms(config, recipient, data.message) : { result: "invalid_recipient" }
     // The durable claim remains even if persistence fails: retries cannot send twice.
+    // finish_arrival_sms completes any claimed notification, arrival or departure, by ID and attempt.
     await supabase.rpc("finish_arrival_sms", { p_id: data.id, p_attempt: attempt,
       p_result: outcome.result, p_provider_id: "providerId" in outcome ? outcome.providerId ?? null : null })
   } catch { /* Attendance is already committed. Never turn SMS failure into tap failure. */ }
+}
+
+/** Tells the guardian the student arrived (Time In). */
+export function deliverArrivalSms(attendanceId: number) {
+  return deliverTapSms("claim_arrival_sms", attendanceId)
+}
+
+/** Tells the guardian the student left for home (Time Out). */
+export function deliverDepartureSms(attendanceId: number) {
+  return deliverTapSms("claim_departure_sms", attendanceId)
 }

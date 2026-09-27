@@ -112,7 +112,7 @@ test("USB action shares normalized attendance writer and arrival SMS, without de
   const { recordUsbTapAction } = createSourceLoader({
     "@/features/auth/server": { requireRole: async role => assert.equal(role, "admin") },
     "@/services/audit/log": { auditRoute: async (_, __, operation) => operation() },
-    "@/services/sms/philsms": { deliverArrivalSms: async id => sms.push(id) },
+    "@/services/sms/philsms": { deliverArrivalSms: async id => sms.push(id), deliverDepartureSms: async id => sms.push(-id) },
     "@/services/supabase/admin": {
       isSupabaseAdminConfigured: () => true,
       createAdminSupabaseClient: () => ({ rpc: async (...args) => {

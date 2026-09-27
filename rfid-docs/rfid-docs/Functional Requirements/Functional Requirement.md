@@ -214,8 +214,9 @@ Time Out remains empty until the student taps again.
   Students without RFID cards can still receive a teacher confirmation.
 - Late counts as attended in subject totals. Unconfirmed subjects are excluded
   from confirmed attendance rates and are never inferred to be Absent.
-- Parent notification describes arrival at the campus. Time Out, a network
-  retry and a subject confirmation do not create additional arrival messages.
+- Parent notification describes arrival at the campus at Time In, and departure
+  (the student has left campus and is going home) at Time Out. A network retry
+  and a subject confirmation do not create additional messages.
 
 These user-confirmed rules extend the earlier teacher Present/Absent decision;
 they do not introduce Excused, automatic absences or automatic subject Late.

@@ -4,7 +4,7 @@ import { CreditsCard } from "./components/credits-card"
 import Link from "next/link"
 import { redirect, unstable_rethrow } from "next/navigation"
 import { requireRole } from "@/features/auth/server"
-import { deliveryResultLabel, parseSmsLogQuery, smsLogPageUrl, smsStatuses, smsStatusLabel, type SmsLogParams } from "@/features/sms-logs/query"
+import { deliveryResultLabel, parseSmsLogQuery, smsLogPageUrl, smsStatuses, smsStatusLabel, smsTypeLabel, type SmsLogParams } from "@/features/sms-logs/query"
 import { fetchSmsLogs } from "@/services/sms/logs"
 import { DataErrorCard } from "@/components/data-error-card"
 import { LiveRefresh } from "@/components/live-refresh"
@@ -31,7 +31,7 @@ export default async function SmsLogsPage({ searchParams }: { searchParams: Prom
     <LiveRefresh channel="live-admin-sms-logs" tables={["sms_notifications", "students", "attendance_records", "rfid_cards"]} />
     <div className="space-y-1">
       <h1 className="text-2xl font-semibold tracking-tight">SMS Logs</h1>
-      <p className="text-sm text-muted-foreground text-pretty">Guardian arrival notifications and sending results. Times are shown in Philippine time (PHT).</p>
+      <p className="text-sm text-muted-foreground text-pretty">Guardian arrival (Time In) and departure (Time Out) notifications and sending results. Times are shown in Philippine time (PHT).</p>
     </div>
     <Suspense fallback={<Card><CardContent className="pt-6 text-sm text-muted-foreground" role="status">Loading SMS credits…</CardContent></Card>}>
       <CreditsCard />
@@ -49,12 +49,13 @@ export default async function SmsLogsPage({ searchParams }: { searchParams: Prom
         <p className="tabular-nums">{result.count.toLocaleString()} matching notifications</p>
         <p>Sent means accepted by the SMS provider, not confirmed phone delivery. Pending may include an unknown sending outcome.</p>
       </div>
-      {result.rows.length ? <div className="overflow-hidden rounded-lg border"><Table aria-label="SMS notification logs" className="min-w-[1050px]">
-        <TableHeader><TableRow className="bg-muted/50">{["Name / Student ID", "RFID No.", "Recipient Number", "SMS Status", "Created", "Sent", "Details"].map(label => <TableHead scope="col" key={label}>{label}</TableHead>)}</TableRow></TableHeader>
+      {result.rows.length ? <div className="overflow-hidden rounded-lg border"><Table aria-label="SMS notification logs" className="min-w-[1200px]">
+        <TableHeader><TableRow className="bg-muted/50">{["Name / Student ID", "RFID No.", "Recipient Number", "Type", "SMS Status", "Created", "Sent", "Details"].map(label => <TableHead scope="col" key={label}>{label}</TableHead>)}</TableRow></TableHeader>
         <TableBody>{result.rows.map(row => <TableRow key={row.id}>
           <TableCell className="max-w-64 whitespace-normal"><p className="font-medium">{row.student?.full_name ?? "Student unavailable"}</p><p className="text-xs text-muted-foreground">{row.student?.student_id ?? "—"}</p></TableCell>
           <TableCell className="font-mono text-xs">{row.attendance?.card?.rfid_number ?? "—"}</TableCell>
           <TableCell className="tabular-nums">{row.parent_contact_number}</TableCell>
+          <TableCell className="text-sm">{smsTypeLabel(row.notification_type)}</TableCell>
           <TableCell><Badge variant={row.sms_status === "Failed" ? "destructive" : row.sms_status === "Sent" ? "secondary" : "outline"}>{smsStatusLabel(row.sms_status)}</Badge></TableCell>
           <TableCell className="text-xs tabular-nums">{formatTimestamp(row.created_at)}</TableCell>
           <TableCell className="text-xs tabular-nums">{formatTimestamp(row.sent_at)}</TableCell>

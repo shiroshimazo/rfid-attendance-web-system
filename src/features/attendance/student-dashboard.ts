@@ -3,11 +3,12 @@ import { requireRole } from "@/features/auth/server"
 import { schoolDateKey } from "@/lib/school-time"
 import {
   fetchStudentDashboardSnapshot,
+  type SmsNotificationType,
   type SmsStatus,
   type StudentDashboardSnapshot,
 } from "@/services/attendance/student-dashboard"
 
-export type { AttendanceRowStatus, SmsStatus }
+export type { AttendanceRowStatus, SmsNotificationType, SmsStatus }
 
 /**
  * `Active` means an active card is assigned. `Registered` means at least one
@@ -48,6 +49,8 @@ export interface StudentRfidInfo {
 export interface ParentSmsInfo {
   status: SmsStatus | null
   sentAt: string | null
+  /** Latest of today's notifications: arrival at Time In, departure at Time Out. */
+  type: SmsNotificationType | null
 }
 
 export interface StudentDashboardKpis {
@@ -201,6 +204,7 @@ export function buildStudentDashboardData(
     sms: {
       status: snapshot.sms?.sms_status ?? null,
       sentAt: snapshot.sms?.sent_at ?? null,
+      type: snapshot.sms?.notification_type ?? null,
     },
     kpis: buildKpis(snapshot.history, today),
   }

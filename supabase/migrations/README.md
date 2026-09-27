@@ -100,6 +100,29 @@ migration; run it only together with the previous application version. It
 drops the catalog table and the subject status column, which no history row
 references.
 
+## Guardian departure SMS rollout
+
+Apply `202609270002_guardian_departure_sms.sql` after the P06 migration and
+before deploying the matching application: Admin > SMS Logs and the student
+dashboard read the new `notification_type` column, so those pages fail to load
+until it is applied. Then run `../verify_departure_sms.sql` for five PASS rows.
+
+The migration adds `sms_notifications.notification_type` (`arrival` or
+`departure`, default `arrival`). Existing rows are all arrivals, so nothing is
+rewritten. `record_rfid_tap` now also queues one Pending departure SMS on Time
+Out ("<name> has left <campus> on <date> at <time> PHT and is going home.").
+`claim_departure_sms` claims it under the same P06 rules: one attempt, new rows
+within ten minutes only, duplicates held for review, service role only.
+`claim_arrival_sms` now only counts arrival rows, so a departure never blocks or
+reopens an arrival. `finish_arrival_sms` completes both types unchanged.
+
+Rollback only if needed: redeploy the previous application, run
+`../rollback_departure_sms.sql` to revoke the departure sender, then reapply
+`202609140001_rfid_tap_processing.sql` so Time Out stops queueing departure rows.
+All notifications, including departure rows, are kept.
+
+Local proof: `node --test tests/rfid-tap.test.mjs tests/philsms.test.mjs tests/rfid-tap-route.test.mjs`.
+
 ## P06 PhilSMS rollout
 
 Apply `202609150001_philsms_arrival_delivery.sql`, then run
@@ -526,6 +549,8 @@ source for account lifecycle changes. Profile inserts and status updates also
 update `public.users.status`; archiving students deactivates only their active
 cards, and teacher assignments follow the teacher's status. Newly inserted or
 reassigned teaching assignments inherit their teacher's stored status.
+
+`202609270002_guardian_departure_sms.sql` queues and sends a guardian departure ("going home") SMS at Time Out, alongside the existing arrival SMS.
 
 ## W02 rollout and verification
 

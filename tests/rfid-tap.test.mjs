@@ -40,7 +40,7 @@ beforeEach(() => db.exec("begin"))
 afterEach(() => db.exec("rollback; reset role"))
 after(() => db.close())
 
-test("first tap and retry record one arrival; second distinct tap fills departure only", async () => {
+test("first tap and retry record one arrival; second distinct tap fills departure and queues one departure SMS", async () => {
   const request = randomUUID()
   const first = await tap(undefined, undefined, request)
   assert.equal(first.ok, true); assert.equal(first.action, "time_in")
@@ -58,11 +58,13 @@ test("first tap and retry record one arrival; second distinct tap fills departur
   assert.equal(saved.rfid_card_id, card)
   assert.equal((await rows("select * from public.rfid_tap_requests")).length, 2)
   assert.equal((await rows("select * from public.subject_attendance")).length, 0)
-  const notifications = await rows("select * from public.sms_notifications")
-  assert.equal(notifications.length, 1)
-  assert.equal(notifications[0].sms_status, "Pending")
-  assert.equal(notifications[0].sent_at, null)
+  const notifications = await rows("select * from public.sms_notifications order by id")
+  assert.equal(notifications.length, 2)
+  assert(notifications.every(row => row.sms_status === "Pending" && row.sent_at === null && row.attendance_id === first.attendanceId))
+  assert.deepEqual(notifications.map(row => row.notification_type), ["arrival", "departure"])
   assert.match(notifications[0].message, /Tap Student has arrived at Main Campus/)
+  assert.equal(notifications[1].message, "Tap Student has left Main Campus on 2026-09-08 at 12:30:00 PHT and is going home.")
+  assert.equal(notifications[1].parent_contact_number, "09123456789")
 })
 
 for (const [section, time, expected] of [
@@ -109,7 +111,8 @@ test("third tap is rejected while completed requests remain safely replayable", 
   assert.equal((await tap("2026-09-08T13:00:00+08:00")).code, "DAY_COMPLETE")
   assert.deepEqual(await tap("2026-09-08T14:00:00+08:00", undefined, exitRequest), { ...exit, replayed: true })
   assert.deepEqual(await rows("select * from public.attendance_records"), before)
-  assert.equal((await rows("select * from public.sms_notifications")).length, 1)
+  // One arrival and one departure; the rejected third tap and the replay add none.
+  assert.deepEqual((await rows("select notification_type from public.sms_notifications order by id")).map(row => row.notification_type), ["arrival", "departure"])
 })
 
 test("Manila midnight starts a new day without filling yesterday's missing departure", async () => {
@@ -200,6 +203,9 @@ test("read-only rollout probe returns seven PASS checks", async () => {
   const smsChecks = await rows(await readFile(new URL("../supabase/verify_philsms_delivery.sql", import.meta.url), "utf8"))
   assert.equal(smsChecks.length, 5)
   assert(smsChecks.every(row => row.result === "PASS"), JSON.stringify(smsChecks))
+  const departureChecks = await rows(await readFile(new URL("../supabase/verify_departure_sms.sql", import.meta.url), "utf8"))
+  assert.equal(departureChecks.length, 5)
+  assert(departureChecks.every(row => row.result === "PASS"), JSON.stringify(departureChecks))
 })
 
 test("SMS claim is one attempt per new arrival and completion cannot be overwritten", async () => {
@@ -249,6 +255,85 @@ test("unknown SMS outcomes stay Pending and cannot be claimed again; rollback pr
   await rejected(()=>rows('select public.claim_arrival_sms($1,$2)',[result.attendanceId,randomUUID()]))
   await db.exec('reset role')
   assert.deepEqual(await rows('select * from public.sms_notifications'),before)
+})
+
+test("departure SMS is claimed once per Time Out, independently of the arrival SMS", async () => {
+  const arrival = await tap()
+  const claim = async (name, token = randomUUID()) =>
+    (await rows(`select public.${name}($1,$2) as result`, [arrival.attendanceId, token]))[0].result
+  await db.exec("set local role service_role")
+  assert.equal(await claim("claim_departure_sms"), null) // nothing to claim before Time Out
+  const arrivalAttempt = randomUUID()
+  const arrivalSms = await claim("claim_arrival_sms", arrivalAttempt)
+  assert.match(arrivalSms.message, /has arrived at/)
+  await rows("select public.finish_arrival_sms($1,$2,'accepted','arrival-id')", [arrivalSms.id, arrivalAttempt])
+  const departureRequest = randomUUID()
+  const departure = await tap("2026-09-08T16:30:00+08:00", undefined, departureRequest)
+  assert.equal(departure.action, "time_out")
+  assert.deepEqual(await tap("2026-09-08T16:31:00+08:00", undefined, departureRequest), { ...departure, replayed: true })
+  assert.equal(await claim("claim_arrival_sms"), null) // a departure row never re-opens the arrival
+  const attempt = randomUUID()
+  const sms = await claim("claim_departure_sms", attempt)
+  assert.equal(sms.recipient, "09123456789")
+  assert.equal(sms.message, "Tap Student has left Main Campus on 2026-09-08 at 16:30:00 PHT and is going home.")
+  assert.equal(await claim("claim_departure_sms"), null)
+  await rows("select public.finish_arrival_sms($1,$2,'accepted','departure-id')", [sms.id, attempt])
+  await db.exec("reset role")
+  const saved = await rows("select notification_type,sms_status,provider_message_id from public.sms_notifications order by id")
+  assert.deepEqual(saved, [
+    { notification_type: "arrival", sms_status: "Sent", provider_message_id: "arrival-id" },
+    { notification_type: "departure", sms_status: "Sent", provider_message_id: "departure-id" },
+  ])
+})
+
+test("departure SMS skips expired, disabled and duplicate rows; only service role can dispatch", async () => {
+  const { attendanceId } = await tap()
+  await tap("2026-09-08T16:30:00+08:00")
+  const claim = async (name = "claim_departure_sms") =>
+    (await rows(`select public.${name}($1,$2) as result`, [attendanceId, randomUUID()]))[0].result
+  await rows("update public.sms_notifications set delivery_enabled=false where notification_type='departure'")
+  assert.equal(await claim(), null)
+  await rows("update public.sms_notifications set delivery_enabled=true,created_at=now()-interval '11 minutes' where notification_type='departure'")
+  assert.equal(await claim(), null)
+  await rows("update public.sms_notifications set created_at=now()")
+  await rows(`insert into public.sms_notifications(attendance_id,student_id,parent_contact_number,message,notification_type)
+    select attendance_id,student_id,parent_contact_number,message,notification_type from public.sms_notifications where notification_type='departure'`)
+  assert.equal(await claim(), null)
+  assert(await claim("claim_arrival_sms"), "a duplicate departure must not block the arrival")
+  for (const role of ["authenticated", "anon"]) {
+    await db.exec(`set local role ${role}`); await rejected(() => claim())
+    await db.exec("reset role")
+  }
+  for (const role of ["authenticated", "anon", "service_role"]) {
+    await db.exec(`set local role ${role}`)
+    await rejected(() => rows("select public.claim_tap_sms($1,$2,'departure')", [attendanceId, randomUUID()]))
+    await db.exec("reset role")
+  }
+})
+
+test("departure rollback stops sending and queueing while preserving every notification", async () => {
+  const { attendanceId } = await tap()
+  await tap("2026-09-08T16:30:00+08:00")
+  const before = await rows("select * from public.sms_notifications order by id")
+  const inner = sql => sql.replace(/^begin;$/m, "").replace(/^commit;$/m, "")
+  await db.exec(await readFile(new URL("../supabase/rollback_departure_sms.sql", import.meta.url), "utf8"))
+  await db.exec(inner(migration))
+  await db.exec("set local role service_role")
+  await rejected(() => rows("select public.claim_departure_sms($1,$2)", [attendanceId, randomUUID()]))
+  await db.exec("reset role")
+  assert.deepEqual(await rows("select * from public.sms_notifications order by id"), before)
+  await tap("2026-09-09T07:00:00+08:00")
+  await tap("2026-09-09T16:30:00+08:00")
+  const types = (await rows("select notification_type from public.sms_notifications order by id")).map(row => row.notification_type)
+  assert.deepEqual(types, ["arrival", "departure", "arrival"])
+  // Reapplying the departure migration restores queueing and sending without touching history.
+  await db.exec(inner(await readFile(new URL("../supabase/migrations/202609270002_guardian_departure_sms.sql", import.meta.url), "utf8")))
+  const next = await tap("2026-09-10T07:00:00+08:00")
+  await tap("2026-09-10T16:30:00+08:00")
+  await db.exec("set local role service_role")
+  assert.match((await rows("select public.claim_departure_sms($1,$2) as result", [next.attendanceId, randomUUID()]))[0].result.message, /has left/)
+  await db.exec("reset role")
+  assert.deepEqual((await rows("select * from public.sms_notifications order by id")).slice(0, 2), before)
 })
 
 test('P10 backfill preview follows tap priority and never changes stored evidence', async () => {

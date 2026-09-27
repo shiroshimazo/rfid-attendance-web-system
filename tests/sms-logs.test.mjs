@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import { test } from "node:test"
 import { createSourceLoader } from "./helpers/load-typescript.mjs"
 
-const { parseSmsLogQuery, smsLogPageUrl, smsStatusLabel, deliveryResultLabel } = createSourceLoader()("src/features/sms-logs/query.ts")
+const { parseSmsLogQuery, smsLogPageUrl, smsStatusLabel, smsTypeLabel, deliveryResultLabel } = createSourceLoader()("src/features/sms-logs/query.ts")
 
 test("SMS filters validate dates, status and pagination using the school timezone", () => {
   assert.deepEqual(parseSmsLogQuery({}, new Date("2026-09-21T17:00:00Z")), {
@@ -23,6 +23,11 @@ test("uncertain outcomes are never labeled as sent or failed", () => {
   assert.match(deliveryResultLabel("unknown", true), /unknown/)
   assert.match(deliveryResultLabel("attempt_started", true), /not recorded/)
   assert.match(deliveryResultLabel(null, false), /disabled/)
+})
+
+test("arrival and departure notifications are labeled by the tap that queued them", () => {
+  assert.equal(smsTypeLabel("arrival"), "Arrival (Time In)")
+  assert.equal(smsTypeLabel("departure"), "Departure (Time Out)")
 })
 
 function service({ denied = false, error = null } = {}) {
@@ -53,6 +58,7 @@ test("SMS query pages at database level with inclusive PHT dates and attendance-
   assert.ok(calls.some(call => call[0] === "eq" && call[1] === "sms_status" && call[2] === "Pending"))
   assert.deepEqual(calls.find(call => call[0] === "range"), ["range", 25, 49])
   assert.match(calls.find(call => call[0] === "select")[1], /sms_attendance_belongs_to_student_fk.*card:rfid_cards/)
+  assert.match(calls.find(call => call[0] === "select")[1], /notification_type/)
 })
 
 test("SMS reader blocks non-admins before querying and propagates database errors", async () => {

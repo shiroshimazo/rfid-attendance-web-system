@@ -15,7 +15,10 @@ function setup({ configured = true, error = null, data = { ok: true, action: "ti
   const smsCalls = []
   const load = createSourceLoader({
     "@/services/audit/log": { auditActivity: async (_event, _entity, operation) => operation(), auditRoute: async (_event, _entity, operation) => operation() },
-    "@/services/sms/philsms": { deliverArrivalSms: async id => { smsCalls.push(id) } },
+    "@/services/sms/philsms": {
+      deliverArrivalSms: async id => { smsCalls.push(["arrival", id]) },
+      deliverDepartureSms: async id => { smsCalls.push(["departure", id]) },
+    },
     "@/services/supabase/admin": {
       isSupabaseAdminConfigured: () => configured,
       createAdminSupabaseClient: () => ({ rpc: async (...args) => {
@@ -87,8 +90,8 @@ test("failures never expose credentials/database errors or claim a successful ta
   }
 })
 
-test("only successful arrivals (including safe retries) invoke the SMS dispatcher", async () => {
-  for (const [data, expected] of [[{ok:true,action:"time_in",attendanceId:5},[5]], [{ok:true,action:"time_in",attendanceId:5,replayed:true},[5]], [{ok:true,action:"time_out",attendanceId:5},[]], [{ok:false,code:"DAY_COMPLETE"},[]]]) {
+test("only successful arrivals and departures (including safe retries) invoke their SMS dispatcher", async () => {
+  for (const [data, expected] of [[{ok:true,action:"time_in",attendanceId:5},[["arrival",5]]], [{ok:true,action:"time_in",attendanceId:5,replayed:true},[["arrival",5]]], [{ok:true,action:"time_out",attendanceId:5},[["departure",5]]], [{ok:true,action:"time_out",attendanceId:5,replayed:true},[["departure",5]]], [{ok:false,code:"DAY_COMPLETE"},[]], [{ok:false,code:"INVALID_CARD"},[]]]) {
     const x=setup({data}); await x.send(); assert.deepEqual(x.smsCalls,expected)
   }
 })

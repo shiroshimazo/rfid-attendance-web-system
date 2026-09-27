@@ -27,8 +27,8 @@ separate check from a successful compile.
    ESP32 Wi-Fi is not needed. Do not open Serial Monitor at the same time.
 
 Accepted taps return the server's name, year, date/time, green LED, and short
-beep. Rejected cards return red LED and a long beep. Arrival SMS uses the existing
-server configuration; a successful tap does not guarantee SMS delivery. Review
+beep. Rejected cards return red LED and a long beep. Arrival (Time In) and departure
+(Time Out) SMS use the existing server configuration; a successful tap does not guarantee SMS delivery. Review
 SMS Logs for the provider outcome.
 
 A lost USB connection preserves the pending tap on the ESP32. Reconnect using

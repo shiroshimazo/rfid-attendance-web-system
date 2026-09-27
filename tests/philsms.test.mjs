@@ -8,7 +8,7 @@ function setup({ claim = { id:1,recipient:'09171234567',message:'Student arrived
   Object.assign(process.env,{PHILSMS_ENABLED:'true',PHILSMS_API_TOKEN:'test-token',PHILSMS_SENDER_ID:'School',PHILSMS_API_URL:'https://app.philsms.com/api/v3/sms/send'})
   const calls=[]; const sends=[]
   const load=createSourceLoader({'@/services/supabase/admin':{createAdminSupabaseClient:()=>({rpc:async(name,args)=>{
-    calls.push([name,args]); if(name==='claim_arrival_sms') return {data:claim,error:null}
+    calls.push([name,args]); if(name==='claim_arrival_sms'||name==='claim_departure_sms') return {data:claim,error:null}
     if(failFinish) throw new Error('database unavailable')
     return {error:null}
   }})}})
@@ -34,6 +34,18 @@ test('accepted message persists Sent outcome once with recipient and campus mess
   assert.deepEqual(JSON.parse(opt.body),{recipient:'639171234567',sender_id:'School',type:'plain',message:'Student arrived at MV Campus.'})
   assert.equal(x.calls[1][1].p_result,'accepted'); assert.equal(x.calls[1][1].p_provider_id,'provider-1')
   assert.equal(x.calls[0][1].p_attempt,x.calls[1][1].p_attempt)
+})
+test('departure uses its own claim, sends the going-home message and reuses the completion',async()=>{
+  const x=setup({claim:{id:9,recipient:'09171234567',message:'Student has left MV Campus on 2026-09-08 at 16:30:00 PHT and is going home.'}})
+  await x.deliverDepartureSms(5)
+  assert.deepEqual(x.calls.map(([name])=>name),['claim_departure_sms','finish_arrival_sms'])
+  assert.equal(x.calls[0][1].p_attendance_id,5); assert.equal(x.calls[1][1].p_id,9)
+  assert.equal(x.calls[0][1].p_attempt,x.calls[1][1].p_attempt); assert.equal(x.calls[1][1].p_result,'accepted')
+  assert.match(JSON.parse(x.sends[0][1].body).message,/is going home/)
+})
+test('disabled configuration or already claimed departure never sends',async()=>{
+  const off=setup(); process.env.PHILSMS_ENABLED='false'; await off.deliverDepartureSms(5); assert.equal(off.calls.length,0)
+  const claimed=setup({claim:null}); await claimed.deliverDepartureSms(5); assert.equal(claimed.sends.length,0); assert.equal(claimed.calls.length,1)
 })
 test('already claimed or historical arrival never sends',async()=>{
   const x=setup({claim:null}); await x.deliverArrivalSms(5); assert.equal(x.sends.length,0)

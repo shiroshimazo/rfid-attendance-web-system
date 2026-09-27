@@ -1,4 +1,4 @@
-import { deliverArrivalSms } from "@/services/sms/philsms"
+import { deliverArrivalSms, deliverDepartureSms } from "@/services/sms/philsms"
 import { createAdminSupabaseClient, isSupabaseAdminConfigured } from "@/services/supabase/admin"
 
 export function tapFailure(status: number, code: string, message: string) {
@@ -18,6 +18,7 @@ export async function recordValidatedTap(input: { requestId: string; uid: string
       return tapFailure(503, "SAVE_UNAVAILABLE", "Could not confirm attendance. Retry with the same request ID.")
     }
     if (data.ok && data.action === "time_in") await deliverArrivalSms(data.attendanceId)
+    if (data.ok && data.action === "time_out") await deliverDepartureSms(data.attendanceId)
     return { status: data.ok ? 200 : data.code === "INVALID_CARD" ? 422 : 409, body: data }
   } catch {
     return tapFailure(503, "SAVE_UNAVAILABLE", "Could not record attendance. Retry with the same request ID.")
