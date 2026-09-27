@@ -266,10 +266,18 @@ export function StudentFormDialog({
     mode: "onTouched",
   })
 
-  // Reopening the dialog for another student must not show stale values.
-  // Create mode starts on step one.
+  const initializedStudent = React.useRef<number | "create" | null>(null)
+
+  // Initialize once per opening/student, not when a server refresh replaces
+  // program or student objects. Those updates must not erase an active draft.
   React.useEffect(() => {
-    if (!open) return
+    if (!open) {
+      initializedStudent.current = null
+      return
+    }
+    const identity = student?.id ?? "create"
+    if (initializedStudent.current === identity) return
+    initializedStudent.current = identity
 
     const values = defaultValues(student)
 

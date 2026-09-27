@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
+import { CreditsCard } from "./components/credits-card"
 import Link from "next/link"
 import { redirect, unstable_rethrow } from "next/navigation"
 import { requireRole } from "@/features/auth/server"
@@ -31,6 +33,9 @@ export default async function SmsLogsPage({ searchParams }: { searchParams: Prom
       <h1 className="text-2xl font-semibold tracking-tight">SMS Logs</h1>
       <p className="text-sm text-muted-foreground text-pretty">Guardian arrival notifications and sending results. Times are shown in Philippine time (PHT).</p>
     </div>
+    <Suspense fallback={<Card><CardContent className="pt-6 text-sm text-muted-foreground" role="status">Loading SMS credits…</CardContent></Card>}>
+      <CreditsCard />
+    </Suspense>
     <Card><CardContent className="pt-6">
       <form key={JSON.stringify(query)} action="/admin/sms-logs" method="get" className="grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="space-y-2"><Label htmlFor="sms-status">SMS status</Label><select id="sms-status" name="status" defaultValue={query.status} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="all">All statuses</option>{smsStatuses.map(status => <option key={status} value={status}>{smsStatusLabel(status)}</option>)}</select></div>

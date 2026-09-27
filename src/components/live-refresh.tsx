@@ -49,12 +49,19 @@ export function LiveRefresh({
     let timer: ReturnType<typeof setTimeout> | null = null
     let connected = false
     let disposed = false
+    let pending = false
     let schoolDate = schoolDateKey(new Date())
     const schedule = () => {
-      if (disposed || timer !== null) return
+      if (disposed) return
+      pending = true
+      if (timer !== null) return
       timer = setTimeout(() => {
         timer = null
         if (disposed) return
+        // Keep drafts intact while minimized or editing a dialog. Retain the
+        // pending update so the recovery tick can apply it after editing ends.
+        if (document.visibilityState !== "visible" || document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) return
+        pending = false
         schoolDate = schoolDateKey(new Date())
         router.refresh()
       }, debounceMs)
@@ -74,21 +81,21 @@ export function LiveRefresh({
       connected = status === "SUBSCRIBED"
       if (connected) schedule() // Includes changes missed before initial/reconnection subscription.
     })
-    const visible = () => { if (document.visibilityState === "visible") schedule() }
+    const recover = () => {
+      if (document.visibilityState === "visible" && (pending || !connected || schoolDateKey(new Date()) !== schoolDate)) schedule()
+    }
     window.addEventListener("online", schedule)
-    document.addEventListener("visibilitychange", visible)
+    document.addEventListener("visibilitychange", recover)
     // Recover missed changes while disconnected, and roll today's views over at
     // Manila midnight even when there are no database events.
-    const recovery = setInterval(() => {
-      if (document.visibilityState === "visible" && (!connected || schoolDateKey(new Date()) !== schoolDate)) schedule()
-    }, 30_000)
+    const recovery = setInterval(recover, 30_000)
 
     return () => {
       disposed = true
       if (timer !== null) clearTimeout(timer)
       clearInterval(recovery)
       window.removeEventListener("online", schedule)
-      document.removeEventListener("visibilitychange", visible)
+      document.removeEventListener("visibilitychange", recover)
       void supabase.removeChannel(builder)
     }
   }, [router, channel, tableKey, debounceMs])

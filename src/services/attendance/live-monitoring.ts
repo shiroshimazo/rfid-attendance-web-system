@@ -16,15 +16,16 @@ export interface LiveMonitoringRecord {
   card: { rfid_number: string } | null
 }
 
-/** Read today's recorded taps using the administrator's session and existing RLS. */
-export async function fetchLiveMonitoringRecords(date: string) {
+/** Read the inclusive date range using the administrator's session and existing RLS. */
+export async function fetchLiveMonitoringRecords(fromDate: string, toDate = fromDate) {
   const supabase = await createServerSupabaseClient()
   return fetchAllRows<LiveMonitoringRecord>((from, to) => supabase
     .from("attendance_records")
     .select(`id, attendance_date, time_in, time_out,
       student:students!attendance_records_student_id_fkey(student_id, full_name, section, program_id, program:programs(program_code, program_name)),
       card:rfid_cards!attendance_card_belongs_to_student_fk(rfid_number)`)
-    .eq("attendance_date", date)
+    .gte("attendance_date", fromDate)
+    .lte("attendance_date", toDate)
     .in("attendance_status", ["Present", "Late"])
     .order("id", { ascending: false })
     .range(from, to)

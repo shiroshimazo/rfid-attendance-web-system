@@ -1,7 +1,22 @@
 import type { LiveMonitoringRecord } from "@/services/attendance/live-monitoring"
+import { schoolDateKey } from "@/lib/school-time"
+
+export type MonitoringParams = Record<string, string | string[] | undefined>
+
+export function parseMonitoringRange(params: MonitoringParams, now = new Date()) {
+  const today = schoolDateKey(now)
+  const date = (value: string | string[] | undefined) => {
+    const text = Array.isArray(value) ? value[0] : value
+    return text && /^\d{4}-\d{2}-\d{2}$/.test(text) && Number.isFinite(Date.parse(text)) && new Date(text).toISOString().slice(0, 10) === text ? text : today
+  }
+  const from = date(params.from)
+  const to = date(params.to)
+  return { from: from <= to ? from : to, to: from <= to ? to : from }
+}
 
 export interface LiveMonitoringRow {
   id: number
+  attendanceDate: string
   studentId: string
   name: string
   section: string
@@ -23,6 +38,7 @@ export interface LiveMonitoringFilters {
 export function buildLiveMonitoringRows(records: LiveMonitoringRecord[]): LiveMonitoringRow[] {
   return records.filter(record => record.time_in || record.time_out).map(record => ({
     id: record.id,
+    attendanceDate: record.attendance_date,
     studentId: record.student?.student_id ?? "",
     name: record.student?.full_name ?? "Unknown student",
     section: record.student?.section ?? "",
@@ -34,6 +50,7 @@ export function buildLiveMonitoringRows(records: LiveMonitoringRecord[]): LiveMo
     timeIn: record.time_in,
     timeOut: record.time_out,
   })).sort((a, b) =>
+    b.attendanceDate.localeCompare(a.attendanceDate) ||
     (b.timeOut ?? b.timeIn ?? "").localeCompare(a.timeOut ?? a.timeIn ?? "") || b.id - a.id
   )
 }

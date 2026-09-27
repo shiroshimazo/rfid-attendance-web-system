@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { filterLiveMonitoringRows, type LiveMonitoringFilters, type LiveMonitoringRow } from "@/features/attendance/live-monitoring"
-import { formatClockTime, formatNumber } from "@/lib/format"
+import { formatClockTime, formatDateValue, formatNumber } from "@/lib/format"
 
 const PAGE_SIZE = 20
 const emptyFilters: LiveMonitoringFilters = { search: "", tap: "all", program: "all", section: "all" }
@@ -39,8 +39,8 @@ export function MonitoringTable({ rows }: { rows: LiveMonitoringRow[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Today’s student taps</CardTitle>
-        <CardDescription>One row per student. Taps In shows students awaiting tap out; Taps Out shows completed tap outs.</CardDescription>
+        <CardTitle>Student taps</CardTitle>
+        <CardDescription>One row per attendance record. Taps In shows records awaiting tap out; Taps Out shows completed tap outs.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div role="search" aria-label="Filter live monitoring" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(16rem,2fr)_1fr_1fr_1fr_auto]">
@@ -86,16 +86,17 @@ export function MonitoringTable({ rows }: { rows: LiveMonitoringRow[] }) {
           <Button variant="outline" className="self-end" disabled={!filtersActive} onClick={() => updateFilters(emptyFilters)}>Clear filters</Button>
         </div>
         {visible.length === 0 ? (
-          <EmptyState icon={ScanLine} title={filtersActive ? "No matching taps" : "No taps yet today"}
+          <EmptyState icon={ScanLine} title={filtersActive ? "No matching taps" : "No taps in this date range"}
             description={filtersActive ? "Change or clear the filters to see more students." : "Students appear automatically when their RFID tap is recorded."} />
         ) : (
           <div className="rounded-lg border">
             <Table>
               <TableHeader><TableRow className="bg-muted/50">
-                {["Name", "Section", "Program", "RFID Number", "Tap IN", "Tap Out"].map(label => <TableHead key={label} className="px-3">{label}</TableHead>)}
+                {["Date", "Name", "Section", "Program", "RFID Number", "Tap IN", "Tap Out"].map(label => <TableHead key={label} className="px-3">{label}</TableHead>)}
               </TableRow></TableHeader>
               <TableBody>
                 {visible.map(row => <TableRow key={row.id}>
+                  <TableCell className="px-3 tabular-nums">{formatDateValue(row.attendanceDate)}</TableCell>
                   <TableCell className="px-3 font-medium">{row.name}</TableCell>
                   <TableCell className="px-3">{row.section || "—"}</TableCell>
                   <TableCell className="px-3" title={row.programName}>{row.programCode || row.programName}</TableCell>

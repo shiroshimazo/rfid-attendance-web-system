@@ -119,7 +119,7 @@ PostgreSQL connections, provider delivery and physical hardware need live checks
 
 ## USB transport
 
-Admin > Attendance now offers **Connect USB reader**. The browser sends validated
+Admin > Live Monitoring offers **Connect USB reader**. The browser sends validated
 UUID/UID pairs through `recordUsbTapAction`, which requires an active admin session
 and uses the same `recordValidatedTap` writer and SMS dispatcher as this endpoint.
 No device bearer secret is exposed to the browser. The HTTP device endpoint

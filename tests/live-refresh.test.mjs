@@ -7,12 +7,13 @@ test('continuous events, reconnect, focus, offline recovery, midnight and cleanu
   const timers=new Map(), intervals=new Map(), windowEvents=new Map(), documentEvents=new Map()
   let counter=0, refreshes=0, cleanup, subscribe, removed=0, date='2026-09-09', dependencies
   const events=[]
+  let dialogOpen = false
   globalThis.setTimeout=fn=>{const id=++counter;timers.set(id,fn);return id}
   globalThis.clearTimeout=id=>timers.delete(id)
   globalThis.setInterval=fn=>{const id=++counter;intervals.set(id,fn);return id}
   globalThis.clearInterval=id=>intervals.delete(id)
   globalThis.window={addEventListener:(k,f)=>windowEvents.set(k,f),removeEventListener:k=>windowEvents.delete(k)}
-  globalThis.document={visibilityState:'visible',addEventListener:(k,f)=>documentEvents.set(k,f),removeEventListener:k=>documentEvents.delete(k)}
+  globalThis.document={visibilityState:'visible',querySelector:()=>dialogOpen ? {} : null,addEventListener:(k,f)=>documentEvents.set(k,f),removeEventListener:k=>documentEvents.delete(k)}
   const flush=()=>{const callbacks=[...timers.values()];timers.clear();callbacks.forEach(f=>f())}
   try {
     const builder={on:(_event,filter,callback)=>{events.push({filter,callback});return builder},subscribe:callback=>{subscribe=callback}}
@@ -36,7 +37,21 @@ test('continuous events, reconnect, focus, offline recovery, midnight and cleanu
     date='2026-09-10';[...intervals.values()][0]();flush();assert.equal(refreshes,6)
     intervals.values().next().value();assert.equal(timers.size,0)
     windowEvents.get('online')();flush();assert.equal(refreshes,7)
-    documentEvents.get('visibilitychange')();flush();assert.equal(refreshes,8)
+    // Minimizing and restoring alone must not refresh the form's server props.
+    document.visibilityState='hidden';documentEvents.get('visibilitychange')();flush()
+    document.visibilityState='visible';documentEvents.get('visibilitychange')();flush();assert.equal(refreshes,7)
+    // An update queued before minimizing must wait until the page is visible.
+    events[0].callback();document.visibilityState='hidden';flush();assert.equal(refreshes,7)
+    document.visibilityState='visible';documentEvents.get('visibilitychange')();flush();assert.equal(refreshes,8)
+    // Reconnects, real-time changes and recovery must preserve an open editor,
+    // even if the dialog opens after a refresh has already been scheduled.
+    events[0].callback();dialogOpen=true;flush();assert.equal(refreshes,8)
+    subscribe('SUBSCRIBED');windowEvents.get('online')();flush();assert.equal(refreshes,8)
+    document.visibilityState='hidden';events[0].callback();flush()
+    document.visibilityState='visible';documentEvents.get('visibilitychange')();flush();assert.equal(refreshes,8)
+    intervals.values().next().value();flush();assert.equal(refreshes,8)
+    dialogOpen=false;intervals.values().next().value();flush();assert.equal(refreshes,9)
+    intervals.values().next().value();assert.equal(timers.size,0)
     events[0].callback();cleanup();assert.equal(timers.size,0);assert.equal(intervals.size,0)
     assert.equal(windowEvents.size,0);assert.equal(documentEvents.size,0);assert.equal(removed,1)
     subscribe('SUBSCRIBED');events[0].callback();assert.equal(timers.size,0)

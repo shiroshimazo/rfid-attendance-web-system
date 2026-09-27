@@ -18,7 +18,7 @@ const bundle = await build({
     import { createRoot } from 'react-dom/client';
     import { MonitoringTable } from '@/app/(portal)/admin/live-monitoring/components/monitoring-table';
     const initial = Array.from({length: 25}, (_, i) => ({
-      id:i+1, studentId:'S-'+(i+1), name:i===0?'Ana Student':'Student '+(i+1),
+      id:i+1, attendanceDate:'2026-09-20', studentId:'S-'+(i+1), name:i===0?'Ana Student':'Student '+(i+1),
       section:i===0?'A':'B', programId:i===0?'1':'2', programCode:i===0?'BSIT':'BSE',
       programName:i===0?'Information Technology':'Education', rfidNumber:'UID-'+(i+1),
       timeIn:'08:00:00', timeOut:i===1?'12:00:00':null,
@@ -52,7 +52,8 @@ try {
   page.on("pageerror", error => errors.push(error.message))
   await page.goto(`http://127.0.0.1:${server.address().port}`)
   await page.getByText("Ana Student", { exact: true }).waitFor()
-  assert.deepEqual(await page.getByRole("columnheader").allTextContents(), ["Name", "Section", "Program", "RFID Number", "Tap IN", "Tap Out"])
+  assert.deepEqual(await page.getByRole("columnheader").allTextContents(), ["Date", "Name", "Section", "Program", "RFID Number", "Tap IN", "Tap Out"])
+  assert.equal(await page.locator("tbody tr").first().locator("td").first().textContent(), "Sep 20, 2026")
   assert.equal(await page.locator("tbody tr").count(), 20)
   await page.getByRole("link", { name: /next page/i }).click()
   assert.equal(await page.locator("tbody tr").count(), 5)
@@ -80,7 +81,7 @@ try {
   assert.equal(await page.locator("tbody tr").count(), 1)
   await page.getByRole("button", { name: "Clear filters" }).click()
   await page.evaluate(() => window.clearDay())
-  await page.getByText("No taps yet today", { exact: true }).waitFor()
+  await page.getByText("No taps in this date range", { exact: true }).waitFor()
   assert.deepEqual(errors, [])
   console.log("PASS: columns, pagination, search, combined filters, tap updates, preserved filters, new rows, mobile controls, empty day")
 } finally {
