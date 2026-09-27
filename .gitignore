@@ -44,3 +44,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ESP32 Wi-Fi credentials and device API secret
+/firmware/RfidAttendance/config.h
+/firmware/.build/

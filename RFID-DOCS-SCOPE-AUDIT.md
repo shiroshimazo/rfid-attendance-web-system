@@ -71,7 +71,7 @@ Your instruction resolves the current-release decision: remove this business sta
 | Realtime | `src/components/live-refresh.tsx`, publication migration | KEEP and finish reliability verification. A working live update is a core requirement. |
 | Device ingestion | `src/app/api/rfid/tap/README.md` | PROCEED. This folder has no `route.ts`; the required receiver is not implemented. |
 | SMS sending | `src/services/sms/README.md`, `src/features/sms/README.md` | PROCEED. Database/display support exists; sending is not implemented here. |
-| Firmware and physical feedback | No firmware/build files found in the source inventory | PROCEED for the complete system. Confirm separately if firmware is maintained in another repository. |
+| Firmware and physical feedback | User confirmed the ESP32/RC522/TFT/LED/buzzer sample test works on 2026-09-22 | HARDWARE READY for integration. Full device-to-server acceptance remains tracked under P11. |
 | Database/migrations | Six migrations, seed, and maintenance SQL in `supabase/` | KEEP the schema foundations and migration history. Correct active scope through deliberate migrations. |
 | Shared UI and configuration | `src/components/`, `src/lib/`, styles, navigation, package/config files | KEEP supporting UI and infrastructure. These are not extra business features just because the docs do not name each helper. |
 | Existing tests | `tests/` | KEEP useful regression coverage. R01 removed active Excused expectations; retained mentions test legacy compatibility or rejection only. |
@@ -496,7 +496,27 @@ Validation: all 22 RFID/P10 database tests passed, including actual business-see
 
 **Basis:** OVERVIEW hardware; ARCH Device Layer; FR successful/failed taps.
 
-The inventory found no `.ino`, C++ firmware, PlatformIO configuration, or physical wiring artifact. This establishes a repository gap, not that the physical device does not exist.
+**Device integration implementation: ready for physical testing (2026-09-22).** Added `firmware/RfidAttendance/RfidAttendance.ino` and [setup instructions](firmware/README.md). The firmware calls the existing attendance API over verified HTTPS or explicitly enabled private-LAN HTTP, uses real server card decisions, displays server name/year/date/time, and controls the low-trigger buzzer and LEDs only from confirmed outcomes. Pending UUID/UID survives reboot and is reused on network retries; card removal gates new taps. Registration-only mode preserves USB enrollment without attendance writes.
+
+- [x] Compiled for ESP32 Dev Module with ESP32 core 3.3.12 and ArduinoJson 7.4.3: 1,086,304 bytes flash and 50,528 bytes global RAM.
+- [x] 36 focused API, database attendance/retry, and USB serial tests passed. Local LAN endpoint returned 401 without credentials and 400 INVALID_REQUEST for an authenticated empty body; these probes did not submit attendance taps.
+- [x] Created ignored local configuration with the device key and PC endpoint; Wi-Fi credentials must be entered locally. The setup helper preserves existing configuration and follows Next.js development environment precedence.
+- [ ] Upload configured firmware and verify real first/second taps, rejected cards, held-card behavior, reconnect/reset replay, dashboard updates, and SMS outcome. No connected ESP32 was detected during implementation. Hardware-ready status below remains user-confirmed; full P11 completion is not claimed.
+
+**USB integration added (2026-09-22): ready for physical testing.** Admin > Attendance now has a bidirectional USB reader. Its admin-authenticated server action reuses the attendance writer and SMS dispatcher; the browser receives no device secret. USB is the firmware default and does not require ESP32 Wi-Fi or an antenna. Server replies drive TFT/LED/buzzer feedback; reconnect/reset preserves the pending UUID. Enrollment remains separate.
+
+- [x] 43 focused attendance/API/serial/USB tests pass, including authorization, fragmented messages, duplicate requests, uncertainty, and disconnect cleanup.
+- [x] USB firmware compiles for ESP32 Dev Module. Focused TypeScript changes have no reported errors; the full check remains blocked by existing union-property errors in `login-form-1.tsx` lines 58-60.
+- [ ] User must upload the updated sketch and verify USB Time In/Time Out, rejected cards, physical feedback, reconnect/reset, and SMS provider outcome. No live tap or SMS was sent during automated tests.
+
+**Hardware status: READY TO GO - user-confirmed on 2026-09-22.** The user confirmed the assembled hardware works after resolving the buzzer connection issue. This records physical sample-test acceptance, not independent inspection by the assistant.
+
+- [x] ESP32 and RC522 read a physical card UID; the TFT displays the result.
+- [x] Sample registered UID `EE:20:01:07` produces green LED feedback and a short beep; other UIDs produce red LED feedback and a long beep, based on the user's confirmation of the sample sketch.
+- [x] Replacement low-trigger active buzzer works in the setup. The sample sketch uses GPIO22 for buzzer control, GPIO16 for green, and GPIO17 for red.
+- [ ] Verify server-backed device integration: actual registration lookup, first/second attendance taps, server-confirmed feedback, dashboard updates, and arrival SMS status. The sample sketch compares a hardcoded UID; full P11 acceptance remains pending.
+
+The original inventory found no firmware artifacts. This gap is now addressed by the Arduino sketch and wiring/setup guide under `firmware/`; physical server-backed acceptance remains pending.
 
 Proceed with the specified ESP32, RC522, MIFARE Classic 1K card, TFT, green/red LEDs, and buzzer integration after the server contract is testable. Verify UID capture, Wi-Fi request, displayed name/year/date/time, successful recording feedback, and rejected-card feedback. Do not signal success for a request the server has not confirmed.
 
@@ -558,7 +578,8 @@ flow, finalize the absence policy, alter permissions, or complete R03–R05.
 - [ ] Dashboard, history, attendance panel, and report totals follow one documented rule.
 - [x] Admin reports include the required attendance, RFID, and SMS records; PDF output matches its stated scope in local P08 tests. User confirmed live export testing completed under P08.
 - [x] Archived history is retained and available through the admin report/export path in local P08 tests. User acceptance is recorded under P08.
-- [ ] Device display/LED/buzzer behavior is verified with real accepted and rejected cards.
+- [x] Hardware is ready for integration: physical UID reading and TFT/LED/buzzer sample feedback work, user-confirmed on 2026-09-22.
+- [ ] Device feedback matches real server-accepted and server-rejected cards; full P11 end-to-end acceptance remains pending.
 - [ ] No standalone extra feature was added to satisfy an old generated roadmap.
 
 ## 9. Original audit coverage and checks (before R01 implementation)

@@ -1,8 +1,8 @@
 import { auditRoute } from "@/services/audit/log"
 import { createHash, timingSafeEqual } from "node:crypto"
 import { rfidTapSchema } from "@/features/rfid-tap/schema"
-import { deliverArrivalSms } from "@/services/sms/philsms"
-import { createAdminSupabaseClient, isSupabaseAdminConfigured } from "@/services/supabase/admin"
+import { recordValidatedTap } from "@/services/rfid/tap"
+import { isSupabaseAdminConfigured } from "@/services/supabase/admin"
 
 export const runtime = "nodejs"
 
@@ -53,16 +53,7 @@ export async function POST(request: Request) {
     catch { return failure(400, "INVALID_REQUEST", "Send valid JSON with a request ID and reader UID.") }
     const parsed = rfidTapSchema.safeParse(input)
     if (!parsed.success) return failure(400, "INVALID_REQUEST", "Send a UUID requestId and a valid 4, 7 or 10-byte hexadecimal uid.")
-    try {
-      const { data, error } = await createAdminSupabaseClient().rpc("record_rfid_tap", {
-        p_request_id: parsed.data.requestId, p_uid: parsed.data.uid,
-      })
-      if (error) return failure(503, "SAVE_UNAVAILABLE", "Could not record attendance. Retry with the same request ID.")
-      if (!data || typeof data.ok !== "boolean") return failure(503, "SAVE_UNAVAILABLE", "Could not confirm attendance. Retry with the same request ID.")
-      if (data.ok && data.action === "time_in") await deliverArrivalSms(data.attendanceId)
-      return reply(data, data.ok ? 200 : data.code === "INVALID_CARD" ? 422 : 409)
-    } catch {
-      return failure(503, "SAVE_UNAVAILABLE", "Could not record attendance. Retry with the same request ID.")
-    }
+    const result = await recordValidatedTap({ requestId: parsed.data.requestId, uid: parsed.data.uid! })
+    return reply(result.body, result.status)
   })
 }

@@ -1,4 +1,4 @@
-import { UserRound } from "lucide-react"
+import { MessageSquareText, UserRound } from "lucide-react"
 import { createElement, type ComponentType } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -91,6 +91,7 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
         { title: "Reports", url: "/admin/reports", icon: ReportsIcon },
         { title: "Archives", url: "/admin/archives", icon: ArchivesIcon },
         { title: "System Logs", url: "/admin/system-logs", icon: SystemLogsIcon },
+        { title: "SMS Logs", url: "/admin/sms-logs", icon: MessageSquareText },
         { title: "Settings", url: "/admin/settings", icon: SettingsIcon },
       ],
     },

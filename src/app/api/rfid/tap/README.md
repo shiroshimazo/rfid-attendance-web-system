@@ -70,6 +70,11 @@ remain P07.
 
 ## Install and test
 
+ESP32 firmware and the local-PC/HTTPS setup guide are in
+[`firmware/README.md`](../../../../../firmware/README.md). The device uses this
+existing endpoint; no additional ingestion route is needed. Use registration-only
+firmware mode for USB enrollment so registering a card does not record attendance.
+
 1. Apply `supabase/migrations/202609140001_rfid_tap_processing.sql`, then
    `supabase/migrations/202609140002_teacher_confirmed_late.sql`, after the existing
    migrations. These add the writer/receipts and teacher Late support; they do not
@@ -111,3 +116,11 @@ without removing any Late history. Neither rollback script is a setup step.
 Local proof uses PGlite migrations/transactions, actual route code with boundary
 mocks, subject action/PDF tests and Chromium fixtures. Hosted deployment, multiple
 PostgreSQL connections, provider delivery and physical hardware need live checks.
+
+## USB transport
+
+Admin > Attendance now offers **Connect USB reader**. The browser sends validated
+UUID/UID pairs through `recordUsbTapAction`, which requires an active admin session
+and uses the same `recordValidatedTap` writer and SMS dispatcher as this endpoint.
+No device bearer secret is exposed to the browser. The HTTP device endpoint
+continues to require its bearer key. See [USB setup](../../../../../firmware/README.md).
