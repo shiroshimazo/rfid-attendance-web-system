@@ -1,0 +1,12 @@
+Use case: infographic-diagram
+Create a basic low-fidelity black-and-white flowchart for an RFID student attendance product. Pure white background, thin black outlines, plain black sans-serif text. Only simple rectangular boxes, one decision diamond, and arrows. No colors, gray fills, icons, illustrations, shadows, gradients, decorations, or bold oversized headings. Simple wireframe document style. Readable landscape layout.
+Title: "Student Attendance Flow"
+Main sequence with exact labels:
+"Student taps IN" -> diamond "Valid card?"
+Yes -> "Record Time In\nPresent / Late" -> "Show confirmation" -> "Attend classes" -> "Student taps OUT" -> "Record Time Out" -> "View attendance"
+No branch from diamond -> "Show error" -> "Contact admin"
+Side branch from Record Time In -> "Send arrival SMS to guardian"
+Separate simple row below, labeled "Subject attendance":
+"Teacher opens roster" -> "Mark Present / Late / Absent" -> "Save subject attendance"
+Small plain footnote: "Campus taps and subject attendance are recorded separately."
+Keep arrows clear, direct, and non-overlapping. This should look like a basic early draft flowchart drawn in a diagram tool, not an infographic.

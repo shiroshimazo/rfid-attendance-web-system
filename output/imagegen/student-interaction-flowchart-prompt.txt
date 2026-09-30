@@ -1,0 +1,12 @@
+Use case: infographic-diagram
+Asset type: product documentation flowchart.
+Create a polished, highly readable flowchart titled "RFID Attendance — Student Interaction". White background, restrained professional colors, crisp dark sans-serif text, generous spacing, simple RFID card and screen icons. Landscape layout. Real flowchart boxes and diamonds, unambiguous directional arrows, no crossing lines. Focus on user interaction, no code or backend details.
+Main campus journey runs left to right with a second row if necessary:
+"Student taps IN" -> diamond "Valid, active card?"
+No branch -> "Show error" -> "Ask admin for help" (ends).
+Yes branch -> "Save Time In" with smaller line "Mark Present or Late" -> "Show confirmation" -> "Student attends classes" -> "Student taps OUT" -> "Save Time Out" with smaller line "Keep arrival status" -> "Attendance available in portal".
+Branch downward from Save Time In: "Queue arrival SMS to guardian" -> "SMS status: Pending / Sent / Failed". This is a side branch, not a prerequisite for attending class.
+Separate clearly bounded lower panel titled "Subject attendance — teacher action": "Teacher opens subject roster" -> "Confirms Present / Late / Absent" -> "Subject attendance available in portal".
+Below that panel write "Campus taps do not confirm subject attendance."
+Small footer notes: "First accepted tap = IN • Second accepted tap = OUT • Further taps that day are rejected" and "Sent = SMS provider acceptance; delivery is not guaranteed."
+Ensure all exact labels render accurately. Keep campus and subject attendance logically independent; no arrow implying the teacher step is required for checkout. Show start-to-finish order clearly. No invented product brand, no watermark.
