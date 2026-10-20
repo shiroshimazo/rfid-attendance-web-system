@@ -14,6 +14,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatTimestamp } from "@/lib/format"
 
+import { LogSearchField } from "./components/log-search-field"
+
 export const metadata: Metadata = { title: "System Logs" }
 export const dynamic = "force-dynamic"
 const selectClass = "h-10 w-full rounded-md border bg-background px-3 text-sm"
@@ -34,7 +36,7 @@ export default async function SystemLogsPage({ searchParams }: { searchParams: P
     </div>
     <Card><CardContent className="pt-6">
       <form key={JSON.stringify(query)} action="/admin/system-logs" method="get" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <div className="space-y-2 sm:col-span-2"><Label htmlFor="log-search">Search</Label><Input id="log-search" name="search" defaultValue={query.search} placeholder="Actor, activity or record ID" className="h-10" /></div>
+        <LogSearchField defaultTerms={query.search} />
         <div className="space-y-2"><Label htmlFor="log-entity">Category</Label><select id="log-entity" name="entity" defaultValue={query.entity} className={selectClass}><option value="all">All categories</option>{logEntities.map(entity => <option key={entity} value={entity}>{logLabel(entity)}</option>)}</select></div>
         <div className="space-y-2"><Label htmlFor="log-outcome">Result</Label><select id="log-outcome" name="outcome" defaultValue={query.outcome} className={selectClass}><option value="all">All results</option>{logOutcomes.map(outcome => <option key={outcome} value={outcome}>{logLabel(outcome)}</option>)}</select></div>
         <div className="space-y-2"><Label htmlFor="log-from">From</Label><Input id="log-from" name="from" type="date" defaultValue={query.from} required className="h-10" /></div>

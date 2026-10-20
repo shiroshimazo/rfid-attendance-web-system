@@ -22,6 +22,7 @@ import {
 } from "@/components/account-status-badge"
 import { RfidStatusBadge } from "@/components/attendance-status-badge"
 import { EmptyState } from "@/components/empty-state"
+import { SearchTagInput } from "@/components/search-tag-input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -42,8 +43,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Pagination,
   PaginationContent,
@@ -72,6 +71,7 @@ import { accountStatuses } from "@/features/shared/schema"
 import type { StudentDirectory, StudentView } from "@/features/students/directory"
 import { formatNumber, initialsOf } from "@/lib/format"
 import { normalizeRfidUid } from "@/lib/rfid-uid"
+import { matchesAnySearchTag } from "@/lib/search-tags"
 
 import { RfidAssignDialog } from "./rfid-assign-dialog"
 import { StudentArchiveDialog } from "./student-archive-dialog"
@@ -97,26 +97,37 @@ const statusOrder: Record<StudentView["status"], number> = {
 
 const collator = new Intl.Collator(undefined, { numeric: true })
 
-function matchesQuery(student: StudentView, needle: string) {
-  if (!needle) return true
-  const uid = normalizeRfidUid(needle)
-  if (uid && student.cards.some(card => normalizeRfidUid(card.rfidNumber) === uid)) return true
+function matchesQuery(student: StudentView, tags: string[]) {
+  if (tags.length === 0) return true
 
-  return [
-    student.fullName,
-    student.studentId,
-    student.email,
-    student.programCode,
-    student.programName,
-    student.yearLevel,
-    student.section,
-    student.campus,
-    student.parentName,
-    ...student.cards.map((card) => card.rfidNumber),
-  ]
-    .join(" ")
-    .toLowerCase()
-    .includes(needle)
+  // A term that reads as a full card number should match the card exactly.
+  const cardHit = tags.some((tag) => {
+    const uid = normalizeRfidUid(tag)
+    if (!uid) return false
+
+    return student.cards.some(
+      (card) => normalizeRfidUid(card.rfidNumber) === uid
+    )
+  })
+  if (cardHit) return true
+
+  return matchesAnySearchTag(
+    [
+      student.fullName,
+      student.studentId,
+      student.email,
+      student.programCode,
+      student.programName,
+      student.yearLevel,
+      student.section,
+      student.campus,
+      student.parentName,
+      ...student.cards.map((card) => card.rfidNumber),
+    ]
+      .join(" ")
+      .toLowerCase(),
+    tags
+  )
 }
 
 function compareStudents(
@@ -215,7 +226,7 @@ export function StudentsDirectory({
 }) {
   const { students, programs, yearLevels, sections } = directory
 
-  const [query, setQuery] = React.useState("")
+  const [query, setQuery] = React.useState<string[]>([])
   const [program, setProgram] = React.useState("all")
   const [yearLevel, setYearLevel] = React.useState("all")
   const [section, setSection] = React.useState("all")
@@ -233,8 +244,6 @@ export function StudentsDirectory({
   const [assigning, setAssigning] = React.useState<StudentView | null>(null)
 
   const filtered = React.useMemo(() => {
-    const needle = query.trim().toLowerCase()
-
     return students
       .filter((student) => {
         if (program !== "all" && String(student.programId) !== program) {
@@ -244,7 +253,7 @@ export function StudentsDirectory({
         if (section !== "all" && student.section !== section) return false
         if (status !== "all" && student.status !== status) return false
 
-        return matchesQuery(student, needle)
+        return matchesQuery(student, query)
       })
       .sort((a, b) => compareStudents(a, b, sort.column, sort.direction))
   }, [students, query, program, yearLevel, section, status, sort])
@@ -273,7 +282,7 @@ export function StudentsDirectory({
   }
 
   const filtersActive =
-    query.trim() !== "" ||
+    query.length > 0 ||
     program !== "all" ||
     yearLevel !== "all" ||
     section !== "all" ||
@@ -299,19 +308,12 @@ export function StudentsDirectory({
       <CardContent className="space-y-4">
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <div className="relative">
-            <Label htmlFor="student-search" className="sr-only">
-              Search students
-            </Label>
-            <Search
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
+            <SearchTagInput
               id="student-search"
+              label="Search students"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onValueChange={setQuery}
               placeholder="Search name, ID, or RFID"
-              className="h-9 pl-8"
             />
           </div>
 

@@ -4,13 +4,14 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { gooeyToast } from "@/components/ui/goey-toaster"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { TablePagination } from "@/components/data-table"
+import { SearchTagInput } from "@/components/search-tag-input"
 import { saveSubjectEnrollmentAction } from "@/features/subject-attendance/actions"
 import { enrolledSubjectStudents, weekdayLabel, type SubjectEnrollment, type SubjectSchedule, type SubjectStudent } from "@/features/subject-attendance/model"
+import { matchesAnySearchTag } from "@/lib/search-tags"
 
 export function SubjectEnrollmentEditor({ schedules, students, enrollments }: {
   schedules: SubjectSchedule[]; students: SubjectStudent[]; enrollments: SubjectEnrollment[]
@@ -41,10 +42,10 @@ function EnrollmentForm({ schedule, students, enrollments }: {
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState(() => new Set(enrolledSubjectStudents(students, enrollments, schedule.id).map(row => row.id)))
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState<string[]>([])
   const [page, setPage] = useState(1)
   const [pending, startTransition] = useTransition()
-  const filtered = students.filter(row => `${row.full_name} ${row.student_id} ${row.year_level} ${row.section} ${row.campus}`.toLowerCase().includes(search.trim().toLowerCase()))
+  const filtered = students.filter(row => matchesAnySearchTag(`${row.full_name} ${row.student_id} ${row.year_level} ${row.section} ${row.campus}`, search))
   const pageCount = Math.max(1, Math.ceil(filtered.length / 10))
   const currentPage = Math.min(page, pageCount)
 
@@ -61,7 +62,7 @@ function EnrollmentForm({ schedule, students, enrollments }: {
 
   return <div className="space-y-4">
     <p className="text-sm tabular-nums" aria-live="polite">{selected.size} students selected. Removing enrollment preserves saved attendance history.</p>
-    <Input aria-label="Search students for enrollment" placeholder="Search name, ID, section or campus" value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
+    <SearchTagInput label="Search students for enrollment" value={search} onValueChange={value => { setSearch(value); setPage(1) }} placeholder="Search name, ID, section or campus" />
     <div className="overflow-x-auto rounded-lg border">
       <Table aria-label="Student subject enrollment">
         <TableHeader><TableRow><TableHead>Enrolled</TableHead><TableHead>Student</TableHead><TableHead>Current class</TableHead></TableRow></TableHeader>

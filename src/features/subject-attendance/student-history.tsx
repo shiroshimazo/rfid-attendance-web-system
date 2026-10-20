@@ -1,13 +1,13 @@
 "use client"
 
 import { useId, useState } from "react"
-import { Search, SlidersHorizontal, X } from "lucide-react"
+import { SlidersHorizontal, X } from "lucide-react"
 import { AttendanceStatusBadge } from "@/components/attendance-status-badge"
 import { SortableHeader, TablePagination, nextSortState, type SortState } from "@/components/data-table"
+import { SearchTagInput } from "@/components/search-tag-input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DatePicker } from "@/components/ui/date-picker"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -29,6 +29,7 @@ export function StudentSubjectHistory({ rows, studentView = true }: { rows: Subj
   const [sort, setSort] = useState<SortState<SubjectHistorySort>>({ column: "date", direction: "desc" })
   const [page, setPage] = useState(1)
   function change(key: keyof SubjectHistoryFilters, value: string) { setFilters(old => ({ ...old, [key]: value })); setPage(1) }
+  function changeSearch(value: string[]) { setFilters(old => ({ ...old, search: value })); setPage(1) }
   const filtered = filterSubjectHistory(rows, filters, sort.column, sort.direction)
   const totals = subjectTotals(filtered)
   const pageCount = Math.max(1, Math.ceil(filtered.length / 10))
@@ -36,7 +37,7 @@ export function StudentSubjectHistory({ rows, studentView = true }: { rows: Subj
   const visible = filtered.slice((currentPage - 1) * 10, currentPage * 10)
   const options = (key: "course_code" | "campus" | "teacher_name") => [...new Set(rows.map(row => row[key]))].sort()
   const labels: Record<keyof SubjectHistoryFilters, string> = { search: "Search", from: "From", to: "To", subject: "Subject", result: "Result", campus: "Campus", teacher: "Teacher" }
-  const active = (Object.keys(filters) as (keyof SubjectHistoryFilters)[]).filter(key => filters[key])
+  const active = (Object.keys(filters) as (keyof SubjectHistoryFilters)[]).filter(key => key === "search" ? filters.search.length > 0 : Boolean(filters[key]))
   const invalidRange = Boolean(filters.from && filters.to && filters.from > filters.to)
   function onSort(column: SubjectHistorySort) { setSort(old => nextSortState(old, column)); setPage(1) }
   return <Card className="min-w-0">
@@ -46,13 +47,13 @@ export function StudentSubjectHistory({ rows, studentView = true }: { rows: Subj
         {[["Present", totals.present], ["Late", totals.late], ["Absent", totals.absent], ["Attendance rate", totals.rate === null ? "No confirmations" : `${totals.rate.toFixed(1)}%`]].map(([label, value]) => <div key={label} className={`rounded-lg border p-4 ${label === "Attendance rate" ? "bg-muted/50" : ""}`}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-1 text-xl font-semibold tabular-nums">{value}</dd></div>)}
       </dl>
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_auto_160px_150px_auto]" role="search" aria-label="Filter subject attendance">
-        <div className="relative"><Label htmlFor={`${id}-search`} className="sr-only">Search subject attendance</Label><Search aria-hidden className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" /><Input id={`${id}-search`} value={filters.search} onChange={event => change("search", event.target.value)} placeholder="Search student, subject, section…" className="h-10 pl-9" /></div>
+        <div className="relative"><SearchTagInput id={`${id}-search`} label="Search subject attendance" value={filters.search} onValueChange={changeSearch} placeholder="Search student, subject, section…" size="lg" /></div>
         <Popover><PopoverTrigger asChild><Button variant="outline" className="h-10">Date range{filters.from || filters.to ? " · Active" : ""}</Button></PopoverTrigger><PopoverContent className="w-80 space-y-3" align="start"><div className="space-y-1"><Label htmlFor={`${id}-from`}>From date</Label><DatePicker id={`${id}-from`} value={filters.from} max={filters.to || undefined} onChange={value => change("from", value)} /></div><div className="space-y-1"><Label htmlFor={`${id}-to`}>To date</Label><DatePicker id={`${id}-to`} value={filters.to} min={filters.from || undefined} onChange={value => change("to", value)} /></div><p className="text-xs text-muted-foreground">Both dates are included. Leave blank for all dates.</p></PopoverContent></Popover>
         <FilterSelect label="Subjects" value={filters.subject} options={options("course_code")} onChange={value => change("subject", value)} />
         <FilterSelect label="Results" value={filters.result} options={["Present", "Late", "Absent"]} onChange={value => change("result", value)} />
         <Popover><PopoverTrigger asChild><Button variant="outline" className="h-10"><SlidersHorizontal aria-hidden />More filters</Button></PopoverTrigger><PopoverContent className="space-y-3" align="end"><FilterSelect label="Campuses" value={filters.campus} options={options("campus")} onChange={value => change("campus", value)} /><FilterSelect label="Teachers" value={filters.teacher} options={options("teacher_name")} onChange={value => change("teacher", value)} /></PopoverContent></Popover>
       </div>
-      {active.length > 0 && <div className="flex flex-wrap items-center gap-2">{active.map(key => <Button key={key} variant="secondary" size="sm" className="h-10 max-w-full rounded-full" onClick={() => change(key, "")} aria-label={`Remove ${labels[key]} filter`}><span className="truncate">{labels[key]}: {filters[key]}</span><X aria-hidden className="size-3" /></Button>)}<Button variant="ghost" className="h-10" onClick={() => { setFilters(emptySubjectFilters); setPage(1) }}>Clear all</Button></div>}
+      {active.length > 0 && <div className="flex flex-wrap items-center gap-2">{active.map(key => <Button key={key} variant="secondary" size="sm" className="h-10 max-w-full rounded-full" onClick={() => key === "search" ? changeSearch([]) : change(key, "")} aria-label={`Remove ${labels[key]} filter`}><span className="truncate">{labels[key]}: {key === "search" ? filters.search.join(", ") : filters[key]}</span><X aria-hidden className="size-3" /></Button>)}<Button variant="ghost" className="h-10" onClick={() => { setFilters(emptySubjectFilters); setPage(1) }}>Clear all</Button></div>}
       {invalidRange && <p role="alert" className="text-sm text-destructive">From date must be on or before To date.</p>}
       <div className="overflow-hidden rounded-lg border">
         <Table><TableHeader><TableRow className="bg-muted/40">{([['date','Date / session'],['subject','Subject / teacher'],['student','Student'],['placement','Section / campus'],['result','Result']] as const).map(([column,label]) => <SortableHeader key={column} column={column} label={label} sort={sort} onSort={onSort} />)}<TableHead>RFID</TableHead></TableRow></TableHeader>

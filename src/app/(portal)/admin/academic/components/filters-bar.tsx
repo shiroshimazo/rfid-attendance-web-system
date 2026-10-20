@@ -1,10 +1,9 @@
 "use client"
 
-import { RotateCcw, Search } from "lucide-react"
+import { RotateCcw } from "lucide-react"
 
+import { SearchTagInput } from "@/components/search-tag-input"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -39,8 +38,9 @@ export function FiltersBar({
   idPrefix: string
   searchLabel: string
   searchPlaceholder: string
-  search: string
-  onSearchChange: (value: string) => void
+  /** The search terms; a row is kept when it matches at least one of them. */
+  search: string[]
+  onSearchChange: (value: string[]) => void
   status: CatalogStatusFilter
   onStatusChange: (value: CatalogStatusFilter) => void
   /** Omitted on the Programs tab, which lists the programs themselves. */
@@ -50,24 +50,17 @@ export function FiltersBar({
   onClear: () => void
 }) {
   const isFiltered =
-    search.trim() !== "" || status !== "current" || program !== "all"
+    search.length > 0 || status !== "current" || program !== "all"
 
   return (
     <div role="search" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
       <div className="relative sm:col-span-2">
-        <Label htmlFor={`${idPrefix}-search`} className="sr-only">
-          {searchLabel}
-        </Label>
-        <Search
-          aria-hidden
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-        />
-        <Input
+        <SearchTagInput
           id={`${idPrefix}-search`}
+          label={searchLabel}
           value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
+          onValueChange={onSearchChange}
           placeholder={searchPlaceholder}
-          className="h-9 pl-8"
         />
       </div>
 

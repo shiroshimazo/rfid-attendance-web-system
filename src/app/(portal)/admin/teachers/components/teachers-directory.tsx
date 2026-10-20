@@ -22,6 +22,7 @@ import {
   accountStatusLabels,
 } from "@/components/account-status-badge"
 import { EmptyState } from "@/components/empty-state"
+import { SearchTagInput } from "@/components/search-tag-input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -41,7 +42,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -61,6 +61,7 @@ import {
 import type { TeacherDirectory, TeacherView } from "@/features/teachers/directory"
 import { accountStatuses } from "@/features/teachers/schema"
 import { formatNumber, initialsOf } from "@/lib/format"
+import { matchesAnySearchTag } from "@/lib/search-tags"
 
 import { AssignmentBadges } from "./assignment-badges"
 import { TeacherFormDialog } from "./teacher-form-dialog"
@@ -78,8 +79,8 @@ const statusOrder: Record<TeacherView["status"], number> = {
   archived: 2,
 }
 
-function matchesQuery(teacher: TeacherView, needle: string) {
-  if (!needle) return true
+function matchesQuery(teacher: TeacherView, tags: string[]) {
+  if (tags.length === 0) return true
 
   const haystack = [
     teacher.fullName,
@@ -99,7 +100,7 @@ function matchesQuery(teacher: TeacherView, needle: string) {
     .join(" ")
     .toLowerCase()
 
-  return haystack.includes(needle)
+  return matchesAnySearchTag(haystack, tags)
 }
 
 function compareTeachers(
@@ -172,7 +173,7 @@ function SortableHeader({
 export function TeachersDirectory({ directory }: { directory: TeacherDirectory }) {
   const { teachers, programs, courses, departments } = directory
 
-  const [query, setQuery] = React.useState("")
+  const [query, setQuery] = React.useState<string[]>([])
   const [department, setDepartment] = React.useState("all")
   const [program, setProgram] = React.useState("all")
   const [status, setStatus] = React.useState("all")
@@ -189,8 +190,6 @@ export function TeachersDirectory({ directory }: { directory: TeacherDirectory }
   const [statusTarget, setStatusTarget] = React.useState<TeacherView | null>(null)
 
   const filtered = React.useMemo(() => {
-    const needle = query.trim().toLowerCase()
-
     return teachers
       .filter((teacher) => {
         if (department !== "all" && teacher.department !== department) return false
@@ -204,7 +203,7 @@ export function TeachersDirectory({ directory }: { directory: TeacherDirectory }
           return false
         }
 
-        return matchesQuery(teacher, needle)
+        return matchesQuery(teacher, query)
       })
       .sort((a, b) => compareTeachers(a, b, sort.column, sort.direction))
   }, [teachers, query, department, status, program, sort])
@@ -232,7 +231,7 @@ export function TeachersDirectory({ directory }: { directory: TeacherDirectory }
   }
 
   const filtersActive =
-    query.trim() !== "" ||
+    query.length > 0 ||
     department !== "all" ||
     program !== "all" ||
     status !== "all"
@@ -257,19 +256,12 @@ export function TeachersDirectory({ directory }: { directory: TeacherDirectory }
       <CardContent className="space-y-4">
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <div className="relative">
-            <Label htmlFor="teacher-search" className="sr-only">
-              Search teachers
-            </Label>
-            <Search
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
+            <SearchTagInput
               id="teacher-search"
+              label="Search teachers"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onValueChange={setQuery}
               placeholder="Search name, ID, email, or class"
-              className="h-9 pl-8"
             />
           </div>
 

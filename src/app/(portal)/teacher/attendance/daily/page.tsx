@@ -72,7 +72,7 @@ export default async function TeacherAttendancePage({
     query.programId ?? "",
     query.yearLevel ?? "",
     query.section ?? "",
-    query.search,
+    query.search.join(","),
   ].join("|")
 
   return (

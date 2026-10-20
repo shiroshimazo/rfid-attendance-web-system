@@ -1,12 +1,12 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ScanLine, Search } from "lucide-react"
+import { ScanLine } from "lucide-react"
 import { EmptyState } from "@/components/empty-state"
 import { TablePagination } from "@/components/data-table"
+import { SearchTagInput } from "@/components/search-tag-input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -14,7 +14,7 @@ import { filterLiveMonitoringRows, type LiveMonitoringFilters, type LiveMonitori
 import { formatClockTime, formatDateValue, formatNumber } from "@/lib/format"
 
 const PAGE_SIZE = 20
-const emptyFilters: LiveMonitoringFilters = { search: "", tap: "all", program: "all", section: "all" }
+const emptyFilters: LiveMonitoringFilters = { search: [], tap: "all", program: "all", section: "all" }
 
 export function MonitoringTable({ rows }: { rows: LiveMonitoringRow[] }) {
   const [filters, setFilters] = useState(emptyFilters)
@@ -29,8 +29,7 @@ export function MonitoringTable({ rows }: { rows: LiveMonitoringRow[] }) {
   const currentPage = Math.min(page, pageCount)
   const start = (currentPage - 1) * PAGE_SIZE
   const visible = filtered.slice(start, start + PAGE_SIZE)
-  const filtersActive = Object.keys(emptyFilters).some(key => filters[key as keyof LiveMonitoringFilters] !== emptyFilters[key as keyof LiveMonitoringFilters])
-
+  const filtersActive = filters.search.length > 0 || filters.tap !== "all" || filters.program !== "all" || filters.section !== "all"
   function updateFilters(patch: Partial<LiveMonitoringFilters>) {
     setFilters(current => ({ ...current, ...patch }))
     setPage(1)
@@ -47,9 +46,7 @@ export function MonitoringTable({ rows }: { rows: LiveMonitoringRow[] }) {
           <div className="space-y-2">
             <Label htmlFor="monitoring-search">Search</Label>
             <div className="relative">
-              <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input id="monitoring-search" className="pl-9" placeholder="Name, student ID, or RFID number" value={filters.search}
-                onChange={event => updateFilters({ search: event.target.value })} />
+              <SearchTagInput id="monitoring-search" label="Search" value={filters.search} onValueChange={value => updateFilters({ search: value })} placeholder="Name, student ID, or RFID number" />
             </div>
           </div>
           <div className="space-y-2">

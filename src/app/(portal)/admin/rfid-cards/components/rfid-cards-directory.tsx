@@ -19,6 +19,7 @@ import {
   type SortState,
 } from "@/components/data-table"
 import { EmptyState } from "@/components/empty-state"
+import { SearchTagInput } from "@/components/search-tag-input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -38,8 +39,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -59,6 +58,7 @@ import type { RfidCardDirectory, RfidCardView } from "@/features/rfid/cards"
 import { rfidCardStatuses } from "@/features/rfid/schema"
 import { formatDateValue, formatNumber } from "@/lib/format"
 import { normalizeRfidUid } from "@/lib/rfid-uid"
+import { matchesAnySearchTag } from "@/lib/search-tags"
 
 import { RfidCardEditDialog } from "./rfid-card-edit-dialog"
 import { RfidCardRegisterDialog } from "./rfid-card-register-dialog"
@@ -83,27 +83,36 @@ const statusOrder: Record<RfidCardView["cardStatus"], number> = {
 
 const collator = new Intl.Collator(undefined, { numeric: true })
 
-function matchesQuery(card: RfidCardView, needle: string) {
-  if (!needle) return true
-  const uid = normalizeRfidUid(needle)
-  if (uid && normalizeRfidUid(card.rfidNumber) === uid) return true
+function matchesQuery(card: RfidCardView, tags: string[]) {
+  if (tags.length === 0) return true
 
-  return [
-    card.rfidNumber,
-    card.cardStatus,
-    card.student?.fullName,
-    card.student?.studentId,
-    card.student?.email,
-    card.student?.programCode,
-    card.student?.programName,
-    card.student?.yearLevel,
-    card.student?.section,
-    card.student?.campus,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase()
-    .includes(needle)
+  // A term that reads as a full card number should match the card exactly.
+  const cardHit = tags.some((tag) => {
+    const uid = normalizeRfidUid(tag)
+    if (!uid) return false
+
+    return normalizeRfidUid(card.rfidNumber) === uid
+  })
+  if (cardHit) return true
+
+  return matchesAnySearchTag(
+    [
+      card.rfidNumber,
+      card.cardStatus,
+      card.student?.fullName,
+      card.student?.studentId,
+      card.student?.email,
+      card.student?.programCode,
+      card.student?.programName,
+      card.student?.yearLevel,
+      card.student?.section,
+      card.student?.campus,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase(),
+    tags
+  )
 }
 
 function compareCards(
@@ -142,7 +151,7 @@ export function RfidCardsDirectory({
 }) {
   const { cards, programs, stats } = directory
 
-  const [query, setQuery] = React.useState("")
+  const [query, setQuery] = React.useState<string[]>([])
   const [status, setStatus] = React.useState("all")
   const [program, setProgram] = React.useState("all")
   const [sort, setSort] = React.useState<SortState<SortColumn>>({
@@ -158,8 +167,6 @@ export function RfidCardsDirectory({
     React.useState<RfidCardView | null>(null)
 
   const filtered = React.useMemo(() => {
-    const needle = query.trim().toLowerCase()
-
     return cards
       .filter((card) => {
         if (status !== "all" && card.cardStatus !== status) return false
@@ -170,7 +177,7 @@ export function RfidCardsDirectory({
           return false
         }
 
-        return matchesQuery(card, needle)
+        return matchesQuery(card, query)
       })
       .sort((a, b) => compareCards(a, b, sort))
   }, [cards, query, status, program, sort])
@@ -187,7 +194,7 @@ export function RfidCardsDirectory({
   const rows = filtered.slice(start, start + PAGE_SIZE)
 
   const filtersActive =
-    query.trim() !== "" || status !== "all" || program !== "all"
+    query.length > 0 || status !== "all" || program !== "all"
 
   return (
     <Card>
@@ -215,19 +222,12 @@ export function RfidCardsDirectory({
       <CardContent className="space-y-4">
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <div className="relative">
-            <Label htmlFor="rfid-card-search" className="sr-only">
-              Search RFID cards
-            </Label>
-            <Search
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
+            <SearchTagInput
               id="rfid-card-search"
+              label="Search RFID cards"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onValueChange={setQuery}
               placeholder="Search RFID, student, or ID"
-              className="h-9 pl-8"
             />
           </div>
 

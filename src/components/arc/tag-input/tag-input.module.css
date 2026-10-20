@@ -1,0 +1,238 @@
+/* The control copies the app's Input field: same border, fill, radius, focus
+   ring, and height, so a search bar still reads as a search bar. The only
+   addition is the row of tags inside it. */
+.field {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+}
+.field label {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.field[data-size="sm"] {
+  --control-height: 32px;
+  --tag-height: 20px;
+}
+.field[data-size="md"] {
+  --control-height: 36px;
+  --tag-height: 22px;
+}
+.field[data-size="lg"] {
+  --control-height: 40px;
+  --tag-height: 24px;
+}
+.control {
+  box-sizing: content-box;
+  overflow: hidden;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--input-surface);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition:
+    border-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.control:focus-within {
+  border-color: var(--ring);
+  box-shadow:
+    0 1px 2px 0 rgb(0 0 0 / 0.05),
+    0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+/* Equal padding on both sides makes one row fill the minimum height exactly,
+   so existing tags hold their line when a second row opens. */
+.content {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: flex-start;
+  gap: 4px;
+  min-height: calc(var(--control-height) - 2px);
+  box-sizing: border-box;
+  padding: 4px 12px;
+  cursor: text;
+}
+/* A leading glyph sits where the other search fields put theirs. */
+.content[data-leading="true"] {
+  padding-left: 32px;
+}
+.leading {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+/* The taller fields keep the wider gutter their old inputs had. */
+.field[data-size="lg"] .content[data-leading="true"] {
+  padding-left: 36px;
+}
+.field[data-size="lg"] .leading {
+  left: 12px;
+}
+.field[data-size="lg"] .placeholder {
+  left: 36px;
+}
+/* The tag reads as a chip of the app: a secondary badge with a remove button. */
+.tag {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: var(--tag-height);
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0 2px 0 8px;
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: default;
+}
+.tag button {
+  display: grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition:
+    background-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .tag button:hover {
+    background: var(--background);
+    color: var(--foreground);
+  }
+}
+.tag button:focus-visible {
+  background: var(--background);
+  color: var(--foreground);
+  outline: none;
+  box-shadow: inset 0 0 0 1.5px var(--ring);
+}
+/* Quick press, spring release. */
+.tag button:active {
+  transform: scale(0.96);
+  transition:
+    background-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.content input {
+  flex: 1 1 100px;
+  min-width: 80px;
+  min-height: var(--tag-height);
+  box-sizing: border-box;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.875rem;
+}
+.content input:focus,
+.content input:focus-visible {
+  outline: none;
+}
+.content input::placeholder {
+  color: transparent;
+}
+/* The visible placeholder is drawn here so it can rise in when the last tag
+   leaves. The native one stays for assistive tech. */
+.placeholder {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding-right: 4px;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.content[data-leading="true"] .placeholder {
+  left: 32px;
+}/* The pick ring rides above the chips and sizes itself to the picked tag, so it
+   can glide between tags without scaling its border. */
+.ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  border: 1px solid var(--foreground);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--foreground) 6%, transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+/* A resting tag is not a stacking context (its filter ends at none), so its
+   label and button sit above the ring while its fill stays below. */
+.tagLabel,
+.tag button {
+  position: relative;
+  z-index: 2;
+}
+.tag[data-picked] button {
+  color: var(--foreground);
+}
+/* The row's space is padding inside the clipped slot, so the height animates
+   from a true zero. */
+.messageSlot {
+  display: block;
+  overflow: hidden;
+}
+.hint {
+  display: block;
+  padding-top: 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+/* Words are measured against this box when they pop out to leave, so it must
+   be the positioned parent. */
+.words {
+  position: relative;
+  display: block;
+}
+.word {
+  display: inline-block;
+  white-space: pre;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .control,
+  .tag button {
+    transition: none;
+  }
+  .tag button:active {
+    transform: none;
+  }
+}

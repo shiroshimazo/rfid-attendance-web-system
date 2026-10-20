@@ -44,6 +44,8 @@
 
 :root {
   --radius: 0.625rem;
+  /* The fill a text field uses, kept here so other fields can copy it. */
+  --input-surface: transparent;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -78,6 +80,7 @@
 }
 
 .dark {
+  --input-surface: color-mix(in oklab, var(--input) 30%, transparent);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -160,6 +163,19 @@ html {
 /* Let Lenis drive anchor animation when active — CSS smooth fights it. */
 .lenis.lenis-smooth {
   scroll-behavior: auto !important;
+}
+
+/* Radix Select and Base UI Combobox lock the document while their popup is
+   open (react-remove-scroll, useScrollLock). The lock puts overflow on the
+   body, which propagates to the viewport: the page scrollbar disappears and
+   the page stops scrolling, so the app reads as frozen. Keep the document
+   scrollable while a popup is open and drop the scrollbar compensation the
+   lock adds, so the scrollbar stays visible and the layout does not shift.
+   Modal surfaces (dialog, sheet) keep their scroll lock on purpose. */
+html body:has([data-slot="select-content"]),
+html body:has([data-slot="combobox-content"]) {
+  overflow: visible !important;
+  margin-right: 0 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

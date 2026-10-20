@@ -55,6 +55,7 @@ import {
   type ProgramView,
 } from "@/features/academic/schema"
 import { formatNumber } from "@/lib/format"
+import { matchesAnySearchTag } from "@/lib/search-tags"
 
 import { ArchiveDialog, type ArchiveTarget } from "./archive-dialog"
 import { ScopeBadge } from "./catalog-parts"
@@ -131,7 +132,7 @@ export function SubjectsTable({
   courses: CourseView[]
   programs: ProgramView[]
 }) {
-  const [search, setSearch] = React.useState("")
+  const [search, setSearch] = React.useState<string[]>([])
   const [program, setProgram] = React.useState("all")
   const [status, setStatus] = React.useState<CatalogStatusFilter>("current")
   const [sort, setSort] = React.useState<SortState<SortColumn>>({
@@ -158,18 +159,15 @@ export function SubjectsTable({
   )
 
   const sorted = React.useMemo(() => {
-    const needle = search.trim().toLowerCase()
-
     return courses
       .filter(
         (course) =>
           (program === "all" || String(course.programId) === program) &&
           matchesStatusFilter(course.status, status) &&
-          (!needle ||
-            [course.code, course.name, course.programCode]
-              .join(" ")
-              .toLowerCase()
-              .includes(needle))
+          matchesAnySearchTag(
+            [course.code, course.name, course.programCode].join(" "),
+            search
+          )
       )
       .sort((a, b) => compareRows(a, b, sort.column, sort.direction))
   }, [courses, search, program, status, sort])
@@ -231,7 +229,7 @@ export function SubjectsTable({
             setPage(1)
           }}
           onClear={() => {
-            setSearch("")
+            setSearch([])
             setProgram("all")
             setStatus("current")
             setPage(1)

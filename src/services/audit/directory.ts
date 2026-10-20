@@ -15,7 +15,11 @@ export async function fetchSystemLogs(query: LogQuery) {
     .lt("created_at", new Date(Date.parse(`${query.to}T00:00:00+08:00`) + 86400000).toISOString())
   if (query.entity !== "all") request = request.eq("entity", query.entity)
   if (query.outcome !== "all") request = request.eq("outcome", query.outcome)
-  if (query.search) request = request.or(`actor_name.ilike.%${query.search}%,event.ilike.%${query.search}%,record_id.ilike.%${query.search}%`)
+  // One condition per term and column, so a row matching any term is kept.
+  const conditions = query.search.flatMap(term =>
+    ["actor_name", "event", "record_id"].map(column => `${column}.ilike.%${term}%`)
+  )
+  if (conditions.length) request = request.or(conditions.join(","))
   const { data, count, error } = await request.order("created_at", { ascending: false }).order("id", { ascending: false })
     .range((query.page - 1) * LOG_PAGE_SIZE, query.page * LOG_PAGE_SIZE - 1).returns<SystemLog[]>()
   if (error) throw new Error(error.message)

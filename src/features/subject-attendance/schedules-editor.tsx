@@ -12,6 +12,8 @@ import {
   Search,
 } from "lucide-react"
 import { gooeyToast } from "@/components/ui/goey-toaster"
+import { SearchTagInput } from "@/components/search-tag-input"
+import { matchesAnySearchTag } from "@/lib/search-tags"
 
 import {
   AccountStatusBadge,
@@ -42,8 +44,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -134,7 +134,7 @@ export function SubjectSchedulesEditor({
     [allSchedules]
   )
   const router = useRouter()
-  const [search, setSearch] = React.useState("")
+  const [search, setSearch] = React.useState<string[]>([])
   const [day, setDay] = React.useState("all")
   const [campus, setCampus] = React.useState("all")
   const [status, setStatus] = React.useState("all")
@@ -159,13 +159,11 @@ export function SubjectSchedulesEditor({
   )
 
   const isFiltered =
-    search.trim() !== "" || day !== "all" || campus !== "all" || status !== "all"
+    search.length > 0 || day !== "all" || campus !== "all" || status !== "all"
 
   const filtered = React.useMemo(() => {
-    const needle = search.trim().toLowerCase()
-
     return schedules.filter((row) => {
-      if (needle && !searchText(row).includes(needle)) return false
+      if (!matchesAnySearchTag(searchText(row), search)) return false
       if (day !== "all" && String(row.day_of_week) !== day) return false
       if (campus !== "all" && row.campus !== campus) return false
       if (status !== "all" && row.status !== status) return false
@@ -192,7 +190,7 @@ export function SubjectSchedulesEditor({
   }
 
   function resetFilters() {
-    setSearch("")
+    setSearch([])
     setDay("all")
     setCampus("all")
     setStatus("all")
@@ -249,19 +247,12 @@ export function SubjectSchedulesEditor({
 
         <div role="search" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <div className="relative">
-            <Label htmlFor="subject-schedule-search" className="sr-only">
-              Search subject schedules
-            </Label>
-            <Search
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
+            <SearchTagInput
               id="subject-schedule-search"
+              label="Search subject schedules"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onValueChange={setSearch}
               placeholder="Search teacher, subject, section"
-              className="h-9 pl-8"
             />
           </div>
 
@@ -442,7 +433,7 @@ export function SubjectSchedulesEditor({
                     </TableCell>
                     <TableCell className="px-3 text-right">
                       {row.status === "active" ? (
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"

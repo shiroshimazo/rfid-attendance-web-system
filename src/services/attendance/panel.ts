@@ -16,7 +16,8 @@ export interface AttendancePanelFilters {
   programId?: number | null
   yearLevel?: string | null
   section?: string | null
-  search?: string
+  /** The search terms; a row is kept when it matches at least one of them. */
+  search?: string[]
 }
 
 export interface AttendancePanelQuery {
@@ -25,7 +26,7 @@ export interface AttendancePanelQuery {
   programId: number | null
   yearLevel: string | null
   section: string | null
-  search: string
+  search: string[]
 }
 
 export interface AttendanceProgramRef {
@@ -85,6 +86,25 @@ function toSearchPattern(search: string) {
   return cleaned === "" ? null : `%${cleaned}%`
 }
 
+/**
+ * One `ilike` condition per term and column, joined so the database keeps a
+ * row that matches any of the terms.
+ */
+function toSearchConditions(searches: string[]) {
+  const conditions: string[] = []
+
+  for (const search of searches) {
+    const pattern = toSearchPattern(search)
+
+    if (pattern === null) continue
+
+    conditions.push(`full_name.ilike.${pattern}`)
+    conditions.push(`student_id.ilike.${pattern}`)
+  }
+
+  return conditions
+}
+
 function resolveQuery(filters: AttendancePanelFilters): AttendancePanelQuery {
   return {
     date: filters.date,
@@ -92,7 +112,7 @@ function resolveQuery(filters: AttendancePanelFilters): AttendancePanelQuery {
     programId: filters.programId ?? null,
     yearLevel: filters.yearLevel?.trim() || null,
     section: filters.section?.trim() || null,
-    search: filters.search?.trim() ?? "",
+    search: filters.search ?? [],
   }
 }
 
@@ -100,7 +120,7 @@ export async function fetchAttendancePanelSnapshot(
   filters: AttendancePanelFilters
 ): Promise<AttendancePanelSnapshot> {
   const query = resolveQuery(filters)
-  const pattern = toSearchPattern(query.search)
+  const conditions = toSearchConditions(query.search)
   const supabase = await createServerSupabaseClient()
 
   const [students, attendance, programs, placements] = await Promise.all([
@@ -119,10 +139,8 @@ export async function fetchAttendancePanelSnapshot(
       if (query.section !== null) {
         request = request.eq("section", query.section)
       }
-      if (pattern !== null) {
-        request = request.or(
-          `full_name.ilike.${pattern},student_id.ilike.${pattern}`
-        )
+      if (conditions.length > 0) {
+        request = request.or(conditions.join(","))
       }
 
       return request

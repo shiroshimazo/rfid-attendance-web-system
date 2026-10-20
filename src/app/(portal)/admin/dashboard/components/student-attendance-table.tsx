@@ -8,6 +8,7 @@ import {
   RfidStatusBadge,
 } from "@/components/attendance-status-badge"
 import { EmptyState } from "@/components/empty-state"
+import { SearchTagInput } from "@/components/search-tag-input"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -18,8 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -37,6 +36,7 @@ import {
 } from "@/components/ui/table"
 import type { StudentAttendanceRow } from "@/features/attendance/dashboard"
 import { formatClockTime, formatNumber } from "@/lib/format"
+import { matchesAnySearchTagIn } from "@/lib/search-tags"
 
 const PAGE_SIZE = 10
 
@@ -51,22 +51,17 @@ export function StudentAttendanceTable({
   students: StudentAttendanceRow[]
   today: string
 }) {
-  const [query, setQuery] = React.useState("")
+  const [query, setQuery] = React.useState<string[]>([])
   const [status, setStatus] = React.useState<StatusFilter>("All")
   const [visible, setVisible] = React.useState(PAGE_SIZE)
 
   const filtered = React.useMemo(() => {
-    const needle = query.trim().toLowerCase()
-
     return students.filter((student) => {
       if (status !== "All" && student.status !== status) return false
-      if (!needle) return true
 
-      return (
-        student.name.toLowerCase().includes(needle) ||
-        student.studentId.toLowerCase().includes(needle) ||
-        student.section.toLowerCase().includes(needle) ||
-        student.yearLevel.toLowerCase().includes(needle)
+      return matchesAnySearchTagIn(
+        [student.name, student.studentId, student.section, student.yearLevel],
+        query
       )
     })
   }, [students, query, status])
@@ -87,19 +82,13 @@ export function StudentAttendanceTable({
         </CardDescription>
         <CardAction className="col-start-1 row-start-3 flex w-full flex-col gap-2 justify-self-stretch sm:col-start-2 sm:row-start-1 sm:w-auto sm:flex-row sm:items-center sm:justify-self-end">
           <div className="relative w-full sm:w-56">
-            <Label htmlFor="student-search" className="sr-only">
-              Search students
-            </Label>
-            <Search
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
+            <SearchTagInput
               id="student-search"
+              label="Search students"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onValueChange={setQuery}
               placeholder="Search name, ID, or section"
-              className="h-8 pl-8"
+              size="sm"
             />
           </div>
           <Select

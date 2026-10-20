@@ -1,6 +1,7 @@
 import { format, isValid, parseISO } from "date-fns"
 
 import { schoolDateKey } from "@/lib/school-time"
+import { searchTagsFromParams } from "@/lib/search-tags"
 import type { AttendanceRecordStatus } from "@/features/attendance/status"
 export { isAttendanceStatus, recordStatus } from "@/features/attendance/status"
 export type { AttendanceRecordStatus } from "@/features/attendance/status"
@@ -96,7 +97,7 @@ export function parseAttendancePanelQuery(
     programId: readProgramId(firstValue(params.program)),
     yearLevel: firstValue(params.yearLevel).trim() || null,
     section: firstValue(params.section).trim() || null,
-    search: firstValue(params.search).trim(),
+    search: searchTagsFromParams(params.search),
   }
 }
 
@@ -106,6 +107,6 @@ export function isAttendancePanelFiltered(query: AttendancePanelQuery) {
     query.programId !== null ||
     query.yearLevel !== null ||
     query.section !== null ||
-    query.search !== ""
+    query.search.length > 0
   )
 }

@@ -53,6 +53,7 @@ import {
   type SectionView,
 } from "@/features/academic/schema"
 import { formatNumber } from "@/lib/format"
+import { matchesAnySearchTag } from "@/lib/search-tags"
 
 import { ArchiveDialog, type ArchiveTarget } from "./archive-dialog"
 import { ScopeBadge } from "./catalog-parts"
@@ -134,7 +135,7 @@ export function SectionsTable({
   yearLevels: string[]
   campuses: string[]
 }) {
-  const [search, setSearch] = React.useState("")
+  const [search, setSearch] = React.useState<string[]>([])
   const [program, setProgram] = React.useState("all")
   const [status, setStatus] = React.useState<CatalogStatusFilter>("current")
   const [sort, setSort] = React.useState<SortState<SortColumn>>({
@@ -161,18 +162,20 @@ export function SectionsTable({
   )
 
   const sorted = React.useMemo(() => {
-    const needle = search.trim().toLowerCase()
-
     return sections
       .filter(
         (section) =>
           (program === "all" || String(section.programId) === program) &&
           matchesStatusFilter(section.status, status) &&
-          (!needle ||
-            [section.sectionCode, section.yearLevel, section.campus, section.programCode]
-              .join(" ")
-              .toLowerCase()
-              .includes(needle))
+          matchesAnySearchTag(
+            [
+              section.sectionCode,
+              section.yearLevel,
+              section.campus,
+              section.programCode,
+            ].join(" "),
+            search
+          )
       )
       .sort((a, b) => compareRows(a, b, sort.column, sort.direction))
   }, [sections, search, program, status, sort])
@@ -233,7 +236,7 @@ export function SectionsTable({
             setPage(1)
           }}
           onClear={() => {
-            setSearch("")
+            setSearch([])
             setProgram("all")
             setStatus("current")
             setPage(1)

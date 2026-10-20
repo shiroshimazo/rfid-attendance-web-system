@@ -4,13 +4,14 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { gooeyToast } from "@/components/ui/goey-toaster"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { SearchTagInput } from "@/components/search-tag-input"
 import { confirmSubjectAction } from "@/features/subject-attendance/actions"
 import { formatDateValue, formatClockTime } from "@/lib/format"
+import { matchesAnySearchTag } from "@/lib/search-tags"
 import { enrolledSubjectStudents, weekdayLabel, type SubjectAttendanceRow, type SubjectEnrollment, type SubjectRfidEvidence, type SubjectSchedule, type SubjectStudent } from "@/features/subject-attendance/model"
 
 export function TeacherSubjectConsole({ schedules, students, records, enrollments, evidence, date, today }: {
@@ -19,14 +20,14 @@ export function TeacherSubjectConsole({ schedules, students, records, enrollment
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [selected, setSelected] = useState("")
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState<string[]>([])
   const day = new Date(`${date}T00:00:00Z`).getUTCDay()
   const available = schedules.filter(row => row.status === "active" && row.day_of_week === day)
   const classDays = [...new Set(schedules.filter(row => row.status === "active").map(row => row.day_of_week))]
     .sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
   function openDate(value: string) {
     setSelected("")
-    setSearch("")
+    setSearch([])
     startTransition(() => router.push(`/teacher/attendance/confirm?date=${value}`))
   }
   function classDate(weekday: number) {
@@ -40,7 +41,7 @@ export function TeacherSubjectConsole({ schedules, students, records, enrollment
   const sessionRecords = records.filter(row => row.schedule_id === schedule?.id && row.attendance_date === date)
   const byStudent = new Map(sessionRecords.map(row => [row.student_id, row]))
   const unconfirmed = roster.filter(row => !byStudent.has(row.id)).length
-  const filtered = roster.filter(row => `${row.full_name} ${row.student_id}`.toLowerCase().includes(search.toLowerCase()))
+  const filtered = roster.filter(row => matchesAnySearchTag(`${row.full_name} ${row.student_id}`, search))
 
   function confirm(studentId: number, status: "Present" | "Late" | "Absent") {
     if (!schedule) return
@@ -97,7 +98,7 @@ export function TeacherSubjectConsole({ schedules, students, records, enrollment
           <p className="text-sm text-muted-foreground">Each scheduled date has its own sheet. Students start unconfirmed; previous dates keep their saved results.</p>
         </div>
         <p className="text-sm">{roster.length} students · {unconfirmed} unconfirmed. Unconfirmed is not Absent.</p>
-        <Input aria-label="Search subject students" placeholder="Search student name or ID" value={search} onChange={e => { setSearch(e.target.value) }} />
+        <SearchTagInput label="Search subject students" value={search} onValueChange={setSearch} placeholder="Search student name or ID" />
         <Table><TableHeader><TableRow><TableHead>No.</TableHead><TableHead>Student</TableHead><TableHead>RFID taps (campus)</TableHead><TableHead>Current confirmation</TableHead><TableHead>Confirm after checking</TableHead></TableRow></TableHeader>
           <TableBody>{filtered.map((student, index) => <TableRow key={student.id}>
             <TableCell className="tabular-nums">{index + 1}</TableCell>

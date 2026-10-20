@@ -34,6 +34,7 @@ import type {
   TeacherStudentsOptions,
 } from "@/features/students/teacher-directory"
 import { formatNumber, initialsOf } from "@/lib/format"
+import { matchesAnySearchTag } from "@/lib/search-tags"
 
 import {
   emptyStudentsFilters,
@@ -62,13 +63,13 @@ const statusOrder: Record<TeacherStudentRow["status"], number> = {
 
 const collator = new Intl.Collator(undefined, { numeric: true })
 
-function matchesQuery(student: TeacherStudentRow, needle: string) {
-  if (!needle) return true
+function matchesQuery(student: TeacherStudentRow, tags: string[]) {
+  if (tags.length === 0) return true
 
-  return [student.fullName, student.studentId]
-    .join(" ")
-    .toLowerCase()
-    .includes(needle)
+  return matchesAnySearchTag(
+    [student.fullName, student.studentId].join(" ").toLowerCase(),
+    tags
+  )
 }
 
 function compareStudents(
@@ -113,8 +114,6 @@ export function StudentsTable({
   const [viewing, setViewing] = React.useState<TeacherStudentRow | null>(null)
 
   const filtered = React.useMemo(() => {
-    const needle = filters.search.trim().toLowerCase()
-
     return students
       .filter((student) => {
         if (
@@ -133,7 +132,7 @@ export function StudentsTable({
           return false
         }
 
-        return matchesQuery(student, needle)
+        return matchesQuery(student, filters.search)
       })
       .sort((a, b) => compareStudents(a, b, sort.column, sort.direction))
   }, [students, filters, sort])

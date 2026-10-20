@@ -1,5 +1,6 @@
 import type { LiveMonitoringRecord } from "@/services/attendance/live-monitoring"
 import { schoolDateKey } from "@/lib/school-time"
+import { matchesAnySearchTagIn } from "@/lib/search-tags"
 
 export type MonitoringParams = Record<string, string | string[] | undefined>
 
@@ -29,7 +30,8 @@ export interface LiveMonitoringRow {
 }
 
 export interface LiveMonitoringFilters {
-  search: string
+  /** The search terms; a row is kept when it matches at least one of them. */
+  search: string[]
   tap: "all" | "in" | "out"
   program: string
   section: string
@@ -56,13 +58,14 @@ export function buildLiveMonitoringRows(records: LiveMonitoringRecord[]): LiveMo
 }
 
 export function filterLiveMonitoringRows(rows: LiveMonitoringRow[], filters: LiveMonitoringFilters) {
-  const search = filters.search.trim().toLowerCase()
   return rows.filter(row => {
     if (filters.tap === "in" && (!row.timeIn || row.timeOut)) return false
     if (filters.tap === "out" && !row.timeOut) return false
     if (filters.program !== "all" && row.programId !== filters.program) return false
     if (filters.section !== "all" && row.section !== filters.section) return false
-    return !search || [row.name, row.studentId, row.section, row.programCode, row.programName, row.rfidNumber]
-      .some(value => value.toLowerCase().includes(search))
+    return matchesAnySearchTagIn(
+      [row.name, row.studentId, row.section, row.programCode, row.programName, row.rfidNumber],
+      filters.search
+    )
   })
 }

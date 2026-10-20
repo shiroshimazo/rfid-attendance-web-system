@@ -2,6 +2,7 @@ import { z } from "zod"
 
 import { isPilotCampus, isPilotSection, PILOT_YEAR_LEVEL } from "@/features/academic/pilot"
 import { databaseIdSchema, requiredText } from "@/features/shared/schema"
+import { searchTagsFromParams } from "@/lib/search-tags"
 
 /**
  * Schedule rows are never deleted: a row that disappears would silently mean
@@ -44,7 +45,8 @@ export type ScheduleSearchParams = Record<
 >
 
 export interface SchedulePanelQuery {
-  search: string
+  /** The search terms; a row is kept when it matches at least one of them. */
+  search: string[]
   session: ScheduleSession | "all"
   day: number | "all"
 }
@@ -71,14 +73,16 @@ export function parseSchedulePanelQuery(
   params: ScheduleSearchParams
 ): SchedulePanelQuery {
   return {
-    search: firstValue(params.search).trim(),
+    search: searchTagsFromParams(params.search),
     session: readSession(firstValue(params.session)),
     day: readDay(firstValue(params.day)),
   }
 }
 
 export function isSchedulePanelFiltered(query: SchedulePanelQuery) {
-  return query.search !== "" || query.session !== "all" || query.day !== "all"
+  return (
+    query.search.length > 0 || query.session !== "all" || query.day !== "all"
+  )
 }
 
 /** 24-hour `HH:mm`, the value an `<input type="time">` submits. */

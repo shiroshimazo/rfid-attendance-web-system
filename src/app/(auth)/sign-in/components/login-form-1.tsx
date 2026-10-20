@@ -55,9 +55,9 @@ export function LoginForm1({
 
     try {
       const result = await beginEmailLogin(values)
-      if (result.error) { form.setError("root", { message: result.error }); return }
-      if (result.path) { form.reset(); router.replace(result.path); router.refresh(); return }
-      if (result.email) { form.reset(); setVerificationEmail(result.email) }
+      if ("error" in result && result.error) { form.setError("root", { message: result.error }); return }
+      if ("path" in result && result.path) { form.reset(); router.replace(result.path); router.refresh(); return }
+      if ("email" in result && result.email) { form.reset(); setVerificationEmail(result.email) }
     } catch (error) {
       form.setError("root", {
         message:

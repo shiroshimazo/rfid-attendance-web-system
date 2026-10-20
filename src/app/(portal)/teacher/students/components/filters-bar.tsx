@@ -1,10 +1,9 @@
 "use client"
 
-import { RotateCcw, Search } from "lucide-react"
+import { RotateCcw } from "lucide-react"
 
+import { SearchTagInput } from "@/components/search-tag-input"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -19,7 +18,8 @@ import {
 import type { TeacherStudentsOptions } from "@/features/students/teacher-directory"
 
 export interface StudentsFilters {
-  search: string
+  /** The search terms; a row is kept when it matches at least one of them. */
+  search: string[]
   program: string
   yearLevel: string
   section: string
@@ -28,7 +28,7 @@ export interface StudentsFilters {
 }
 
 export const emptyStudentsFilters: StudentsFilters = {
-  search: "",
+  search: [],
   program: "all",
   yearLevel: "all",
   section: "all",
@@ -37,7 +37,7 @@ export const emptyStudentsFilters: StudentsFilters = {
 
 export function isStudentsFiltered(filters: StudentsFilters) {
   return (
-    filters.search.trim() !== "" ||
+    filters.search.length > 0 ||
     filters.program !== "all" ||
     filters.yearLevel !== "all" ||
     filters.section !== "all" ||
@@ -65,21 +65,12 @@ export function FiltersBar({
   return (
     <div role="search" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
       <div className="relative">
-        <Label htmlFor="students-search" className="sr-only">
-          Search students
-        </Label>
-        <Search
-          aria-hidden
-          className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-        />
-        <Input
+        <SearchTagInput
           id="students-search"
+          label="Search students"
           value={filters.search}
-          onChange={(event) =>
-            onChange({ ...filters, search: event.target.value })
-          }
+          onValueChange={(value) => onChange({ ...filters, search: value })}
           placeholder="Search name or student ID"
-          className="h-9 pl-8"
         />
       </div>
 

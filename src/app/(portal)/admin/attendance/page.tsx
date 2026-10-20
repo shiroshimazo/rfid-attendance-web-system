@@ -73,7 +73,7 @@ export default async function AdminAttendancePage({
     query.programId ?? "",
     query.yearLevel ?? "",
     query.section ?? "",
-    query.search,
+    query.search.join(","),
   ].join("|")
 
   return (

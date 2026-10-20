@@ -72,15 +72,19 @@ function distinctSorted(values: string[]) {
 
 function matchesSearch(
   student: TeacherAttendanceSnapshot["students"][number],
-  needle: string
+  tags: string[]
 ) {
-  if (!needle) return true
+  if (tags.length === 0) return true
 
   const haystacks = [student.full_name, student.student_id].map((value) =>
     value.toLowerCase()
   )
 
-  return haystacks.some((haystack) => haystack.includes(needle))
+  return tags.some((tag) => {
+    const needle = tag.toLowerCase()
+
+    return haystacks.some((haystack) => haystack.includes(needle))
+  })
 }
 
 /** Pure aggregation, so the shape can be reasoned about without a database. */
@@ -90,7 +94,7 @@ export function buildTeacherAttendancePanelData(
 ): TeacherAttendancePanelData {
   const { students, attendance, cards, programs } = snapshot
   const date = snapshot.date
-  const needle = query.search.trim().toLowerCase()
+  const tags = query.search
 
   const recordsByStudent = new Map(
     attendance
@@ -118,7 +122,7 @@ export function buildTeacherAttendancePanelData(
         return false
       }
 
-      return matchesSearch(student, needle)
+      return matchesSearch(student, tags)
     })
     .map((student) => {
       const record = recordsByStudent.get(student.id)

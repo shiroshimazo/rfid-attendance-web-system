@@ -59,7 +59,7 @@ export default async function AdminSchedulesPage({
   searchParams: Promise<ScheduleSearchParams>
 }) {
   const query = parseSchedulePanelQuery(await searchParams)
-  const suspenseKey = [query.search, query.session, query.day].join("|")
+  const suspenseKey = [query.search.join(","), query.session, query.day].join("|")
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">

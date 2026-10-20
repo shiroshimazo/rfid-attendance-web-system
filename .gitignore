@@ -33,6 +33,7 @@ yarn-error.log*
 # local environment files and secrets
 .env*
 !.env.example
+.env
 
 # Supabase CLI local state (keep migrations and seed.sql version-controlled)
 /supabase/.temp/

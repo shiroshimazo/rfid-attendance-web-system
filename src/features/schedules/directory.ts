@@ -17,6 +17,7 @@ import {
   type ClassScheduleRow,
   type ScheduleDirectorySnapshot,
 } from "@/services/schedules/directory"
+import { matchesAnySearchTag } from "@/lib/search-tags"
 
 export * from "@/features/schedules/schema"
 export type { ScheduleDirectorySnapshot }
@@ -68,14 +69,12 @@ function toView(
 }
 
 function matchesQuery(view: ScheduleView, query: SchedulePanelQuery) {
-  const needle = query.search.toLowerCase()
-
   if (
-    needle &&
-    ![view.section, view.programCode, view.campus ?? ""]
-      .join(" ")
-      .toLowerCase()
-      .includes(needle)
+    query.search.length > 0 &&
+    !matchesAnySearchTag(
+      [view.section, view.programCode, view.campus ?? ""].join(" "),
+      query.search
+    )
   ) {
     return false
   }

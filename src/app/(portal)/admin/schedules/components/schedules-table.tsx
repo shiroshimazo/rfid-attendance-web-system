@@ -287,7 +287,7 @@ export function SchedulesTable({ directory }: { directory: ScheduleDirectory }) 
                       <AccountStatusBadge status={view.status} />
                     </TableCell>
                     <TableCell className="px-3 text-right">
-                      <DropdownMenu>
+                      <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
