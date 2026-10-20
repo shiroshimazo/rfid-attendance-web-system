@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { CodeInput } from "@/components/ui/code-input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { cancelEmailLogin, resendEmailLogin, verifyEmailLogin } from "@/features/auth/email-login-actions"
@@ -32,8 +32,8 @@ export function EmailCodeForm({ email, onBack }: { email: string; onBack: () => 
           } catch { setMessage("Unable to connect. Please try again.") }
           finally { setBusy(false) }
         }}>
-          <Label htmlFor="login-code">Verification code</Label>
-          <Input id="login-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required autoFocus value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} className="text-center text-2xl tracking-[0.4em] tabular-nums" />
+          <Label htmlFor="login-code-0">Verification code</Label>
+          <CodeInput id="login-code" label="Verification code" autoFocus value={code} onChange={setCode} />
           <Button type="submit" className="w-full" disabled={busy || code.length !== 6}>{busy ? "Please wait..." : "Verify and sign in"}</Button>
         </form>
         {message && <p role="status" className="text-sm">{message}</p>}

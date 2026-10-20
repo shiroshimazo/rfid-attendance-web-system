@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { CodeInput } from "@/components/ui/code-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -132,11 +133,9 @@ export function ForgotPasswordForm1({
               )}
               {state.step === "code" && (
                 <div className="grid gap-3">
-                  <Label htmlFor="recovery-code">Six-digit code</Label>
-                  <Input ref={firstInput} id="recovery-code" type="text" inputMode="numeric"
-                    autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} minLength={6}
-                    required value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
-                    className="text-center text-lg tracking-[0.3em]" />
+                  <Label htmlFor="recovery-code-0">Six-digit code</Label>
+                  <CodeInput id="recovery-code" label="Six-digit code" autoFocus
+                    value={code} onChange={setCode} />
                 </div>
               )}
               {state.step === "password" && (
@@ -158,7 +157,7 @@ export function ForgotPasswordForm1({
               )}
               {error && <p role="alert" className="text-sm text-destructive text-pretty">{error}</p>}
               {message && <p role="status" className="text-sm text-muted-foreground text-pretty">{message}</p>}
-              <Button type="submit" className="w-full cursor-pointer" disabled={state.step === "email" && remaining > 0}>
+              <Button type="submit" className="w-full cursor-pointer" disabled={(state.step === "email" && remaining > 0) || (state.step === "code" && code.length !== 6)}>
                 {busy ? "Please wait..." : state.step === "email"
                   ? remaining > 0 ? `Send code in ${remaining}s` : "Send recovery code"
                   : state.step === "code" ? "Verify code"
