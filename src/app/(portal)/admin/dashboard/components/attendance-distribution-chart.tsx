@@ -1,8 +1,6 @@
 "use client"
 
-import * as React from "react"
-import { PieChartIcon } from "lucide-react"
-import { Label, Pie, PieChart } from "recharts"
+import { GaugeIcon } from "lucide-react"
 
 import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
 import { EmptyState } from "@/components/empty-state"
@@ -13,18 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
+import type { ChartConfig } from "@/components/ui/chart"
+import { RadialStatusChart } from "@/features/attendance/radial-status-chart"
 import type { StatusSlice } from "@/features/attendance/dashboard"
 
 const chartConfig = {
-  count: { label: "Students" },
   present: { label: "Present", color: "var(--chart-2)" },
   late: { label: "Late", color: "var(--chart-4)" },
   absent: { label: "Absent", color: "var(--destructive)" },
@@ -38,22 +29,7 @@ export function AttendanceDistributionChart({
   distribution: StatusSlice[]
   attendanceRate: number
 }) {
-  const slices = React.useMemo(
-    () =>
-      distribution.map((slice) => {
-        const key = slice.status.toLowerCase()
-
-        return {
-          key,
-          status: slice.status,
-          count: slice.count,
-          fill: `var(--color-${key})`,
-        }
-      }),
-    [distribution]
-  )
-
-  const total = slices.reduce((sum, slice) => sum + slice.count, 0)
+  const total = distribution.reduce((sum, slice) => sum + slice.count, 0)
 
   return (
     <Card className="flex flex-col">
@@ -63,65 +39,22 @@ export function AttendanceDistributionChart({
       </CardHeader>
       <CardContent className="flex-1">
         {total > 0 ? (
-          <ChartContainer
+          <RadialStatusChart
+            slices={distribution}
             config={chartConfig}
-            role="img"
-            aria-label="Attendance status distribution for today"
-            className="mx-auto aspect-square h-64"
-          >
-            <PieChart>
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent nameKey="key" hideLabel />}
-              />
-              <Pie
-                data={slices}
-                dataKey="count"
-                nameKey="key"
-                innerRadius={62}
-                strokeWidth={4}
-              >
-                <Label
-                  content={({ viewBox }) => {
-                    if (
-                      !viewBox ||
-                      !("cx" in viewBox) ||
-                      viewBox.cx == null ||
-                      viewBox.cy == null
-                    )
-                      return null
-                    const cx = viewBox.cx
-                    const cy = viewBox.cy
-
-                    return (
-                      <foreignObject
-                        x={cx - 70}
-                        y={cy - 50}
-                        width={140}
-                        height={68}
-                      >
-                        <div className="flex h-full w-full flex-col items-center justify-center gap-0.5">
-                          <SlidingNumber
-                            value={attendanceRate}
-                            decimalPlaces={1}
-                            suffix="%"
-                            className="text-2xl font-semibold text-foreground"
-                          />
-                          <span className="text-xs text-muted-foreground">
-                            <SlidingNumber value={total} /> students
-                          </span>
-                        </div>
-                      </foreignObject>
-                    )
-                  }}
-                />
-              </Pie>
-              <ChartLegend content={<ChartLegendContent nameKey="key" className="flex-wrap gap-y-2" />} />
-            </PieChart>
-          </ChartContainer>
+            headline={
+              <SlidingNumber value={attendanceRate} decimalPlaces={1} suffix="%" />
+            }
+            caption={
+              <>
+                <SlidingNumber value={total} /> students
+              </>
+            }
+            ariaLabel="Attendance status distribution for today"
+          />
         ) : (
           <EmptyState
-            icon={PieChartIcon}
+            icon={GaugeIcon}
             title="No students to chart"
             description="Add active students to see today's attendance statuses."
           />

@@ -84,7 +84,7 @@ export function AttendanceTrendChart({
           <Tabs
             value={range}
             onValueChange={(value) => setRange(value as TrendRange)}
-            className="hidden sm:block"
+            className="hidden @sm/chart:block"
           >
             <TabsList aria-label="Attendance trend range">
               {ranges.map((item) => (
@@ -101,7 +101,7 @@ export function AttendanceTrendChart({
             <SelectTrigger
               size="sm"
               aria-label="Attendance trend range"
-              className="w-32 sm:hidden"
+              className="w-32 @sm/chart:hidden"
             >
               <SelectValue>{activeRange.label}</SelectValue>
             </SelectTrigger>
@@ -115,15 +115,15 @@ export function AttendanceTrendChart({
           </Select>
         </CardAction>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative mx-6 min-h-64 flex-1 px-0">
         {hasHistory && points.length > 0 ? (
           <ChartContainer
             config={chartConfig}
             role="img"
             aria-label={`Attendance trend, ${activeRange.caption.toLowerCase()}`}
-            className="aspect-auto h-64 w-full"
+            className="absolute inset-0 aspect-auto h-full w-full"
           >
-            <LineChart accessibilityLayer data={points} margin={{ left: 4, right: 12 }}>
+            <LineChart accessibilityLayer data={points} margin={{ top: 12, left: 4, right: 12, bottom: 4 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis
                 dataKey="label"

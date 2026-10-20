@@ -32,6 +32,21 @@ export function PanelSkeleton() {
       <Card>
         <CardHeader>
           <Skeleton className="h-5 w-44" />
+          <Skeleton className="h-4 w-full max-w-md" />
+        </CardHeader>
+        <CardContent className="flex flex-col items-center gap-4">
+          <Skeleton className="aspect-square w-full max-w-[300px] rounded-full" />
+          <div className="grid w-full max-w-sm gap-2.5">
+            {Array.from({ length: 3 }, (_, index) => (
+              <Skeleton key={index} className="h-5 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-44" />
           <Skeleton className="mt-2 h-4 w-64" />
         </CardHeader>
         <CardContent className="space-y-2">
