@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useReducedMotion } from "motion/react"
 import {
   Label,
   PolarAngleAxis,
@@ -56,6 +57,7 @@ export function RadialStatusChart({
   ariaLabel,
   className,
 }: RadialStatusChartProps) {
+  const reduceMotion = useReducedMotion()
   const total = slices.reduce((sum, slice) => sum + slice.count, 0)
 
   const rows = React.useMemo<RadialRow[]>(
@@ -112,7 +114,14 @@ export function RadialStatusChart({
             />
           }
         />
-        <RadialBar dataKey="Share" background cornerRadius={8} isAnimationActive={false} />
+        <RadialBar
+          dataKey="Share"
+          background
+          cornerRadius={8}
+          isAnimationActive={!reduceMotion}
+          animationDuration={1500}
+          animationEasing="ease"
+        />
         <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
           <Label
             content={({ viewBox }) => {

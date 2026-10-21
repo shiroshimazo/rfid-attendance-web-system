@@ -7,7 +7,7 @@ import { logEntities, logOutcomes, logLabel, logPageUrl, parseLogQuery, type Log
 import { DataErrorCard } from "@/components/data-error-card"
 import { LiveRefresh } from "@/components/live-refresh"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { DatePickerField } from "@/components/ui/date-picker-field"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -39,8 +39,8 @@ export default async function SystemLogsPage({ searchParams }: { searchParams: P
         <LogSearchField defaultTerms={query.search} />
         <div className="space-y-2"><Label htmlFor="log-entity">Category</Label><select id="log-entity" name="entity" defaultValue={query.entity} className={selectClass}><option value="all">All categories</option>{logEntities.map(entity => <option key={entity} value={entity}>{logLabel(entity)}</option>)}</select></div>
         <div className="space-y-2"><Label htmlFor="log-outcome">Result</Label><select id="log-outcome" name="outcome" defaultValue={query.outcome} className={selectClass}><option value="all">All results</option>{logOutcomes.map(outcome => <option key={outcome} value={outcome}>{logLabel(outcome)}</option>)}</select></div>
-        <div className="space-y-2"><Label htmlFor="log-from">From</Label><Input id="log-from" name="from" type="date" defaultValue={query.from} required className="h-10" /></div>
-        <div className="space-y-2"><Label htmlFor="log-to">To</Label><Input id="log-to" name="to" type="date" defaultValue={query.to} required className="h-10" /></div>
+        <div className="space-y-2"><Label htmlFor="log-from">From</Label><DatePickerField id="log-from" name="from" defaultValue={query.from} className="h-10" /></div>
+        <div className="space-y-2"><Label htmlFor="log-to">To</Label><DatePickerField id="log-to" name="to" defaultValue={query.to} className="h-10" /></div>
         <div className="flex gap-2 sm:col-span-2"><Button type="submit" className="min-h-10">Apply filters</Button><Button asChild variant="outline" className="min-h-10"><Link href="/admin/system-logs">Reset</Link></Button></div>
       </form>
     </CardContent></Card>

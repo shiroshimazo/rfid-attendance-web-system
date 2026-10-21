@@ -11,7 +11,7 @@ import { LiveRefresh } from "@/components/live-refresh"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { DatePickerField } from "@/components/ui/date-picker-field"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDateValue, formatTimestamp } from "@/lib/format"
@@ -39,8 +39,8 @@ export default async function SmsLogsPage({ searchParams }: { searchParams: Prom
     <Card><CardContent className="pt-6">
       <form key={JSON.stringify(query)} action="/admin/sms-logs" method="get" className="grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="space-y-2"><Label htmlFor="sms-status">SMS status</Label><select id="sms-status" name="status" defaultValue={query.status} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="all">All statuses</option>{smsStatuses.map(status => <option key={status} value={status}>{smsStatusLabel(status)}</option>)}</select></div>
-        <div className="space-y-2"><Label htmlFor="sms-from">Created from</Label><Input id="sms-from" name="from" type="date" defaultValue={query.from} required className="h-10" /></div>
-        <div className="space-y-2"><Label htmlFor="sms-to">Created to</Label><Input id="sms-to" name="to" type="date" defaultValue={query.to} required className="h-10" /></div>
+        <div className="space-y-2"><Label htmlFor="sms-from">Created from</Label><DatePickerField id="sms-from" name="from" defaultValue={query.from} className="h-10" /></div>
+        <div className="space-y-2"><Label htmlFor="sms-to">Created to</Label><DatePickerField id="sms-to" name="to" defaultValue={query.to} className="h-10" /></div>
         <div className="flex gap-2"><Button type="submit" className="min-h-10">Apply filters</Button><Button asChild variant="outline" className="min-h-10"><Link href="/admin/sms-logs">Reset</Link></Button></div>
       </form>
     </CardContent></Card>

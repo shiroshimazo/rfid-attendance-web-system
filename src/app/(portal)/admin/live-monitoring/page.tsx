@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { UsbAttendanceReader } from "@/components/usb-attendance-reader"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { DatePickerField } from "@/components/ui/date-picker-field"
 import { Label } from "@/components/ui/label"
 import { DataErrorCard } from "@/components/data-error-card"
 import { LiveRefresh } from "@/components/live-refresh"
@@ -38,8 +38,8 @@ export default async function LiveMonitoringPage({ searchParams }: { searchParam
       </div>
       <UsbAttendanceReader />
       <form key={`${from}:${to}`} action="/admin/live-monitoring" method="get" className="flex flex-wrap items-end gap-3 rounded-xl border p-4">
-        <div className="space-y-2"><Label htmlFor="monitoring-from">From date</Label><Input id="monitoring-from" name="from" type="date" defaultValue={from} required className="h-10" /></div>
-        <div className="space-y-2"><Label htmlFor="monitoring-to">To date</Label><Input id="monitoring-to" name="to" type="date" defaultValue={to} required className="h-10" /></div>
+        <div className="space-y-2"><Label htmlFor="monitoring-from">From date</Label><DatePickerField id="monitoring-from" name="from" defaultValue={from} className="h-10" /></div>
+        <div className="space-y-2"><Label htmlFor="monitoring-to">To date</Label><DatePickerField id="monitoring-to" name="to" defaultValue={to} className="h-10" /></div>
         <Button type="submit" className="min-h-10">Apply dates</Button>
         <Button asChild variant="outline" className="min-h-10"><Link href="/admin/live-monitoring">Today</Link></Button>
       </form>
