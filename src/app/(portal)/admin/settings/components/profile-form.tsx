@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, Save } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
@@ -50,8 +51,32 @@ export function ProfileForm({
     control: form.control,
     name: ["avatarUrl", "fullName"],
   })
+  const [email, phoneNumber] = useWatch({
+    control: form.control,
+    name: ["email", "phoneNumber"],
+  })
+
+  // The server is the only authority on the stored details. When it asks for
+  // the password on a form that saw no change, the field is forced open.
+  const [serverRequiresReauth, setServerRequiresReauth] = React.useState(false)
+
+  // Email, phone, and photo are protected details. Changing one of them
+  // needs the current password, so the field appears only when it matters.
+  const requiresReauth =
+    (email ?? profile.email) !== profile.email ||
+    (phoneNumber ?? profile.phoneNumber) !== profile.phoneNumber ||
+    (avatarUrl ?? profile.avatarUrl) !== profile.avatarUrl
+
+  const needsPassword = requiresReauth || serverRequiresReauth
 
   async function onSubmit(values: AdminProfileValues) {
+    if (needsPassword && !values.currentPassword) {
+      form.setError("currentPassword", {
+        message: "Enter your current password to confirm this change",
+      })
+      return
+    }
+
     const result = await updateAdminProfileAction(values)
 
     if (!result.ok) {
@@ -59,12 +84,18 @@ export function ProfileForm({
         form.setError(path as keyof AdminProfileValues, { message })
       }
 
+      if (result.fieldErrors?.currentPassword) {
+        setServerRequiresReauth(true)
+      }
+
       gooeyToast.error(result.message)
       return
     }
 
     // Reset to the saved values so the form is no longer marked as dirty.
-    form.reset(values)
+    // The confirmation password is dropped from the form state.
+    form.reset({ ...values, currentPassword: "" })
+    setServerRequiresReauth(false)
     gooeyToast.success(result.message)
   }
 
@@ -167,6 +198,31 @@ export function ProfileForm({
                 )}
               />
             </div>
+
+            {needsPassword ? (
+              <FormField
+                control={form.control}
+                name="currentPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Current password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        autoComplete="current-password"
+                        placeholder="Your sign-in password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-pretty">
+                      Required because you are changing protected details. It
+                      checks your account, and it is never stored.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
 
             {pendingEmail ? (
               <p

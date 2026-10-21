@@ -28,31 +28,91 @@ import {
 import { Input } from "@/components/ui/input"
 import { changeAdminPasswordAction } from "@/features/profiles/actions"
 import {
-  changePasswordSchema,
-  type ChangePasswordValues,
+  changeOwnPasswordSchema,
+  type ChangeOwnPasswordValues,
 } from "@/features/profiles/schema"
 
-const emptyPassword: ChangePasswordValues = {
+const emptyPassword: ChangeOwnPasswordValues = {
+  currentPassword: "",
   password: "",
   confirmPassword: "",
 }
 
+/** Shared eye control so every password field reveals the same way. */
+function VisibilityButton({
+  visible,
+  onToggle,
+}: {
+  visible: boolean
+  onToggle: () => void
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      aria-label={visible ? "Hide password" : "Show password"}
+      aria-pressed={visible}
+      onClick={onToggle}
+      className="relative shrink-0 transition-transform after:absolute after:-inset-1 after:content-[''] active:scale-[0.96]"
+    >
+      <span className="relative block size-4">
+        <motion.span
+          aria-hidden
+          initial={false}
+          animate={
+            visible
+              ? { opacity: 0, scale: 0.25, filter: "blur(4px)" }
+              : { opacity: 1, scale: 1, filter: "blur(0px)" }
+          }
+          transition={{
+            type: "spring",
+            duration: 0.3,
+            bounce: 0,
+          }}
+          className="absolute inset-0"
+        >
+          <Eye aria-hidden className="size-4" />
+        </motion.span>
+        <motion.span
+          aria-hidden
+          initial={false}
+          animate={
+            visible
+              ? { opacity: 1, scale: 1, filter: "blur(0px)" }
+              : { opacity: 0, scale: 0.25, filter: "blur(4px)" }
+          }
+          transition={{
+            type: "spring",
+            duration: 0.3,
+            bounce: 0,
+          }}
+          className="absolute inset-0"
+        >
+          <EyeOff aria-hidden className="size-4" />
+        </motion.span>
+      </span>
+    </Button>
+  )
+}
+
 export function PasswordForm() {
   const [isVisible, setIsVisible] = React.useState(false)
+  const [isCurrentVisible, setIsCurrentVisible] = React.useState(false)
 
-  const form = useForm<ChangePasswordValues>({
-    resolver: zodResolver(changePasswordSchema),
+  const form = useForm<ChangeOwnPasswordValues>({
+    resolver: zodResolver(changeOwnPasswordSchema),
     defaultValues: emptyPassword,
   })
 
   const isSubmitting = form.formState.isSubmitting
 
-  async function onSubmit(values: ChangePasswordValues) {
+  async function onSubmit(values: ChangeOwnPasswordValues) {
     const result = await changeAdminPasswordAction(values)
 
     if (!result.ok) {
       for (const [path, message] of Object.entries(result.fieldErrors ?? {})) {
-        form.setError(path as keyof ChangePasswordValues, { message })
+        form.setError(path as keyof ChangeOwnPasswordValues, { message })
       }
 
       gooeyToast.error(result.message)
@@ -62,6 +122,7 @@ export function PasswordForm() {
     // The new credential never lingers in the browser once it is saved.
     form.reset(emptyPassword)
     setIsVisible(false)
+    setIsCurrentVisible(false)
     gooeyToast.success(result.message)
   }
 
@@ -72,12 +133,39 @@ export function PasswordForm() {
           <CardHeader>
             <CardTitle className="text-balance">Change password</CardTitle>
             <CardDescription className="text-pretty">
-              Supabase Authentication stores the new password as a hash. Your
-              other signed-in devices stay signed in.
+              Your current password is checked before the new one is stored, so
+              an open session on a shared computer cannot take over the account.
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="currentPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Current password</FormLabel>
+                  <div className="flex gap-2">
+                    <FormControl>
+                      <Input
+                        type={isCurrentVisible ? "text" : "password"}
+                        autoComplete="current-password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <VisibilityButton
+                      visible={isCurrentVisible}
+                      onToggle={() => setIsCurrentVisible((visible) => !visible)}
+                    />
+                  </div>
+                  <FormDescription>
+                    The password you sign in with today.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="password"
@@ -92,54 +180,10 @@ export function PasswordForm() {
                         {...field}
                       />
                     </FormControl>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      aria-label={
-                        isVisible ? "Hide password" : "Show password"
-                      }
-                      aria-pressed={isVisible}
-                      onClick={() => setIsVisible((visible) => !visible)}
-                      className="relative shrink-0 transition-transform after:absolute after:-inset-1 after:content-[''] active:scale-[0.96]"
-                    >
-                      <span className="relative block size-4">
-                        <motion.span
-                          aria-hidden
-                          initial={false}
-                          animate={
-                            isVisible
-                              ? { opacity: 0, scale: 0.25, filter: "blur(4px)" }
-                              : { opacity: 1, scale: 1, filter: "blur(0px)" }
-                          }
-                          transition={{
-                            type: "spring",
-                            duration: 0.3,
-                            bounce: 0,
-                          }}
-                          className="absolute inset-0"
-                        >
-                          <Eye aria-hidden className="size-4" />
-                        </motion.span>
-                        <motion.span
-                          aria-hidden
-                          initial={false}
-                          animate={
-                            isVisible
-                              ? { opacity: 1, scale: 1, filter: "blur(0px)" }
-                              : { opacity: 0, scale: 0.25, filter: "blur(4px)" }
-                          }
-                          transition={{
-                            type: "spring",
-                            duration: 0.3,
-                            bounce: 0,
-                          }}
-                          className="absolute inset-0"
-                        >
-                          <EyeOff aria-hidden className="size-4" />
-                        </motion.span>
-                      </span>
-                    </Button>
+                    <VisibilityButton
+                      visible={isVisible}
+                      onToggle={() => setIsVisible((visible) => !visible)}
+                    />
                   </div>
                   <FormDescription>
                     Use 8 to 72 characters.

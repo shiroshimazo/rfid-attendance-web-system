@@ -3,12 +3,12 @@
 import { auditActivity } from "@/services/audit/log"
 
 import { createHash, randomBytes } from "node:crypto"
-import { createClient, type Session } from "@supabase/supabase-js"
+import type { Session } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
 import { z } from "zod"
 import { createAdminSupabaseClient } from "@/services/supabase/admin"
+import { createAnonymousAuthClient } from "@/services/supabase/anon"
 import { createServerSupabaseClient } from "@/services/supabase/server"
-import { supabaseUrl, supabasePublishableKey } from "@/services/supabase/config"
 import { dashboardPathByRole, isUserRole } from "./roles"
 
 const cookieName = "login-email-challenge"
@@ -17,7 +17,7 @@ const trustCookieName = "login-email-trust"
 const trustSeconds = 3 * 24 * 60 * 60
 const credentials = z.object({ email: z.string().email().max(254), password: z.string().min(6).max(1024) })
 const hash = (value: string) => createHash("sha256").update(value).digest("hex")
-const authClient = () => createClient(supabaseUrl, supabasePublishableKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } })
+const authClient = () => createAnonymousAuthClient()
 const unavailable = { error: "Unable to complete verification. Please try again or contact your administrator." }
 
 async function activateVerifiedSession(session: Session, userId: string) {

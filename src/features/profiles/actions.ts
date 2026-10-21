@@ -5,10 +5,13 @@ import { auditActivity } from "@/services/audit/log"
 import { revalidatePath } from "next/cache"
 
 import { requireRole } from "@/features/auth/server"
+import { verifyAccountPassword } from "@/features/auth/verify-password"
 import {
   adminProfileSchema,
+  changeOwnPasswordSchema,
   changePasswordSchema,
   type AdminProfileInput,
+  type ChangeOwnPasswordInput,
   type ChangePasswordInput,
 } from "@/features/profiles/schema"
 import {
@@ -46,6 +49,11 @@ function describeAuthError(error: { message: string; code?: string }) {
   return error.message
 }
 
+/** Metadata is untyped JSON, so only usable strings reach the comparison. */
+function readMetadataText(value: unknown) {
+  return typeof value === "string" ? value.trim() : ""
+}
+
 export async function updateAdminProfileAction(
   input: AdminProfileInput
 ): Promise<ActionResult> {
@@ -60,7 +68,41 @@ export async function updateAdminProfileAction(
 
     const values = parsed.data
     const supabase = await createServerSupabaseClient()
-    const emailChanged = values.email !== account.email.toLowerCase()
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser()
+
+    const currentEmail = (currentUser?.email ?? account.email).toLowerCase()
+    const currentPhone = readMetadataText(currentUser?.user_metadata?.phone)
+    const currentAvatar = readMetadataText(currentUser?.user_metadata?.avatar_url)
+
+    // Email, phone, and photo are protected details. A borrowed session must
+    // not be able to redirect the account or take over its contact details.
+    const protectedChanged =
+      values.email !== currentEmail ||
+      values.phoneNumber !== currentPhone ||
+      values.avatarUrl !== currentAvatar
+
+    if (protectedChanged) {
+      if (!values.currentPassword) {
+        return failure("Confirm your current password to change these details.", {
+          currentPassword: "Enter your current password",
+        })
+      }
+
+      const verified = await verifyAccountPassword(
+        account.id,
+        currentEmail,
+        values.currentPassword
+      )
+
+      if (!verified.ok) {
+        const message = verified.message ?? "That is not your current password."
+        return failure(message, { currentPassword: message })
+      }
+    }
+
+    const emailChanged = values.email !== currentEmail
 
     // The personal details have no column in `public.users`, so they are kept in
     // Auth user metadata. `phone` stays in metadata rather than the Auth phone
@@ -115,18 +157,34 @@ export async function updateAdminProfileAction(
 }
 
 export async function changeAdminPasswordAction(
-  input: ChangePasswordInput
+  input: ChangeOwnPasswordInput
 ): Promise<ActionResult> {
   return auditActivity("change_admin_password", "users", async () => {
-    await requireRole("admin")
+    const account = await requireRole("admin")
 
-    const parsed = changePasswordSchema.safeParse(input)
+    const parsed = changeOwnPasswordSchema.safeParse(input)
 
     if (!parsed.success) {
       return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
     }
 
     const supabase = await createServerSupabaseClient()
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser()
+
+    // The current password is proven before the credential is replaced, so a
+    // borrowed session cannot lock the administrator out of their own account.
+    const verified = await verifyAccountPassword(
+      account.id,
+      currentUser?.email ?? account.email,
+      parsed.data.currentPassword
+    )
+
+    if (!verified.ok) {
+      const message = verified.message ?? "That is not your current password."
+      return failure(message, { currentPassword: message })
+    }
 
     // Supabase hashes and stores the credential; the plain value is never kept.
     const { error } = await supabase.auth.updateUser({
