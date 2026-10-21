@@ -1,10 +1,11 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
+import { Suspense } from "react"
 import { createSourceLoader } from "./helpers/load-typescript.mjs"
 
 const load = createSourceLoader()
 const { buildLiveMonitoringRows, filterLiveMonitoringRows, parseMonitoringRange } = load("src/features/attendance/live-monitoring.ts")
-const filters = { search: "", tap: "all", program: "all", section: "all" }
+const filters = { search: [], tap: "all", program: "all", section: "all" }
 const record = (id, timeIn, timeOut = null) => ({
   id, attendance_date: "2026-09-20", time_in: timeIn, time_out: timeOut,
   student: { student_id: `S-${id}`, full_name: `Student ${id}`, section: id === 1 ? "A" : "B",
@@ -25,7 +26,7 @@ test("search and combined filters distinguish pending tap outs from completed ta
   assert.deepEqual(filterLiveMonitoringRows(rows, { ...filters, tap: "in" }).map(row => row.id), [1])
   assert.deepEqual(filterLiveMonitoringRows(rows, { ...filters, tap: "out" }).map(row => row.id), [2])
   for (const search of [" STUDENT 1 ", "s-1", "00000001", "program 1"]) {
-    assert.equal(filterLiveMonitoringRows(rows, { ...filters, search, tap: "in", program: "1", section: "A" }).length, 1)
+    assert.equal(filterLiveMonitoringRows(rows, { ...filters, search: [search.trim()], tap: "in", program: "1", section: "A" }).length, 1)
   }
   assert.equal(filterLiveMonitoringRows(rows, { ...filters, program: "1", section: "B" }).length, 0)
 })
@@ -60,6 +61,10 @@ test("page enforces administrator access before reading records and uses the sch
   let authorized = false, reads = 0, fail = false
   let expectedFrom = "2026-09-20", expectedTo = "2026-09-20"
   const UsbAttendanceReader = () => null
+  const MonitoringTable = () => null
+  const MonitoringDateFilter = () => null
+  const MonitoringPanelSkeleton = () => null
+  const MonitoringUpdateProvider = () => null
   const pageLoad = createSourceLoader({
     "@/features/auth/server": { requireRole: async role => { assert.equal(role, "admin"); if (!authorized) throw Error("denied") } },
     "@/services/attendance/live-monitoring": { fetchLiveMonitoringRecords: async (from, to) => {
@@ -70,7 +75,10 @@ test("page enforces administrator access before reading records and uses the sch
     "@/lib/school-time": { schoolDateKey: () => "2026-09-20" },
     "@/components/live-refresh": { LiveRefresh: () => null },
     "@/components/usb-attendance-reader": { UsbAttendanceReader, UsbAttendanceProvider: () => null },
-    "./components/monitoring-table": { MonitoringTable: () => null },
+    "./components/monitoring-table": { MonitoringTable },
+    "./components/monitoring-date-filter": { MonitoringDateFilter },
+    "./components/monitoring-panel-skeleton": { MonitoringPanelSkeleton },
+    "./components/monitoring-update-provider": { MonitoringUpdateProvider },
   })
   const Page = pageLoad("src/app/(portal)/admin/live-monitoring/page.tsx").default
   const props = { searchParams: Promise.resolve({}) }
@@ -78,7 +86,6 @@ test("page enforces administrator access before reading records and uses the sch
   assert.equal(reads, 0)
   authorized = true
   const page = await Page(props)
-  assert.equal(reads, 1)
   const refresh = page.props.children[0]
   assert.deepEqual(refresh.props.tables, ["attendance_records", "students", "programs", "rfid_cards"])
   assert.equal(refresh.props.debounceMs, 300)
@@ -88,13 +95,88 @@ test("page enforces administrator access before reading records and uses the sch
   expectedFrom = "2026-09-01"
   expectedTo = "2026-09-10"
   const history = await Page({ searchParams: Promise.resolve({ from: expectedFrom, to: expectedTo }) })
-  const dateForm = history.props.children[3]
-  assert.equal(dateForm.props.action, "/admin/live-monitoring")
-  assert.equal(dateForm.props.children[0].props.children[1].props.defaultValue, expectedFrom)
-  assert.equal(dateForm.props.children[1].props.children[1].props.defaultValue, expectedTo)
+  assert.equal(history.props.children[3].props.children[0].props.from, expectedFrom)
+  assert.equal(history.props.children[3].props.children[0].props.to, expectedTo)
   expectedFrom = expectedTo = "2026-09-20"
   fail = true
   const failedPage = await Page(props)
-  assert.equal(failedPage.props.children.at(-1).props.message, "Connection unavailable")
   assert.equal(failedPage.props.children[0].type, refresh.type)
+})
+
+test("the panel reads the records behind a Suspense boundary so only the table loads", async () => {
+  let reads = 0, fail = false
+  const MonitoringTable = () => null
+  const MonitoringPanelSkeleton = () => null
+  const pageLoad = createSourceLoader({
+    "@/features/auth/server": { requireRole: async () => {} },
+    "@/services/attendance/live-monitoring": { fetchLiveMonitoringRecords: async (from, to) => {
+      assert.equal(from, "2026-09-01"); assert.equal(to, "2026-09-10"); reads++
+      if (fail) throw Error("Connection unavailable")
+      return []
+    } },
+    "@/lib/school-time": { schoolDateKey: () => "2026-09-20" },
+    "@/components/live-refresh": { LiveRefresh: () => null },
+    "@/components/usb-attendance-reader": { UsbAttendanceReader: () => null, UsbAttendanceProvider: () => null },
+    "./components/monitoring-table": { MonitoringTable },
+    "./components/monitoring-date-filter": { MonitoringDateFilter: () => null },
+    "./components/monitoring-panel-skeleton": { MonitoringPanelSkeleton },
+    "./components/monitoring-update-provider": { MonitoringUpdateProvider: () => null },
+  })
+  const Page = pageLoad("src/app/(portal)/admin/live-monitoring/page.tsx").default
+  const page = await Page({ searchParams: Promise.resolve({ from: "2026-09-01", to: "2026-09-10" }) })
+  const provider = page.props.children[3]
+  const [filter, suspense] = provider.props.children
+  assert.equal(suspense.type, Suspense)
+  assert.equal(suspense.props.fallback.type, MonitoringPanelSkeleton)
+  // The filter is keyed so it restarts on every range, but the boundary must
+  // not be: a keyed sibling plus a keyed boundary duplicates the filter.
+  assert.equal(filter.key, "2026-09-01:2026-09-10")
+  assert.equal(suspense.key, null)
+  // The shell is ready before the records are read.
+  assert.equal(reads, 0)
+  const panel = suspense.props.children
+  const table = await panel.type(panel.props)
+  assert.equal(reads, 1)
+  assert.equal(table.type, MonitoringTable)
+  fail = true
+  const failedPage = await Page({ searchParams: Promise.resolve({ from: "2026-09-01", to: "2026-09-10" }) })
+  const failedPanel = failedPage.props.children[3].props.children[1].props.children
+  const failed = await failedPanel.type(failedPanel.props)
+  assert.equal(failed.props.message, "Connection unavailable")
+})
+
+test("the date filter keeps a plain GET form and applies the range without reloading the panel", () => {
+  const applied = []
+  const filterLoad = createSourceLoader({
+    react: {
+      useState: initial => [typeof initial === "function" ? initial() : initial, () => {}],
+      useEffect: () => {},
+      useTransition: () => [false, callback => callback()],
+    },
+    "next/navigation": {
+      useRouter: () => ({ push: (href, options) => applied.push([href, options]) }),
+      usePathname: () => "/admin/live-monitoring",
+    },
+    "next/link": () => null,
+    "@/components/ui/button": { Button: () => null },
+    "@/components/ui/label": { Label: () => null },
+    "@/components/ui/date-picker": { DatePicker: () => null },
+    "./monitoring-update-provider": { useMonitoringUpdate: () => ({
+      isPending: false,
+      applyRange: (from, to) => applied.push([from, to]),
+      applyToday: () => applied.push(["today"]),
+    }) },
+  })
+  const { MonitoringDateFilter } = filterLoad("src/app/(portal)/admin/live-monitoring/components/monitoring-date-filter.tsx")
+  const element = MonitoringDateFilter({ from: "2026-09-01", to: "2026-09-10" })
+  assert.equal(element.type, "form")
+  assert.equal(element.props.action, "/admin/live-monitoring")
+  assert.equal(element.props.method, "get")
+  const hidden = element.props.children.filter(child => child.type === "input")
+  assert.deepEqual(hidden.map(input => input.props.name), ["from", "to"])
+  assert.deepEqual(hidden.map(input => input.props.value), ["2026-09-01", "2026-09-10"])
+  const pickers = element.props.children.filter(child => child.type === "div").map(field => field.props.children[1].props.value)
+  assert.deepEqual(pickers, ["2026-09-01", "2026-09-10"])
+  element.props.onSubmit({ preventDefault() {} })
+  assert.deepEqual(applied, [["2026-09-01", "2026-09-10"]])
 })

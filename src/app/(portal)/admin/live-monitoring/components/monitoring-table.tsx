@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ScanLine } from "lucide-react"
+import { Loader2, ScanLine } from "lucide-react"
 import { EmptyState } from "@/components/empty-state"
 import { TablePagination } from "@/components/data-table"
 import { SearchTagInput } from "@/components/search-tag-input"
@@ -13,12 +13,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { filterLiveMonitoringRows, type LiveMonitoringFilters, type LiveMonitoringRow } from "@/features/attendance/live-monitoring"
 import { formatClockTime, formatDateValue, formatNumber } from "@/lib/format"
 
+import { useMonitoringUpdate } from "./monitoring-update-provider"
+
 const PAGE_SIZE = 20
 const emptyFilters: LiveMonitoringFilters = { search: [], tap: "all", program: "all", section: "all" }
 
 export function MonitoringTable({ rows }: { rows: LiveMonitoringRow[] }) {
   const [filters, setFilters] = useState(emptyFilters)
   const [page, setPage] = useState(1)
+  const update = useMonitoringUpdate()
+  const isPending = update?.isPending ?? false
   const programs = useMemo(() => [...new Map(rows.filter(row => row.programId).map(row =>
     [row.programId, { id: row.programId, label: row.programCode || row.programName }]
   )).values()].sort((a, b) => a.label.localeCompare(b.label)), [rows])
@@ -36,9 +40,17 @@ export function MonitoringTable({ rows }: { rows: LiveMonitoringRow[] }) {
   }
 
   return (
-    <Card>
+    <Card aria-busy={isPending}>
       <CardHeader>
-        <CardTitle>Student taps</CardTitle>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle>Student taps</CardTitle>
+          {isPending ? (
+            <span role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 aria-hidden className="size-4 animate-spin" />
+              Updating taps
+            </span>
+          ) : null}
+        </div>
         <CardDescription>One row per attendance record. Taps In shows records awaiting tap out; Taps Out shows completed tap outs.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
