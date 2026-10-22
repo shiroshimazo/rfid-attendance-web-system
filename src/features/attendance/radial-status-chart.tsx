@@ -17,6 +17,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 import { formatNumber, formatPercent } from "@/lib/format"
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
 import { cn } from "@/lib/utils"
 
 export interface RadialStatusSlice {
@@ -119,8 +120,8 @@ export function RadialStatusChart({
           background
           cornerRadius={8}
           isAnimationActive={!reduceMotion}
-          animationDuration={1500}
-          animationEasing="ease"
+          animationDuration={900}
+          animationEasing="ease-out"
         />
         <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
           <Label
@@ -160,8 +161,8 @@ export function RadialStatusChart({
             style={{ backgroundColor: config[row.Status]?.color ?? "var(--chart-1)" }}
           />
           <span className="flex-1 text-muted-foreground">{config[row.Status]?.label ?? row.label}</span>
-          <span className="font-medium tabular-nums">{formatNumber(row.count)}</span>
-          <span className="w-14 text-right text-xs text-muted-foreground tabular-nums">{formatPercent(row.Share)}</span>
+          <span className="font-medium tabular-nums"><SlidingNumber value={row.count} /></span>
+          <span className="w-14 text-right text-xs text-muted-foreground tabular-nums"><SlidingNumber value={row.Share} decimalPlaces={1} suffix="%" /></span>
         </li>
       ))}
     </ul>

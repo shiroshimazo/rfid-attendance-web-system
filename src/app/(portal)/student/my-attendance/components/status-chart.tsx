@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import type { ChartConfig } from "@/components/ui/chart"
 import { RadialStatusChart } from "@/features/attendance/radial-status-chart"
 import type { StudentAttendanceKpis } from "@/features/attendance/student-attendance"
-import { formatPercent } from "@/lib/format"
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
 
 const chartConfig = {
   present: { label: "On time", color: "var(--chart-2)" },
@@ -35,7 +35,7 @@ export function StatusChart({ kpis }: { kpis: StudentAttendanceKpis }) {
               { status: "absent", count: kpis.totalAbsent },
             ]}
             config={chartConfig}
-            headline={formatPercent(kpis.attendanceRate)}
+            headline={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
             caption="attendance rate"
             ariaLabel="Personal attendance rate and share of on-time, late, and absent days across all recorded daily RFID history"
           />

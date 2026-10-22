@@ -3,6 +3,8 @@
 import { LineChartIcon } from "lucide-react"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 
+import { useReducedMotion } from "motion/react"
+
 import { EmptyState } from "@/components/empty-state"
 import {
   Card,
@@ -34,6 +36,7 @@ export function SummaryChart({
   summary: TeacherSummaryPoint[]
   rangeLabel: string
 }) {
+  const reduceMotion = useReducedMotion()
   return (
     <Card className="@container/chart" data-print="block">
       <CardHeader>
@@ -77,6 +80,9 @@ export function SummaryChart({
               />
               <ChartLegend content={<ChartLegendContent />} />
               <Line
+                isAnimationActive={!reduceMotion}
+                animationDuration={900}
+                animationEasing="ease-out"
                 dataKey="present"
                 type="monotone"
                 stroke="var(--color-present)"
@@ -85,6 +91,9 @@ export function SummaryChart({
                 activeDot={{ r: 4 }}
               />
               <Line
+                isAnimationActive={!reduceMotion}
+                animationDuration={900}
+                animationEasing="ease-out"
                 dataKey="absent"
                 type="monotone"
                 stroke="var(--color-absent)"

@@ -4,6 +4,8 @@ import * as React from "react"
 import { LineChartIcon } from "lucide-react"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
 
+import { useReducedMotion } from "motion/react"
+
 import { EmptyState } from "@/components/empty-state"
 import {
   Card,
@@ -62,6 +64,7 @@ export function AttendanceTrendChart({
   trend: TrendSeries
   hasHistory: boolean
 }) {
+  const reduceMotion = useReducedMotion()
   const [range, setRange] = React.useState<TrendRange>("daily")
   const points = trend[range]
   const activeRange = ranges.find((item) => item.value === range) ?? ranges[0]
@@ -153,6 +156,9 @@ export function AttendanceTrendChart({
               />
               <ChartLegend content={<ChartLegendContent />} />
               <Line
+                isAnimationActive={!reduceMotion}
+                animationDuration={900}
+                animationEasing="ease-out"
                 dataKey="present"
                 type="monotone"
                 stroke="var(--color-present)"
@@ -161,6 +167,9 @@ export function AttendanceTrendChart({
                 activeDot={{ r: 4 }}
               />
               <Line
+                isAnimationActive={!reduceMotion}
+                animationDuration={900}
+                animationEasing="ease-out"
                 dataKey="absent"
                 type="monotone"
                 stroke="var(--color-absent)"

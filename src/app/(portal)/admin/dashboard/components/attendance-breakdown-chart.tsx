@@ -4,6 +4,8 @@ import * as React from "react"
 import { BarChart3 } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
+import { useReducedMotion } from "motion/react"
+
 import { EmptyState } from "@/components/empty-state"
 import {
   Card,
@@ -62,6 +64,7 @@ export function AttendanceBreakdownChart({
   byYearLevel: GroupBreakdown[]
   bySection: GroupBreakdown[]
 }) {
+  const reduceMotion = useReducedMotion()
   const [grouping, setGrouping] = React.useState<Grouping>("program")
   const source =
     grouping === "program"
@@ -138,11 +141,17 @@ export function AttendanceBreakdownChart({
               />
               <ChartLegend content={<ChartLegendContent />} />
               <Bar
+                isAnimationActive={!reduceMotion}
+                animationDuration={900}
+                animationEasing="ease-out"
                 dataKey="present"
                 fill="var(--color-present)"
                 radius={[4, 4, 0, 0]}
               />
               <Bar
+                isAnimationActive={!reduceMotion}
+                animationDuration={900}
+                animationEasing="ease-out"
                 dataKey="absent"
                 fill="var(--color-absent)"
                 radius={[4, 4, 0, 0]}

@@ -1,7 +1,10 @@
+"use client"
+
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 import type { TooltipValueType } from "recharts"
 
+import { useContentReady } from "@/hooks/use-content-ready"
 import { cn } from "@/lib/utils"
 
 // Format: { THEME_NAME: CSS_SELECTOR }
@@ -54,6 +57,7 @@ function ChartContainer({
     height: number
   }
 }) {
+  const ready = useContentReady()
   const uniqueId = React.useId()
   const chartId = `chart-${id ?? uniqueId.replace(/:/g, "")}`
 
@@ -69,14 +73,16 @@ function ChartContainer({
         {...props}
       >
         <ChartStyle id={chartId} config={config} />
-        <RechartsPrimitive.ResponsiveContainer
-          initialDimension={initialDimension}
-          // Sidebar open/close animates content width for ~200ms; without
-          // debounce every chart re-renders each frame and the toggle janks.
-          debounce={150}
-        >
-          {children}
-        </RechartsPrimitive.ResponsiveContainer>
+        {ready ? (
+          <RechartsPrimitive.ResponsiveContainer
+            initialDimension={initialDimension}
+            // Sidebar open/close animates content width for ~200ms; without
+            // debounce every chart re-renders each frame and the toggle janks.
+            debounce={150}
+          >
+            {children}
+          </RechartsPrimitive.ResponsiveContainer>
+        ) : null}
       </div>
     </ChartContext.Provider>
   )
