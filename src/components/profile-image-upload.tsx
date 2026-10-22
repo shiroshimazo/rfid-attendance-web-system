@@ -38,7 +38,7 @@ export function ProfileImageUpload({ value, onChange, onUploadingChange, disable
     try {
       const data = new FormData()
       data.set("file", file)
-      const response = await fetch("/api/teacher-profile-image", { method: "POST", body: data, signal: pending.signal })
+      const response = await fetch("/api/profile-image", { method: "POST", body: data, signal: pending.signal })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || "Image upload failed.")
       if (!pending.signal.aborted) onChange(result.url)
@@ -54,12 +54,12 @@ export function ProfileImageUpload({ value, onChange, onUploadingChange, disable
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <Avatar className="size-14 shrink-0">
           <AvatarImage src={value || undefined} alt="Profile picture preview" />
           <AvatarFallback>Photo</AvatarFallback>
         </Avatar>
-        <Input {...props} type="file" accept="image/jpeg,image/png,image/webp" disabled={disabled || uploading}
+        <Input {...props} className="min-w-0 flex-1 basis-40" type="file" accept="image/jpeg,image/png,image/webp" disabled={disabled || uploading}
           onChange={upload} aria-invalid={!!error || props["aria-invalid"]}
           aria-describedby={[props["aria-describedby"], error ? errorId : ""].filter(Boolean).join(" ")} />
         {value && <Button type="button" variant="outline" disabled={disabled || uploading} onClick={() => { onChange(""); setError("") }}>Remove</Button>}

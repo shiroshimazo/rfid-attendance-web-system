@@ -18,14 +18,27 @@ function setup({ role = "admin", status = "active", missing = false, uploadError
     "@/features/auth/server": { getCurrentAccount: async () => ({ id: "admin-id", role, status }) },
     "@/services/supabase/admin": { createAdminSupabaseClient: () => ({ storage }) },
   })
-  return { POST: load("src/app/api/teacher-profile-image/route.ts").POST, uploads, buckets }
+  return { POST: load("src/app/api/profile-image/route.ts").POST, legacyPOST: load("src/app/api/teacher-profile-image/route.ts").POST, uploads, buckets }
 }
 
 function request(bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), type = "image/png") {
   const data = new FormData()
   data.set("file", new File([bytes], "photo.png", { type }))
-  return new Request("https://example.com/api/teacher-profile-image", { method: "POST", body: data })
+  return new Request("https://example.com/api/profile-image", { method: "POST", body: data })
 }
+
+test("legacy teacher endpoint uses the shared upload handler", () => {
+  const { POST, legacyPOST } = setup()
+  assert.equal(legacyPOST, POST)
+})
+
+test("rejects cross-origin uploads", async () => {
+  const { POST, uploads } = setup()
+  const input = request()
+  input.headers.set("origin", "https://untrusted.example")
+  assert.equal((await POST(input)).status, 403)
+  assert.equal(uploads.length, 0)
+})
 
 test("only active administrators can upload", async () => {
   for (const options of [{ role: "teacher" }, { status: "inactive" }]) {

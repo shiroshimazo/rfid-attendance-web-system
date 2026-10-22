@@ -61,6 +61,11 @@ function CodeInput({
     for (let index = 0; index < length; index++) next.push(digits[index] ?? "")
     return next
   }, [digits, length])
+  // Focus handlers fire before React re-renders, so read the latest cells from a ref.
+  const cellsRef = React.useRef(cells)
+  React.useEffect(() => {
+    cellsRef.current = cells
+  }, [cells])
 
   const focusBox = (index: number) => {
     const box = boxes.current[index]
@@ -71,11 +76,12 @@ function CodeInput({
 
   /** Writes the boxes back to the parent, keeping the digits contiguous. */
   const commit = (next: string[]) => {
+    cellsRef.current = next
     onChange(next.join(""))
   }
 
   const clearFrom = (index: number) => {
-    const next = cells.slice()
+    const next = cellsRef.current.slice()
     for (let i = index; i < length; i++) next[i] = ""
     commit(next)
   }
@@ -89,14 +95,14 @@ function CodeInput({
     }
     if (typed.length > 1) {
       // A pasted or autofilled code arrives whole; spread it over the boxes.
-      if (typed.length === 2 && typed[0] === cells[index]) {
-        const next = cells.slice()
+      if (typed.length === 2 && typed[0] === cellsRef.current[index]) {
+        const next = cellsRef.current.slice()
         next[index] = typed[1]
         commit(next)
         if (index < length - 1) focusBox(index + 1)
         return
       }
-      const next = cells.slice()
+      const next = cellsRef.current.slice()
       let last = index
       for (let i = 0; i < typed.length && index + i < length; i++) {
         next[index + i] = typed[i]
@@ -106,7 +112,7 @@ function CodeInput({
       focusBox(last)
       return
     }
-    const next = cells.slice()
+    const next = cellsRef.current.slice()
     next[index] = typed
     commit(next)
     if (index < length - 1) focusBox(index + 1)
@@ -115,7 +121,7 @@ function CodeInput({
   const handleKeyDown = (index: number, event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Backspace") {
       event.preventDefault()
-      if (cells[index]) {
+      if (cellsRef.current[index]) {
         clearFrom(index)
       } else if (index > 0) {
         focusBox(index - 1)
@@ -144,7 +150,7 @@ function CodeInput({
     const pasted = event.clipboardData.getData("text").replace(/\D/g, "")
     if (!pasted) return
     const start = pasted.length >= length ? 0 : index
-    const next = cells.slice()
+    const next = cellsRef.current.slice()
     let last = start
     for (let i = 0; i < pasted.length && start + i < length; i++) {
       next[start + i] = pasted[i]
@@ -155,7 +161,7 @@ function CodeInput({
   }
 
   const handleFocus = (index: number, event: React.FocusEvent<HTMLInputElement>) => {
-    const firstEmpty = cells.findIndex((cell) => cell === "")
+    const firstEmpty = cellsRef.current.findIndex((cell) => cell === "")
     if (firstEmpty !== -1 && firstEmpty < index) {
       // Digits stay contiguous, so typing continues in the first empty box.
       focusBox(firstEmpty)

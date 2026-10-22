@@ -27,6 +27,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { ProfileImageUpload } from "@/components/profile-image-upload"
 import { PhoneInput } from "@/components/ui/phone-input"
 import {
   Select,
@@ -294,7 +295,8 @@ export function StudentFormDialog({
 
   // Dates are recorded, never scheduled, so tomorrow is out of range.
   const today = toDateKey(new Date())
-  const isSubmitting = form.formState.isSubmitting
+  const [isUploading, setIsUploading] = React.useState(false)
+  const isSubmitting = form.formState.isSubmitting || isUploading
   const step = steps[stepIndex]
   const isLastStep = stepIndex === steps.length - 1
 
@@ -316,6 +318,7 @@ export function StudentFormDialog({
   })
 
   async function goNext() {
+    if (isSubmitting) return
     const valid = await form.trigger(step.fields, { shouldFocus: true })
 
     if (valid) setStepIndex((current) => Math.min(current + 1, steps.length - 1))
@@ -583,20 +586,21 @@ export function StudentFormDialog({
                     render={({ field }) => (
                       <FormItem className="sm:col-span-2">
                         <FormLabel>
-                          Profile picture URL{" "}
+                          Profile picture{" "}
                           <span className="font-normal text-muted-foreground">
                             (optional)
                           </span>
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            inputMode="url"
-                            placeholder="https://example.com/photo.jpg"
+                          <ProfileImageUpload
+                            key={`${student?.id ?? "new"}-${open}`}
+                            onUploadingChange={setIsUploading}
+                            disabled={form.formState.isSubmitting}
                             {...field}
                           />
                         </FormControl>
                         <FormDescription>
-                          Optional. Initials are shown when this is empty.
+                          JPG, PNG, or WebP, up to 2 MB. Initials are shown when no image is selected.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

@@ -6,7 +6,7 @@ import { Loader2, Save } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
 import { gooeyToast } from "@/components/ui/goey-toaster"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileImageUpload } from "@/components/profile-image-upload"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -31,7 +31,6 @@ import {
   adminProfileSchema,
   type AdminProfileValues,
 } from "@/features/profiles/schema"
-import { initialsOf } from "@/lib/format"
 
 export function ProfileForm({
   profile,
@@ -46,10 +45,11 @@ export function ProfileForm({
     defaultValues: profile,
   })
 
-  const isSubmitting = form.formState.isSubmitting
-  const [avatarUrl, fullName] = useWatch({
+  const [isUploading, setIsUploading] = React.useState(false)
+  const isSubmitting = form.formState.isSubmitting || isUploading
+  const avatarUrl = useWatch({
     control: form.control,
-    name: ["avatarUrl", "fullName"],
+    name: "avatarUrl",
   })
   const [email, phoneNumber] = useWatch({
     control: form.control,
@@ -70,6 +70,7 @@ export function ProfileForm({
   const needsPassword = requiresReauth || serverRequiresReauth
 
   async function onSubmit(values: AdminProfileValues) {
+    if (isUploading) return
     if (needsPassword && !values.currentPassword) {
       form.setError("currentPassword", {
         message: "Enter your current password to confirm this change",
@@ -112,38 +113,26 @@ export function ProfileForm({
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <div className="flex flex-wrap items-center gap-4">
-              <Avatar className="size-16 ring-1 ring-[oklch(0_0_0/0.1)] dark:ring-[oklch(1_0_0/0.1)]">
-                {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
-                <AvatarFallback className="text-base">
-                  {initialsOf(fullName || profile.email)}
-                </AvatarFallback>
-              </Avatar>
-
-              <div className="min-w-56 flex-1 space-y-1">
-                <FormField
-                  control={form.control}
-                  name="avatarUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Change photo</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="url"
-                          autoComplete="photo"
-                          placeholder="https://example.com/photo.jpg"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Optional. Your initials are shown when this is empty.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
+            <FormField
+              control={form.control}
+              name="avatarUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Change photo</FormLabel>
+                  <FormControl>
+                    <ProfileImageUpload
+                      onUploadingChange={setIsUploading}
+                      disabled={form.formState.isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    JPG, PNG, or WebP, up to 2 MB. Your initials are shown when no image is selected.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
