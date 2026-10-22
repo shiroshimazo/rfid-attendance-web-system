@@ -171,9 +171,13 @@ html {
    the page stops scrolling, so the app reads as frozen. Keep the document
    scrollable while a popup is open and drop the scrollbar compensation the
    lock adds, so the scrollbar stays visible and the layout does not shift.
-   Modal surfaces (dialog, sheet) keep their scroll lock on purpose. */
-html body:has([data-slot="select-content"]),
-html body:has([data-slot="combobox-content"]) {
+   Exclude modal overlays so nested popups preserve the modal's scroll lock. */
+html body:has([data-slot="select-content"], [data-slot="combobox-content"]):not(:has(
+  [data-slot="dialog-overlay"],
+  [data-slot="sheet-overlay"],
+  [data-slot="drawer-overlay"],
+  [data-slot="alert-dialog-overlay"]
+)) {
   overflow: visible !important;
   margin-right: 0 !important;
 }
