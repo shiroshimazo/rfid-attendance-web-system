@@ -3,6 +3,7 @@
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ModeToggle } from "@/components/mode-toggle"
+import { PhilippineClock } from "@/components/philippine-clock"
 
 export function SiteHeader() {
   return (
@@ -13,8 +14,9 @@ export function SiteHeader() {
           orientation="vertical"
           className="data-[orientation=vertical]:h-4"
         />
-        <p className="text-sm font-medium text-balance">RFID Attendance System</p>
-        <div className="ml-auto flex items-center">
+        <p className="min-w-0 truncate text-sm font-medium">RFID Attendance System</p>
+        <div className="ml-auto flex shrink-0 items-center gap-3">
+          <PhilippineClock />
           <ModeToggle />
         </div>
       </div>

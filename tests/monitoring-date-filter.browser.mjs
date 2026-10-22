@@ -77,8 +77,12 @@ try {
     options: { scroll: false },
   })
   // The table is the part of the panel that waits, so it carries the state.
-  await page.getByText("Updating taps", { exact: true }).waitFor()
+  await page.locator('tbody [role="status"]').getByText("Updating taps", { exact: true }).waitFor()
+  assert.equal(await page.locator('tbody td[colspan="7"]').count(), 1)
+  assert.equal(await page.getByText("No taps in this date range", { exact: true }).count(), 0)
   assert.equal(await page.locator('[aria-busy="true"]').count() > 0, true)
+  await page.locator('tbody [role="status"]').waitFor({ state: "hidden" })
+  await page.getByText("No taps in this date range", { exact: true }).waitFor()
   // Today stays on the current route and drops the range.
   await page.getByRole("link", { name: "Today", exact: true }).click()
   assert.deepEqual(await page.evaluate(() => window.pushed), {

@@ -42,15 +42,7 @@ export function MonitoringTable({ rows }: { rows: LiveMonitoringRow[] }) {
   return (
     <Card aria-busy={isPending}>
       <CardHeader>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle>Student taps</CardTitle>
-          {isPending ? (
-            <span role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 aria-hidden className="size-4 animate-spin" />
-              Updating taps
-            </span>
-          ) : null}
-        </div>
+        <CardTitle>Student taps</CardTitle>
         <CardDescription>One row per attendance record. Taps In shows records awaiting tap out; Taps Out shows completed tap outs.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -94,7 +86,7 @@ export function MonitoringTable({ rows }: { rows: LiveMonitoringRow[] }) {
           </div>
           <Button variant="outline" className="self-end" disabled={!filtersActive} onClick={() => updateFilters(emptyFilters)}>Clear filters</Button>
         </div>
-        {visible.length === 0 ? (
+        {!isPending && visible.length === 0 ? (
           <EmptyState icon={ScanLine} title={filtersActive ? "No matching taps" : "No taps in this date range"}
             description={filtersActive ? "Change or clear the filters to see more students." : "Students appear automatically when their RFID tap is recorded."} />
         ) : (
@@ -104,7 +96,16 @@ export function MonitoringTable({ rows }: { rows: LiveMonitoringRow[] }) {
                 {["Date", "Name", "Section", "Program", "RFID Number", "Tap IN", "Tap Out"].map(label => <TableHead key={label} className="px-3">{label}</TableHead>)}
               </TableRow></TableHeader>
               <TableBody>
-                {visible.map(row => <TableRow key={row.id}>
+                {isPending ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-48 text-center">
+                      <span role="status" className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 aria-hidden className="size-4 animate-spin" />
+                        Updating taps
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ) : visible.map(row => <TableRow key={row.id}>
                   <TableCell className="px-3 tabular-nums">{formatDateValue(row.attendanceDate)}</TableCell>
                   <TableCell className="px-3 font-medium">{row.name}</TableCell>
                   <TableCell className="px-3">{row.section || "—"}</TableCell>
