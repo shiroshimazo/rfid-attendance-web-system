@@ -1,0 +1,3 @@
+module.exports=[765857,a=>{"use strict";var b=a.i(220694),c=a.i(139138);function d({className:a,...d}){return(0,b.jsx)("div",{"data-slot":"skeleton",className:(0,c.cn)("bg-accent animate-pulse rounded-md",a),...d})}a.s(["Skeleton",()=>d])},938790,a=>{"use strict";var b=a.i(220694),c=a.i(765857);function d(){return(0,b.jsxs)("div",{role:"status","aria-label":"Loading system logs",className:"flex flex-1 flex-col gap-4 p-4 md:p-6",children:[(0,b.jsx)(c.Skeleton,{className:"h-8 w-40"}),(0,b.jsx)(c.Skeleton,{className:"h-32 w-full"}),(0,b.jsx)(c.Skeleton,{className:"h-80 w-full"})]})}a.s(["default",()=>d])}];
+
+//# sourceMappingURL=src_5a54ec9f._.js.map

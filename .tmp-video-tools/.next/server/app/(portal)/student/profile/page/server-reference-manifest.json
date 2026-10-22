@@ -1,0 +1,20 @@
+{
+  "node": {
+    "40b25aa7b3d3212885fb0f7fa77c040b2914cd99a6": {
+      "workers": {
+        "app/(portal)/student/profile/page": {
+          "moduleId": 234740,
+          "async": false,
+          "exportedName": "changeStudentPasswordAction",
+          "filename": "src/features/profiles/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/student/profile/page": "action-browser"
+      },
+      "exportedName": "changeStudentPasswordAction",
+      "filename": "src/features/profiles/actions.ts"
+    }
+  },
+  "edge": {}
+}

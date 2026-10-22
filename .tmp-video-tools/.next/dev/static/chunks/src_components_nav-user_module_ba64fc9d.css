@@ -1,0 +1,91 @@
+/* [project]/src/components/nav-user.module.css [app-client] (css) */
+.nav-user-module__rpRVOa__liquidMenu[data-state] {
+  --liquid-x: 0px;
+  --liquid-y: 0px;
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+}
+
+.nav-user-module__rpRVOa__liquidMenu[data-side="right"] {
+  --liquid-x: -20px;
+}
+
+.nav-user-module__rpRVOa__liquidMenu[data-side="left"] {
+  --liquid-x: 20px;
+}
+
+.nav-user-module__rpRVOa__liquidMenu[data-side="top"] {
+  --liquid-y: 20px;
+}
+
+.nav-user-module__rpRVOa__liquidMenu[data-side="bottom"] {
+  --liquid-y: -20px;
+}
+
+.nav-user-module__rpRVOa__liquidMenu[data-state="open"] {
+  animation: .34s cubic-bezier(.16, 1, .3, 1) both nav-user-module__rpRVOa__liquidOpen;
+}
+
+.nav-user-module__rpRVOa__liquidMenu[data-state="closed"] {
+  pointer-events: none;
+  animation: .2s cubic-bezier(.4, 0, 1, 1) both nav-user-module__rpRVOa__liquidClose;
+}
+
+.nav-user-module__rpRVOa__liquidMenu[data-state="open"] > * {
+  animation: .22s ease-out both nav-user-module__rpRVOa__revealContent;
+}
+
+.nav-user-module__rpRVOa__liquidMenu[data-state="closed"] > * {
+  animation: .1s ease-out both nav-user-module__rpRVOa__hideContent;
+}
+
+@keyframes nav-user-module__rpRVOa__liquidOpen {
+  0% {
+    opacity: 0;
+    transform: translate(var(--liquid-x), var(--liquid-y)) scale(.12, .16);
+    border-radius: 50%;
+  }
+
+  100% {
+    opacity: 1;
+    border-radius: 8px;
+    transform: translate(0)scale(1);
+  }
+}
+
+@keyframes nav-user-module__rpRVOa__liquidClose {
+  from {
+    opacity: 1;
+    border-radius: 8px;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(var(--liquid-x), var(--liquid-y)) scale(.12, .16);
+    border-radius: 50%;
+  }
+}
+
+@keyframes nav-user-module__rpRVOa__revealContent {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes nav-user-module__rpRVOa__hideContent {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-user-module__rpRVOa__liquidMenu[data-state], .nav-user-module__rpRVOa__liquidMenu[data-state] > * {
+    animation: none;
+  }
+}
+
+/*# sourceMappingURL=src_components_nav-user_module_ba64fc9d.css.map*/

@@ -1,0 +1,65 @@
+{
+  "node": {
+    "409447040e70d715a769fe15192bc57d42887b4192": {
+      "workers": {
+        "app/(auth)/sign-in/page": {
+          "moduleId": "[project]/.next-internal/server/app/(auth)/sign-in/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/features/auth/email-login-actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "beginEmailLogin",
+          "filename": "src/features/auth/email-login-actions.ts"
+        }
+      },
+      "layer": {
+        "app/(auth)/sign-in/page": "action-browser"
+      },
+      "exportedName": "beginEmailLogin",
+      "filename": "src/features/auth/email-login-actions.ts"
+    },
+    "00b14c3c3901adf0352d40cb1bbd822d7ec16b5ebd": {
+      "workers": {
+        "app/(auth)/sign-in/page": {
+          "moduleId": "[project]/.next-internal/server/app/(auth)/sign-in/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/features/auth/email-login-actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "cancelEmailLogin",
+          "filename": "src/features/auth/email-login-actions.ts"
+        }
+      },
+      "layer": {
+        "app/(auth)/sign-in/page": "action-browser"
+      },
+      "exportedName": "cancelEmailLogin",
+      "filename": "src/features/auth/email-login-actions.ts"
+    },
+    "007e519d3fc1b61147881119ea14b7751066142abd": {
+      "workers": {
+        "app/(auth)/sign-in/page": {
+          "moduleId": "[project]/.next-internal/server/app/(auth)/sign-in/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/features/auth/email-login-actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "resendEmailLogin",
+          "filename": "src/features/auth/email-login-actions.ts"
+        }
+      },
+      "layer": {
+        "app/(auth)/sign-in/page": "action-browser"
+      },
+      "exportedName": "resendEmailLogin",
+      "filename": "src/features/auth/email-login-actions.ts"
+    },
+    "4040241167bea0f3ab268861f3378d821ccc0d29cb": {
+      "workers": {
+        "app/(auth)/sign-in/page": {
+          "moduleId": "[project]/.next-internal/server/app/(auth)/sign-in/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/features/auth/email-login-actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "verifyEmailLogin",
+          "filename": "src/features/auth/email-login-actions.ts"
+        }
+      },
+      "layer": {
+        "app/(auth)/sign-in/page": "action-browser"
+      },
+      "exportedName": "verifyEmailLogin",
+      "filename": "src/features/auth/email-login-actions.ts"
+    }
+  },
+  "edge": {}
+}

@@ -1,0 +1,580 @@
+module.exports = [
+"[externals]/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js [external] (next/dist/compiled/next-server/app-route-turbo.runtime.dev.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/compiled/next-server/app-route-turbo.runtime.dev.js", () => require("next/dist/compiled/next-server/app-route-turbo.runtime.dev.js"));
+
+module.exports = mod;
+}),
+"[externals]/next/dist/compiled/@opentelemetry/api [external] (next/dist/compiled/@opentelemetry/api, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/compiled/@opentelemetry/api", () => require("next/dist/compiled/@opentelemetry/api"));
+
+module.exports = mod;
+}),
+"[externals]/next/dist/compiled/next-server/app-page-turbo.runtime.dev.js [external] (next/dist/compiled/next-server/app-page-turbo.runtime.dev.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/compiled/next-server/app-page-turbo.runtime.dev.js", () => require("next/dist/compiled/next-server/app-page-turbo.runtime.dev.js"));
+
+module.exports = mod;
+}),
+"[externals]/next/dist/server/app-render/work-unit-async-storage.external.js [external] (next/dist/server/app-render/work-unit-async-storage.external.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/server/app-render/work-unit-async-storage.external.js", () => require("next/dist/server/app-render/work-unit-async-storage.external.js"));
+
+module.exports = mod;
+}),
+"[externals]/next/dist/server/app-render/work-async-storage.external.js [external] (next/dist/server/app-render/work-async-storage.external.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/server/app-render/work-async-storage.external.js", () => require("next/dist/server/app-render/work-async-storage.external.js"));
+
+module.exports = mod;
+}),
+"[externals]/next/dist/shared/lib/no-fallback-error.external.js [external] (next/dist/shared/lib/no-fallback-error.external.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/shared/lib/no-fallback-error.external.js", () => require("next/dist/shared/lib/no-fallback-error.external.js"));
+
+module.exports = mod;
+}),
+"[externals]/next/dist/server/app-render/action-async-storage.external.js [external] (next/dist/server/app-render/action-async-storage.external.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/server/app-render/action-async-storage.external.js", () => require("next/dist/server/app-render/action-async-storage.external.js"));
+
+module.exports = mod;
+}),
+"[project]/src/features/auth/roles.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "dashboardPathByRole",
+    ()=>dashboardPathByRole,
+    "isUserRole",
+    ()=>isUserRole,
+    "userRoles",
+    ()=>userRoles
+]);
+const userRoles = [
+    "admin",
+    "teacher",
+    "student"
+];
+const dashboardPathByRole = {
+    admin: "/admin/dashboard",
+    teacher: "/teacher/dashboard",
+    student: "/student/dashboard"
+};
+function isUserRole(value) {
+    return typeof value === "string" && userRoles.includes(value);
+}
+}),
+"[project]/src/services/supabase/config.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "isSupabaseConfigured",
+    ()=>isSupabaseConfigured,
+    "missingSupabaseConfigurationMessage",
+    ()=>missingSupabaseConfigurationMessage,
+    "supabasePublishableKey",
+    ()=>supabasePublishableKey,
+    "supabaseUrl",
+    ()=>supabaseUrl
+]);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
+function isSupabaseConfigured() {
+    return Boolean(supabaseUrl && supabasePublishableKey);
+}
+const missingSupabaseConfigurationMessage = "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to .env.";
+}),
+"[externals]/next/dist/server/app-render/after-task-async-storage.external.js [external] (next/dist/server/app-render/after-task-async-storage.external.js, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("next/dist/server/app-render/after-task-async-storage.external.js", () => require("next/dist/server/app-render/after-task-async-storage.external.js"));
+
+module.exports = mod;
+}),
+"[project]/src/services/supabase/server.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "createServerSupabaseClient",
+    ()=>createServerSupabaseClient
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$supabase$2b$ssr$40$0$2e$12$2e$5_$40$supabase$2b$supabase$2d$js$40$2$2e$112$2e$4$2f$node_modules$2f40$supabase$2f$ssr$2f$dist$2f$module$2f$createServerClient$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/@supabase+ssr@0.12.5_@supabase+supabase-js@2.112.4/node_modules/@supabase/ssr/dist/module/createServerClient.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$1$2e$1_$40$babel$2b$core$40$7$2e$2_ae7822e8c058bc095c44df49cc7a35cf$2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/next@16.1.1_@babel+core@7.2_ae7822e8c058bc095c44df49cc7a35cf/node_modules/next/headers.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/services/supabase/config.ts [app-route] (ecmascript)");
+;
+;
+;
+async function createServerSupabaseClient() {
+    if (!(0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["isSupabaseConfigured"])()) {
+        throw new Error(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["missingSupabaseConfigurationMessage"]);
+    }
+    const cookieStore = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$1$2e$1_$40$babel$2b$core$40$7$2e$2_ae7822e8c058bc095c44df49cc7a35cf$2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["cookies"])();
+    return (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$supabase$2b$ssr$40$0$2e$12$2e$5_$40$supabase$2b$supabase$2d$js$40$2$2e$112$2e$4$2f$node_modules$2f40$supabase$2f$ssr$2f$dist$2f$module$2f$createServerClient$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createServerClient"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["supabaseUrl"], __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["supabasePublishableKey"], {
+        cookies: {
+            getAll () {
+                return cookieStore.getAll();
+            },
+            setAll (cookiesToSet) {
+                try {
+                    cookiesToSet.forEach(({ name, value, options })=>{
+                        cookieStore.set(name, value, options);
+                    });
+                } catch  {
+                // Server Components cannot always write cookies. The proxy refreshes
+                // the same session and persists any updated cookies on the response.
+                }
+            }
+        }
+    });
+}
+}),
+"[project]/src/features/auth/server.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "getCurrentAccount",
+    ()=>getCurrentAccount,
+    "requireCurrentAccount",
+    ()=>requireCurrentAccount,
+    "requireRole",
+    ()=>requireRole
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$1$2e$1_$40$babel$2b$core$40$7$2e$2_ae7822e8c058bc095c44df49cc7a35cf$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/next@16.1.1_@babel+core@7.2_ae7822e8c058bc095c44df49cc7a35cf/node_modules/next/dist/server/route-modules/app-page/vendored/rsc/react.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$1$2e$1_$40$babel$2b$core$40$7$2e$2_ae7822e8c058bc095c44df49cc7a35cf$2f$node_modules$2f$next$2f$dist$2f$api$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/next@16.1.1_@babel+core@7.2_ae7822e8c058bc095c44df49cc7a35cf/node_modules/next/dist/api/navigation.react-server.js [app-route] (ecmascript) <locals>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$1$2e$1_$40$babel$2b$core$40$7$2e$2_ae7822e8c058bc095c44df49cc7a35cf$2f$node_modules$2f$next$2f$dist$2f$client$2f$components$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/next@16.1.1_@babel+core@7.2_ae7822e8c058bc095c44df49cc7a35cf/node_modules/next/dist/client/components/navigation.react-server.js [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$auth$2f$roles$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/features/auth/roles.ts [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/services/supabase/config.ts [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$server$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/services/supabase/server.ts [app-route] (ecmascript)");
+;
+;
+;
+;
+;
+const getCurrentAccount = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$1$2e$1_$40$babel$2b$core$40$7$2e$2_ae7822e8c058bc095c44df49cc7a35cf$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["cache"])(async ()=>{
+    if (!(0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["isSupabaseConfigured"])()) return null;
+    const supabase = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$server$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createServerSupabaseClient"])();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data: verified, error: verificationError } = await supabase.rpc("has_verified_email_session");
+    if (verificationError || verified !== true) return null;
+    const { data } = await supabase.from("users").select("id, email, role, status").eq("id", user.id).maybeSingle();
+    const account = data;
+    if (!account || !(0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$auth$2f$roles$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["isUserRole"])(account.role)) return null;
+    const metadataName = user.user_metadata?.full_name;
+    return {
+        id: account.id,
+        email: account.email,
+        name: typeof metadataName === "string" && metadataName.trim() ? metadataName : account.email,
+        role: account.role,
+        status: account.status
+    };
+});
+async function requireCurrentAccount() {
+    const account = await getCurrentAccount();
+    if (!account) (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$1$2e$1_$40$babel$2b$core$40$7$2e$2_ae7822e8c058bc095c44df49cc7a35cf$2f$node_modules$2f$next$2f$dist$2f$client$2f$components$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["redirect"])("/sign-in");
+    if (account.status !== "active") (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$1$2e$1_$40$babel$2b$core$40$7$2e$2_ae7822e8c058bc095c44df49cc7a35cf$2f$node_modules$2f$next$2f$dist$2f$client$2f$components$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["redirect"])("/errors/unauthorized");
+    return account;
+}
+async function requireRole(role) {
+    const account = await requireCurrentAccount();
+    if (account.role !== role) {
+        (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$1$2e$1_$40$babel$2b$core$40$7$2e$2_ae7822e8c058bc095c44df49cc7a35cf$2f$node_modules$2f$next$2f$dist$2f$client$2f$components$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["redirect"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$auth$2f$roles$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["dashboardPathByRole"][account.role]);
+    }
+    return account;
+}
+}),
+"[project]/src/services/supabase/admin.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "createAdminSupabaseClient",
+    ()=>createAdminSupabaseClient,
+    "isSupabaseAdminConfigured",
+    ()=>isSupabaseAdminConfigured,
+    "missingServiceRoleMessage",
+    ()=>missingServiceRoleMessage
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$supabase$2b$supabase$2d$js$40$2$2e$112$2e$4$2f$node_modules$2f40$supabase$2f$supabase$2d$js$2f$dist$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$locals$3e$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/@supabase+supabase-js@2.112.4/node_modules/@supabase/supabase-js/dist/index.mjs [app-route] (ecmascript) <locals>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/services/supabase/config.ts [app-route] (ecmascript)");
+;
+;
+/**
+ * Deliberately not prefixed with NEXT_PUBLIC_, so the key never reaches the
+ * browser bundle. Only server actions and route handlers may read it.
+ */ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+const missingServiceRoleMessage = "Supabase administration is not configured. Add SUPABASE_SERVICE_ROLE_KEY to .env on the server.";
+function isSupabaseAdminConfigured() {
+    return Boolean(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["supabaseUrl"] && serviceRoleKey);
+}
+function createAdminSupabaseClient() {
+    if ("TURBOPACK compile-time falsy", 0) //TURBOPACK unreachable
+    ;
+    if (!isSupabaseAdminConfigured()) {
+        throw new Error(missingServiceRoleMessage);
+    }
+    return (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$supabase$2b$supabase$2d$js$40$2$2e$112$2e$4$2f$node_modules$2f40$supabase$2f$supabase$2d$js$2f$dist$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$locals$3e$__["createClient"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["supabaseUrl"], serviceRoleKey, {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false
+        }
+    });
+}
+}),
+"[project]/src/services/audit/log.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "auditActivity",
+    ()=>auditActivity,
+    "auditRoute",
+    ()=>auditRoute,
+    "recordActivity",
+    ()=>recordActivity
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$auth$2f$server$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/features/auth/server.ts [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/services/supabase/admin.ts [app-route] (ecmascript)");
+;
+;
+async function recordActivity(event, entity, outcome, httpStatus) {
+    try {
+        const account = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$auth$2f$server$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["getCurrentAccount"])().catch(()=>null);
+        const { error } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createAdminSupabaseClient"])().from("system_logs").insert({
+            actor_id: account?.id ?? null,
+            actor_name: account?.name ?? "Unauthenticated / service",
+            actor_role: account?.role ?? "system",
+            source: "application",
+            event,
+            entity,
+            outcome,
+            details: httpStatus === undefined ? {} : {
+                http_status: httpStatus
+            }
+        });
+        if (error) console.error("System audit append failed; check database migration and connectivity.");
+    } catch  {
+        // Auth, device responses and already-committed writes must remain truthful during outages.
+        console.error("System audit append unavailable; check database migration and connectivity.");
+    }
+}
+async function auditActivity(event, entity, operation) {
+    try {
+        const result = await operation();
+        const failed = typeof result === "object" && result !== null && ("ok" in result && result.ok === false || "error" in result && Boolean(result.error));
+        await recordActivity(event, entity, failed ? "failed" : "success");
+        return result;
+    } catch (error) {
+        const redirect = typeof error === "object" && error !== null && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT");
+        await recordActivity(event, entity, redirect ? "denied" : "failed");
+        throw error;
+    }
+}
+async function auditRoute(event, entity, operation) {
+    try {
+        const response = await operation();
+        const outcome = [
+            401,
+            403
+        ].includes(response.status) ? "denied" : response.status >= 400 ? "failed" : "success";
+        await recordActivity(event, entity, outcome, response.status);
+        return response;
+    } catch (error) {
+        await recordActivity(event, entity, "failed", 500);
+        throw error;
+    }
+}
+}),
+"[externals]/node:crypto [external] (node:crypto, cjs)", ((__turbopack_context__, module, exports) => {
+
+const mod = __turbopack_context__.x("node:crypto", () => require("node:crypto"));
+
+module.exports = mod;
+}),
+"[project]/src/lib/rfid-uid.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+/** Reader bytes in order: 4, 7 or 10 bytes; preserve every leading zero.
+ * Printed decimal card numbers are not converted or guessed. */ __turbopack_context__.s([
+    "normalizeRfidUid",
+    ()=>normalizeRfidUid,
+    "rfidUidMessage",
+    ()=>rfidUidMessage
+]);
+function normalizeRfidUid(input) {
+    if (input.length > 64) return null;
+    const value = input.replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, "").toUpperCase();
+    if (!/^(?:[0-9A-F]+|[0-9A-F]{2}(?::[0-9A-F]{2})+|[0-9A-F]{2}(?:-[0-9A-F]{2})+|[0-9A-F]{2}(?: [0-9A-F]{2})+)$/.test(value)) return null;
+    const uid = value.replace(/[: -]/g, "");
+    return [
+        8,
+        14,
+        20
+    ].includes(uid.length) ? uid : null;
+}
+const rfidUidMessage = "Enter a 4, 7, or 10-byte hexadecimal UID from the reader, such as 00:00:00:11.";
+}),
+"[project]/src/features/rfid-tap/schema.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "rfidTapSchema",
+    ()=>rfidTapSchema
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$4$2e$3$2e$2$2f$node_modules$2f$zod$2f$v4$2f$classic$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/zod@4.3.2/node_modules/zod/v4/classic/external.js [app-route] (ecmascript) <export * as z>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$rfid$2d$uid$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/rfid-uid.ts [app-route] (ecmascript)");
+;
+;
+const rfidTapSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$4$2e$3$2e$2$2f$node_modules$2f$zod$2f$v4$2f$classic$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].object({
+    requestId: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$4$2e$3$2e$2$2f$node_modules$2f$zod$2f$v4$2f$classic$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].uuid(),
+    uid: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$4$2e$3$2e$2$2f$node_modules$2f$zod$2f$v4$2f$classic$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z$3e$__["z"].string().max(64).transform(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$rfid$2d$uid$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["normalizeRfidUid"]).refine((value)=>value !== null, "Invalid reader UID")
+}).strict();
+}),
+"[project]/src/services/sms/philsms.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "deliverArrivalSms",
+    ()=>deliverArrivalSms,
+    "normalizePhilippineMobile",
+    ()=>normalizePhilippineMobile,
+    "sendPhilSms",
+    ()=>sendPhilSms
+]);
+var __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__ = __turbopack_context__.i("[externals]/node:crypto [external] (node:crypto, cjs)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/services/supabase/admin.ts [app-route] (ecmascript)");
+;
+;
+function normalizePhilippineMobile(input) {
+    const number = input.trim().replace(/[ ()-]/g, "");
+    if (/^09\d{9}$/.test(number)) return `63${number.slice(1)}`;
+    if (/^\+?639\d{9}$/.test(number)) return number.replace(/^\+/, "");
+    return null;
+}
+function configuration() {
+    if (process.env.PHILSMS_ENABLED !== "true") return null;
+    const token = process.env.PHILSMS_API_TOKEN?.trim();
+    const sender = process.env.PHILSMS_SENDER_ID?.trim();
+    const endpoint = process.env.PHILSMS_API_URL?.trim() || "https://app.philsms.com/api/v3/sms/send";
+    if (!token || !sender || !/^[A-Za-z0-9 ]{1,11}$/.test(sender) || ![
+        "https://app.philsms.com/api/v3/sms/send",
+        "https://dashboard.philsms.com/api/v3/sms/send"
+    ].includes(endpoint)) return null;
+    return {
+        token,
+        sender,
+        endpoint
+    };
+}
+async function sendPhilSms(config, recipient, message) {
+    try {
+        const response = await fetch(config.endpoint, {
+            method: "POST",
+            redirect: "error",
+            signal: AbortSignal.timeout(8000),
+            headers: {
+                Authorization: `Bearer ${config.token}`,
+                Accept: "application/json",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                recipient,
+                sender_id: config.sender,
+                type: /^[\x20-\x7E\r\n]*$/.test(message) ? "plain" : "unicode",
+                message
+            })
+        });
+        const payload = await response.json();
+        if (response.ok && payload?.status === "success") {
+            const report = Array.isArray(payload.data) ? payload.data[0] : payload.data;
+            // A top-level success is API acceptance, not proof of handset delivery.
+            if (report && typeof report.status === "string" && /^(failed|rejected|undelivered)$/i.test(report.status)) return {
+                result: "rejected"
+            };
+            return {
+                result: "accepted",
+                providerId: typeof report?.uid === "string" ? report.uid : undefined
+            };
+        }
+        if (payload?.status === "error" && response.status < 500) return {
+            result: "rejected"
+        };
+        return {
+            result: "unknown"
+        };
+    } catch  {
+        return {
+            result: "unknown"
+        };
+    }
+}
+async function deliverArrivalSms(attendanceId) {
+    const config = configuration();
+    if (!config || !Number.isSafeInteger(attendanceId) || attendanceId <= 0) return;
+    try {
+        const supabase = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createAdminSupabaseClient"])();
+        const attempt = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["randomUUID"])();
+        const { data, error } = await supabase.rpc("claim_arrival_sms", {
+            p_attendance_id: attendanceId,
+            p_attempt: attempt
+        });
+        if (error || !data) return;
+        const recipient = normalizePhilippineMobile(data.recipient);
+        const outcome = recipient ? await sendPhilSms(config, recipient, data.message) : {
+            result: "invalid_recipient"
+        };
+        // The durable claim remains even if persistence fails: retries cannot send twice.
+        await supabase.rpc("finish_arrival_sms", {
+            p_id: data.id,
+            p_attempt: attempt,
+            p_result: outcome.result,
+            p_provider_id: "providerId" in outcome ? outcome.providerId ?? null : null
+        });
+    } catch  {}
+}
+}),
+"[project]/src/services/rfid/tap.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "recordValidatedTap",
+    ()=>recordValidatedTap,
+    "tapFailure",
+    ()=>tapFailure
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$sms$2f$philsms$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/services/sms/philsms.ts [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/services/supabase/admin.ts [app-route] (ecmascript)");
+;
+;
+function tapFailure(status, code, message) {
+    return {
+        status,
+        body: {
+            ok: false,
+            code,
+            message,
+            feedback: {
+                led: "red",
+                buzzer: "warning"
+            }
+        }
+    };
+}
+async function recordValidatedTap(input) {
+    if (!(0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["isSupabaseAdminConfigured"])()) {
+        return tapFailure(503, "NOT_CONFIGURED", "RFID attendance is not configured on the server.");
+    }
+    try {
+        const { data, error } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["createAdminSupabaseClient"])().rpc("record_rfid_tap", {
+            p_request_id: input.requestId,
+            p_uid: input.uid
+        });
+        if (error || !data || typeof data.ok !== "boolean") {
+            return tapFailure(503, "SAVE_UNAVAILABLE", "Could not confirm attendance. Retry with the same request ID.");
+        }
+        if (data.ok && data.action === "time_in") await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$sms$2f$philsms$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["deliverArrivalSms"])(data.attendanceId);
+        return {
+            status: data.ok ? 200 : data.code === "INVALID_CARD" ? 422 : 409,
+            body: data
+        };
+    } catch  {
+        return tapFailure(503, "SAVE_UNAVAILABLE", "Could not record attendance. Retry with the same request ID.");
+    }
+}
+}),
+"[project]/src/app/api/rfid/tap/route.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"use strict";
+
+__turbopack_context__.s([
+    "POST",
+    ()=>POST,
+    "runtime",
+    ()=>runtime
+]);
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$audit$2f$log$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/services/audit/log.ts [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__ = __turbopack_context__.i("[externals]/node:crypto [external] (node:crypto, cjs)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$rfid$2d$tap$2f$schema$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/features/rfid-tap/schema.ts [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$rfid$2f$tap$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/services/rfid/tap.ts [app-route] (ecmascript)");
+var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/services/supabase/admin.ts [app-route] (ecmascript)");
+;
+;
+;
+;
+;
+const runtime = "nodejs";
+function reply(body, status = 200) {
+    return Response.json(body, {
+        status,
+        headers: {
+            "Cache-Control": "no-store"
+        }
+    });
+}
+function failure(status, code, message) {
+    return reply({
+        ok: false,
+        code,
+        message,
+        feedback: {
+            led: "red",
+            buzzer: "warning"
+        }
+    }, status);
+}
+async function POST(request) {
+    return (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$audit$2f$log$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["auditRoute"])("rfid_tap", "rfid_cards", async ()=>{
+        const key = process.env.RFID_DEVICE_API_KEY ?? "";
+        if (key.length < 32 || !(0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$supabase$2f$admin$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["isSupabaseAdminConfigured"])()) {
+            return failure(503, "NOT_CONFIGURED", "RFID attendance is not configured on the server.");
+        }
+        const supplied = request.headers.get("authorization") ?? "";
+        const hash = (value)=>(0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["createHash"])("sha256").update(value).digest();
+        if (!(0, __TURBOPACK__imported__module__$5b$externals$5d2f$node$3a$crypto__$5b$external$5d$__$28$node$3a$crypto$2c$__cjs$29$__["timingSafeEqual"])(hash(supplied), hash(`Bearer ${key}`))) {
+            return failure(401, "UNAUTHORIZED", "Device authentication required.");
+        }
+        if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
+            return failure(415, "INVALID_CONTENT_TYPE", "Send an application/json request.");
+        }
+        // Bound the body even when Content-Length is absent or incorrect.
+        const reader = request.body?.getReader();
+        if (!reader) return failure(400, "INVALID_REQUEST", "Send a request ID and reader UID.");
+        let body = "";
+        let bytes = 0;
+        const decoder = new TextDecoder();
+        try {
+            while(true){
+                const { done, value } = await reader.read();
+                if (done) break;
+                bytes += value.byteLength;
+                if (bytes > 1024) {
+                    await reader.cancel();
+                    return failure(413, "REQUEST_TOO_LARGE", "The tap request is too large.");
+                }
+                body += decoder.decode(value, {
+                    stream: true
+                });
+            }
+            body += decoder.decode();
+        } catch  {
+            return failure(400, "INVALID_REQUEST", "Could not read the tap request.");
+        } finally{
+            reader.releaseLock();
+        }
+        let input;
+        try {
+            input = JSON.parse(body);
+        } catch  {
+            return failure(400, "INVALID_REQUEST", "Send valid JSON with a request ID and reader UID.");
+        }
+        const parsed = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$features$2f$rfid$2d$tap$2f$schema$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["rfidTapSchema"].safeParse(input);
+        if (!parsed.success) return failure(400, "INVALID_REQUEST", "Send a UUID requestId and a valid 4, 7 or 10-byte hexadecimal uid.");
+        const result = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$services$2f$rfid$2f$tap$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["recordValidatedTap"])({
+            requestId: parsed.data.requestId,
+            uid: parsed.data.uid
+        });
+        return reply(result.body, result.status);
+    });
+}
+}),
+];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__7ee5fbec._.js.map

@@ -1,0 +1,3 @@
+module.exports=[193695,(a,b,c)=>{b.exports=a.x("next/dist/shared/lib/no-fallback-error.external.js",()=>require("next/dist/shared/lib/no-fallback-error.external.js"))},650645,a=>{a.n(a.i(827572))},825210,a=>{a.n(a.i(402747))},517537,a=>{a.n(a.i(903363))},609824,a=>{a.n(a.i(648661))},732277,a=>{a.n(a.i(753361))},183475,a=>{a.n(a.i(119614))},647907,a=>{a.n(a.i(739621))},368023,a=>{a.n(a.i(877290))},374188,a=>{a.n(a.i(506217))},911004,a=>{a.n(a.i(489567))},426622,a=>{"use strict";a.i(538021);var b=a.i(721329);function c(){(0,b.redirect)("/admin/schedules/subject-schedules")}a.s(["default",()=>c])}];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__5b276fa3._.js.map

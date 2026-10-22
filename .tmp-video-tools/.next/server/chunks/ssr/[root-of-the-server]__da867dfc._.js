@@ -1,0 +1,3 @@
+module.exports=[193695,(a,b,c)=>{b.exports=a.x("next/dist/shared/lib/no-fallback-error.external.js",()=>require("next/dist/shared/lib/no-fallback-error.external.js"))},650645,a=>{a.n(a.i(827572))},825210,a=>{a.n(a.i(402747))},517537,a=>{a.n(a.i(903363))},609824,a=>{a.n(a.i(648661))},732277,a=>{a.n(a.i(753361))},183475,a=>{a.n(a.i(119614))},647907,a=>{a.n(a.i(739621))},57336,a=>{a.n(a.i(543286))},389840,a=>{"use strict";a.i(538021);var b=a.i(721329);async function c({searchParams:a}){let c=new URLSearchParams;for(let[b,d]of Object.entries(await a))Array.isArray(d)?d.forEach(a=>c.append(b,a)):void 0!==d&&c.set(b,d);(0,b.redirect)(`/teacher/attendance/daily${c.size?`?${c}`:""}`)}a.s(["default",()=>c])}];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__da867dfc._.js.map

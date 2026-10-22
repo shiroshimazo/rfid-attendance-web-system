@@ -1,0 +1,20 @@
+{
+  "node": {
+    "404da90a4e7fe8872422ffb49914fe4ba62af27f09": {
+      "workers": {
+        "app/(portal)/admin/dashboard/page": {
+          "moduleId": "[project]/.next-internal/server/app/(portal)/admin/dashboard/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/features/rfid-tap/usb-action.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false,
+          "exportedName": "recordUsbTapAction",
+          "filename": "src/features/rfid-tap/usb-action.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/dashboard/page": "action-browser"
+      },
+      "exportedName": "recordUsbTapAction",
+      "filename": "src/features/rfid-tap/usb-action.ts"
+    }
+  },
+  "edge": {}
+}

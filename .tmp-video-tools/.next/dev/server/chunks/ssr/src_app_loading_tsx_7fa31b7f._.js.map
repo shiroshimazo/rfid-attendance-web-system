@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///D:/rfid-attendance-web-system/src/app/loading.tsx"],"sourcesContent":["export default function Loading() {\r\n  return (\r\n    <div className=\"flex min-h-screen items-center justify-center\">\r\n      <div className=\"text-center\">\r\n        <div className=\"animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto\"></div>\r\n        <p className=\"text-muted-foreground mt-2\">Loading...</p>\r\n      </div>\r\n    </div>\r\n  )\r\n}\r\n"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACtB,qBACE,6VAAC;QAAI,WAAU;kBACb,cAAA,6VAAC;YAAI,WAAU;;8BACb,6VAAC;oBAAI,WAAU;;;;;;8BACf,6VAAC;oBAAE,WAAU;8BAA6B;;;;;;;;;;;;;;;;;AAIlD"}}]
+}

@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///D:/rfid-attendance-web-system/src/app/%28portal%29/student/layout.tsx"],"sourcesContent":["import type { ReactNode } from \"react\"\r\n\r\nimport { requireRole } from \"@/features/auth/server\"\r\n\r\nexport default async function StudentLayout({ children }: { children: ReactNode }) {\r\n  await requireRole(\"student\")\r\n  return children\r\n}\r\n"],"names":[],"mappings":";;;;AAEA;;AAEe,eAAe,cAAc,EAAE,QAAQ,EAA2B;IAC/E,MAAM,IAAA,gJAAW,EAAC;IAClB,OAAO;AACT"}}]
+}

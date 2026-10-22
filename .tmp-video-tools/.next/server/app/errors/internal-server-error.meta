@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(auth)/layout,_N_T_/(auth)/errors/layout,_N_T_/(auth)/errors/internal-server-error/layout,_N_T_/(auth)/errors/internal-server-error/page,_N_T_/errors/internal-server-error"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGF1dGgp/errors/internal-server-error/__PAGE__",
+    "/!KGF1dGgp/errors/internal-server-error",
+    "/!KGF1dGgp/errors",
+    "/!KGF1dGgp",
+    "/_index",
+    "/_head"
+  ]
+}

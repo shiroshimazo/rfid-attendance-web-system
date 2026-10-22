@@ -1,0 +1,65 @@
+{
+  "node": {
+    "409a39e83ede00e473596f8d3cc0a8d631ebf6ffb3": {
+      "workers": {
+        "app/(auth)/sign-in/page": {
+          "moduleId": 606776,
+          "async": false,
+          "exportedName": "beginEmailLogin",
+          "filename": "src/features/auth/email-login-actions.ts"
+        }
+      },
+      "layer": {
+        "app/(auth)/sign-in/page": "action-browser"
+      },
+      "exportedName": "beginEmailLogin",
+      "filename": "src/features/auth/email-login-actions.ts"
+    },
+    "0047ab4ed9c0d0042d23c6096f00cea4166d8bdf5f": {
+      "workers": {
+        "app/(auth)/sign-in/page": {
+          "moduleId": 606776,
+          "async": false,
+          "exportedName": "cancelEmailLogin",
+          "filename": "src/features/auth/email-login-actions.ts"
+        }
+      },
+      "layer": {
+        "app/(auth)/sign-in/page": "action-browser"
+      },
+      "exportedName": "cancelEmailLogin",
+      "filename": "src/features/auth/email-login-actions.ts"
+    },
+    "0008c8a738c6847bbf61b227ffc2603cc6be8cf87e": {
+      "workers": {
+        "app/(auth)/sign-in/page": {
+          "moduleId": 606776,
+          "async": false,
+          "exportedName": "resendEmailLogin",
+          "filename": "src/features/auth/email-login-actions.ts"
+        }
+      },
+      "layer": {
+        "app/(auth)/sign-in/page": "action-browser"
+      },
+      "exportedName": "resendEmailLogin",
+      "filename": "src/features/auth/email-login-actions.ts"
+    },
+    "409bffcefba31c5bddbf129f1ffb7f10cd553b67da": {
+      "workers": {
+        "app/(auth)/sign-in/page": {
+          "moduleId": 606776,
+          "async": false,
+          "exportedName": "verifyEmailLogin",
+          "filename": "src/features/auth/email-login-actions.ts"
+        }
+      },
+      "layer": {
+        "app/(auth)/sign-in/page": "action-browser"
+      },
+      "exportedName": "verifyEmailLogin",
+      "filename": "src/features/auth/email-login-actions.ts"
+    }
+  },
+  "edge": {}
+}

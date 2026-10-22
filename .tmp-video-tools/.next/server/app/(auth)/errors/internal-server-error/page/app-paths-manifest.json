@@ -1,0 +1,3 @@
+{
+  "/(auth)/errors/internal-server-error/page": "app/(auth)/errors/internal-server-error/page.js"
+}

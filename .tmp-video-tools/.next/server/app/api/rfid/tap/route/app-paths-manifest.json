@@ -1,0 +1,3 @@
+{
+  "/api/rfid/tap/route": "app/api/rfid/tap/route.js"
+}

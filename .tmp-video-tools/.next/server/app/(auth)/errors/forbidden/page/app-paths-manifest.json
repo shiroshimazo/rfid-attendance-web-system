@@ -1,0 +1,3 @@
+{
+  "/(auth)/errors/forbidden/page": "app/(auth)/errors/forbidden/page.js"
+}

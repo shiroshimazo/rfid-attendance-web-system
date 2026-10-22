@@ -1,0 +1,5 @@
+{
+  "/(portal)/admin/attendance/page": "app/(portal)/admin/attendance/page.js",
+  "/(portal)/admin/settings/page": "app/(portal)/admin/settings/page.js",
+  "/(portal)/admin/sms-logs/page": "app/(portal)/admin/sms-logs/page.js"
+}

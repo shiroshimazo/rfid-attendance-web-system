@@ -1,0 +1,35 @@
+{
+  "node": {
+    "40b8821d7de47c0c6f47adcccfd4ab9d02949aed73": {
+      "workers": {
+        "app/(portal)/admin/archives/page": {
+          "moduleId": 98880,
+          "async": false,
+          "exportedName": "recordUsbTapAction",
+          "filename": "src/features/rfid-tap/usb-action.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/archives/page": "action-browser"
+      },
+      "exportedName": "recordUsbTapAction",
+      "filename": "src/features/rfid-tap/usb-action.ts"
+    },
+    "40645de03c303b5c30d3f85f2685ab56bc147d65d1": {
+      "workers": {
+        "app/(portal)/admin/archives/page": {
+          "moduleId": 98880,
+          "async": false,
+          "exportedName": "restoreArchiveAction",
+          "filename": "src/features/archives/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/archives/page": "action-browser"
+      },
+      "exportedName": "restoreArchiveAction",
+      "filename": "src/features/archives/actions.ts"
+    }
+  },
+  "edge": {}
+}

@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/node_modules/.pnpm/lenis@1.3.26_react@19.2.3/node_modules/lenis/dist/lenis.css"],"sourcesContent":["html.lenis,\nhtml.lenis body {\n  height: auto;\n}\n\n.lenis:not(.lenis-autoToggle).lenis-stopped {\n  overflow: clip;\n}\n\n.lenis [data-lenis-prevent],\n.lenis [data-lenis-prevent-wheel],\n.lenis [data-lenis-prevent-touch],\n.lenis [data-lenis-prevent-vertical],\n.lenis [data-lenis-prevent-horizontal] {\n  overscroll-behavior: contain;\n}\n\n.lenis.lenis-smooth iframe {\n  pointer-events: none;\n}\n\n.lenis.lenis-autoToggle {\n  transition-property: overflow;\n  transition-duration: 1ms;\n  transition-behavior: allow-discrete;\n}\n"],"names":[],"mappings":"AAAA;;;;AAKA;;;;AAIA;;;;AAQA;;;;AAIA","ignoreList":[0]}}]
+}

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { LayoutGroup } from "motion/react"
 import Link from "next/link"
 import { Logo } from "@/components/logo"
 
@@ -32,6 +33,7 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function AppSidebar({ role, user, ...props }: AppSidebarProps) {
+  const navigationId = React.useId()
   const meta = roleMeta[role]
   const { isMobile, setOpenMobile } = useSidebar()
 
@@ -57,9 +59,11 @@ export function AppSidebar({ role, user, ...props }: AppSidebarProps) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {navigationByRole[role].map((group) => (
-          <NavMain key={group.label} label={group.label} items={group.items} />
-        ))}
+        <LayoutGroup id={navigationId}>
+          {navigationByRole[role].map((group) => (
+            <NavMain key={group.label} label={group.label} items={group.items} />
+          ))}
+        </LayoutGroup>
       </SidebarContent>
       <SidebarFooter>
         <NavUser

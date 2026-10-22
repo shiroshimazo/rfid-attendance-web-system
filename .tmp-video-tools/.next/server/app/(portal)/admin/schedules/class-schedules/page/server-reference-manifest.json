@@ -1,0 +1,50 @@
+{
+  "node": {
+    "40b8821d7de47c0c6f47adcccfd4ab9d02949aed73": {
+      "workers": {
+        "app/(portal)/admin/schedules/class-schedules/page": {
+          "moduleId": 664222,
+          "async": false,
+          "exportedName": "recordUsbTapAction",
+          "filename": "src/features/rfid-tap/usb-action.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/schedules/class-schedules/page": "action-browser"
+      },
+      "exportedName": "recordUsbTapAction",
+      "filename": "src/features/rfid-tap/usb-action.ts"
+    },
+    "402427031cc6d3896bd8056980703edada89317e2a": {
+      "workers": {
+        "app/(portal)/admin/schedules/class-schedules/page": {
+          "moduleId": 664222,
+          "async": false,
+          "exportedName": "setScheduleStatusAction",
+          "filename": "src/features/schedules/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/schedules/class-schedules/page": "action-browser"
+      },
+      "exportedName": "setScheduleStatusAction",
+      "filename": "src/features/schedules/actions.ts"
+    },
+    "409c2aca897bad464db796d3c3a69ff8c51743cd66": {
+      "workers": {
+        "app/(portal)/admin/schedules/class-schedules/page": {
+          "moduleId": 664222,
+          "async": false,
+          "exportedName": "updateScheduleAction",
+          "filename": "src/features/schedules/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/schedules/class-schedules/page": "action-browser"
+      },
+      "exportedName": "updateScheduleAction",
+      "filename": "src/features/schedules/actions.ts"
+    }
+  },
+  "edge": {}
+}

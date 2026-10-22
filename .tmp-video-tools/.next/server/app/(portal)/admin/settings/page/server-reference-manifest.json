@@ -1,0 +1,50 @@
+{
+  "node": {
+    "40b8821d7de47c0c6f47adcccfd4ab9d02949aed73": {
+      "workers": {
+        "app/(portal)/admin/settings/page": {
+          "moduleId": 746791,
+          "async": false,
+          "exportedName": "recordUsbTapAction",
+          "filename": "src/features/rfid-tap/usb-action.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/settings/page": "action-browser"
+      },
+      "exportedName": "recordUsbTapAction",
+      "filename": "src/features/rfid-tap/usb-action.ts"
+    },
+    "402ab6241eff4d2f93094929a27706a48b728fa639": {
+      "workers": {
+        "app/(portal)/admin/settings/page": {
+          "moduleId": 746791,
+          "async": false,
+          "exportedName": "changeAdminPasswordAction",
+          "filename": "src/features/profiles/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/settings/page": "action-browser"
+      },
+      "exportedName": "changeAdminPasswordAction",
+      "filename": "src/features/profiles/actions.ts"
+    },
+    "40f307a78b06a5944c76b47822958ed40b420803d5": {
+      "workers": {
+        "app/(portal)/admin/settings/page": {
+          "moduleId": 746791,
+          "async": false,
+          "exportedName": "updateAdminProfileAction",
+          "filename": "src/features/profiles/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/settings/page": "action-browser"
+      },
+      "exportedName": "updateAdminProfileAction",
+      "filename": "src/features/profiles/actions.ts"
+    }
+  },
+  "edge": {}
+}

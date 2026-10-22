@@ -1,0 +1,95 @@
+{
+  "node": {
+    "40b8821d7de47c0c6f47adcccfd4ab9d02949aed73": {
+      "workers": {
+        "app/(portal)/admin/students/page": {
+          "moduleId": 619457,
+          "async": false,
+          "exportedName": "recordUsbTapAction",
+          "filename": "src/features/rfid-tap/usb-action.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/students/page": "action-browser"
+      },
+      "exportedName": "recordUsbTapAction",
+      "filename": "src/features/rfid-tap/usb-action.ts"
+    },
+    "40cc0a86cbf8e4fdd9313531e7ee650f1f00474916": {
+      "workers": {
+        "app/(portal)/admin/students/page": {
+          "moduleId": 619457,
+          "async": false,
+          "exportedName": "assignRfidCardAction",
+          "filename": "src/features/students/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/students/page": "action-browser"
+      },
+      "exportedName": "assignRfidCardAction",
+      "filename": "src/features/students/actions.ts"
+    },
+    "40f8c0ffc6faa015f30f8ef1a37c0139136aa940d2": {
+      "workers": {
+        "app/(portal)/admin/students/page": {
+          "moduleId": 619457,
+          "async": false,
+          "exportedName": "releaseRfidCardAction",
+          "filename": "src/features/students/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/students/page": "action-browser"
+      },
+      "exportedName": "releaseRfidCardAction",
+      "filename": "src/features/students/actions.ts"
+    },
+    "600032737ac6c83ed1c5a5117c199b3d259262cd92": {
+      "workers": {
+        "app/(portal)/admin/students/page": {
+          "moduleId": 619457,
+          "async": false,
+          "exportedName": "setStudentStatusAction",
+          "filename": "src/features/students/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/students/page": "action-browser"
+      },
+      "exportedName": "setStudentStatusAction",
+      "filename": "src/features/students/actions.ts"
+    },
+    "40ad396c5095b2dd5eb2f3ab60caff6899426614fd": {
+      "workers": {
+        "app/(portal)/admin/students/page": {
+          "moduleId": 619457,
+          "async": false,
+          "exportedName": "createStudentAction",
+          "filename": "src/features/students/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/students/page": "action-browser"
+      },
+      "exportedName": "createStudentAction",
+      "filename": "src/features/students/actions.ts"
+    },
+    "407b6611c77fda158dd37adb475106779860a9db78": {
+      "workers": {
+        "app/(portal)/admin/students/page": {
+          "moduleId": 619457,
+          "async": false,
+          "exportedName": "updateStudentAction",
+          "filename": "src/features/students/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/students/page": "action-browser"
+      },
+      "exportedName": "updateStudentAction",
+      "filename": "src/features/students/actions.ts"
+    }
+  },
+  "edge": {}
+}

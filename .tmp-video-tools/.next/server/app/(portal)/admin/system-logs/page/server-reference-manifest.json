@@ -1,0 +1,20 @@
+{
+  "node": {
+    "40b8821d7de47c0c6f47adcccfd4ab9d02949aed73": {
+      "workers": {
+        "app/(portal)/admin/system-logs/page": {
+          "moduleId": 890886,
+          "async": false,
+          "exportedName": "recordUsbTapAction",
+          "filename": "src/features/rfid-tap/usb-action.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/system-logs/page": "action-browser"
+      },
+      "exportedName": "recordUsbTapAction",
+      "filename": "src/features/rfid-tap/usb-action.ts"
+    }
+  },
+  "edge": {}
+}

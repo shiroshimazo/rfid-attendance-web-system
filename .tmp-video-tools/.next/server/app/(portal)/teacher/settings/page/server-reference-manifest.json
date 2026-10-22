@@ -1,0 +1,20 @@
+{
+  "node": {
+    "40578a513ecfaeed9915c701e887251364447bfacb": {
+      "workers": {
+        "app/(portal)/teacher/settings/page": {
+          "moduleId": 319206,
+          "async": false,
+          "exportedName": "changeTeacherPasswordAction",
+          "filename": "src/features/profiles/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/teacher/settings/page": "action-browser"
+      },
+      "exportedName": "changeTeacherPasswordAction",
+      "filename": "src/features/profiles/actions.ts"
+    }
+  },
+  "edge": {}
+}

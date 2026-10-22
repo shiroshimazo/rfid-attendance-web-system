@@ -1,0 +1,65 @@
+{
+  "node": {
+    "40b8821d7de47c0c6f47adcccfd4ab9d02949aed73": {
+      "workers": {
+        "app/(portal)/admin/rfid-cards/page": {
+          "moduleId": 411230,
+          "async": false,
+          "exportedName": "recordUsbTapAction",
+          "filename": "src/features/rfid-tap/usb-action.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/rfid-cards/page": "action-browser"
+      },
+      "exportedName": "recordUsbTapAction",
+      "filename": "src/features/rfid-tap/usb-action.ts"
+    },
+    "40549d3a148d1a5a887ea6c2a80ae6246b517b2651": {
+      "workers": {
+        "app/(portal)/admin/rfid-cards/page": {
+          "moduleId": 411230,
+          "async": false,
+          "exportedName": "editRfidCardAction",
+          "filename": "src/features/rfid/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/rfid-cards/page": "action-browser"
+      },
+      "exportedName": "editRfidCardAction",
+      "filename": "src/features/rfid/actions.ts"
+    },
+    "40596708365998207a95fbfc90900791703a8237aa": {
+      "workers": {
+        "app/(portal)/admin/rfid-cards/page": {
+          "moduleId": 411230,
+          "async": false,
+          "exportedName": "registerRfidCardAction",
+          "filename": "src/features/rfid/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/rfid-cards/page": "action-browser"
+      },
+      "exportedName": "registerRfidCardAction",
+      "filename": "src/features/rfid/actions.ts"
+    },
+    "4035d59b00a54a1be9b448dd9b424a7d3de3023b96": {
+      "workers": {
+        "app/(portal)/admin/rfid-cards/page": {
+          "moduleId": 411230,
+          "async": false,
+          "exportedName": "setRfidCardStatusAction",
+          "filename": "src/features/rfid/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/rfid-cards/page": "action-browser"
+      },
+      "exportedName": "setRfidCardStatusAction",
+      "filename": "src/features/rfid/actions.ts"
+    }
+  },
+  "edge": {}
+}

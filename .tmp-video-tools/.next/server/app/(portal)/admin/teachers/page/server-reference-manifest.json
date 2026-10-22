@@ -1,0 +1,65 @@
+{
+  "node": {
+    "40b8821d7de47c0c6f47adcccfd4ab9d02949aed73": {
+      "workers": {
+        "app/(portal)/admin/teachers/page": {
+          "moduleId": 154227,
+          "async": false,
+          "exportedName": "recordUsbTapAction",
+          "filename": "src/features/rfid-tap/usb-action.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/teachers/page": "action-browser"
+      },
+      "exportedName": "recordUsbTapAction",
+      "filename": "src/features/rfid-tap/usb-action.ts"
+    },
+    "4046d98fabbd8ccbe54eb67d29918d1ae71bc6341e": {
+      "workers": {
+        "app/(portal)/admin/teachers/page": {
+          "moduleId": 154227,
+          "async": false,
+          "exportedName": "createTeacherAction",
+          "filename": "src/features/teachers/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/teachers/page": "action-browser"
+      },
+      "exportedName": "createTeacherAction",
+      "filename": "src/features/teachers/actions.ts"
+    },
+    "401ca0277825223faca9a0cfbf2ab230557ce9c723": {
+      "workers": {
+        "app/(portal)/admin/teachers/page": {
+          "moduleId": 154227,
+          "async": false,
+          "exportedName": "updateTeacherAction",
+          "filename": "src/features/teachers/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/teachers/page": "action-browser"
+      },
+      "exportedName": "updateTeacherAction",
+      "filename": "src/features/teachers/actions.ts"
+    },
+    "60da3fb91c62866bbc7e7171ea2b90a65ce3df22c1": {
+      "workers": {
+        "app/(portal)/admin/teachers/page": {
+          "moduleId": 154227,
+          "async": false,
+          "exportedName": "setTeacherStatusAction",
+          "filename": "src/features/teachers/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/teachers/page": "action-browser"
+      },
+      "exportedName": "setTeacherStatusAction",
+      "filename": "src/features/teachers/actions.ts"
+    }
+  },
+  "edge": {}
+}

@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(auth)/layout,_N_T_/(auth)/errors/layout,_N_T_/(auth)/errors/unauthorized/layout,_N_T_/(auth)/errors/unauthorized/page,_N_T_/errors/unauthorized"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGF1dGgp/errors/unauthorized/__PAGE__",
+    "/!KGF1dGgp/errors/unauthorized",
+    "/!KGF1dGgp/errors",
+    "/!KGF1dGgp",
+    "/_index",
+    "/_head"
+  ]
+}

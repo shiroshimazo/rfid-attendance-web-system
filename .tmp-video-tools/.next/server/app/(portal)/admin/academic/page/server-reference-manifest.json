@@ -1,0 +1,125 @@
+{
+  "node": {
+    "40b8821d7de47c0c6f47adcccfd4ab9d02949aed73": {
+      "workers": {
+        "app/(portal)/admin/academic/page": {
+          "moduleId": 149354,
+          "async": false,
+          "exportedName": "recordUsbTapAction",
+          "filename": "src/features/rfid-tap/usb-action.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/academic/page": "action-browser"
+      },
+      "exportedName": "recordUsbTapAction",
+      "filename": "src/features/rfid-tap/usb-action.ts"
+    },
+    "40d001f2e37bdf4e4c7054b5999e9fd90dae662e3c": {
+      "workers": {
+        "app/(portal)/admin/academic/page": {
+          "moduleId": 149354,
+          "async": false,
+          "exportedName": "setCatalogStatusAction",
+          "filename": "src/features/academic/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/academic/page": "action-browser"
+      },
+      "exportedName": "setCatalogStatusAction",
+      "filename": "src/features/academic/actions.ts"
+    },
+    "40ff7a8bab288b69377ab904b20474336b3abd23e7": {
+      "workers": {
+        "app/(portal)/admin/academic/page": {
+          "moduleId": 149354,
+          "async": false,
+          "exportedName": "createProgramAction",
+          "filename": "src/features/academic/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/academic/page": "action-browser"
+      },
+      "exportedName": "createProgramAction",
+      "filename": "src/features/academic/actions.ts"
+    },
+    "406e9dcf7b78e7b1c40c957a597d7351adb64bf163": {
+      "workers": {
+        "app/(portal)/admin/academic/page": {
+          "moduleId": 149354,
+          "async": false,
+          "exportedName": "updateProgramAction",
+          "filename": "src/features/academic/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/academic/page": "action-browser"
+      },
+      "exportedName": "updateProgramAction",
+      "filename": "src/features/academic/actions.ts"
+    },
+    "40f41f2d634ec72ff7cd6dabf52c9a82c2b2332bea": {
+      "workers": {
+        "app/(portal)/admin/academic/page": {
+          "moduleId": 149354,
+          "async": false,
+          "exportedName": "createSectionAction",
+          "filename": "src/features/academic/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/academic/page": "action-browser"
+      },
+      "exportedName": "createSectionAction",
+      "filename": "src/features/academic/actions.ts"
+    },
+    "40a616760af50f24ff35705b5907c7389f320a188b": {
+      "workers": {
+        "app/(portal)/admin/academic/page": {
+          "moduleId": 149354,
+          "async": false,
+          "exportedName": "updateSectionAction",
+          "filename": "src/features/academic/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/academic/page": "action-browser"
+      },
+      "exportedName": "updateSectionAction",
+      "filename": "src/features/academic/actions.ts"
+    },
+    "40d9b83ec2e89fccc8e541cc7c5d59b194e5304f1e": {
+      "workers": {
+        "app/(portal)/admin/academic/page": {
+          "moduleId": 149354,
+          "async": false,
+          "exportedName": "createCourseAction",
+          "filename": "src/features/academic/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/academic/page": "action-browser"
+      },
+      "exportedName": "createCourseAction",
+      "filename": "src/features/academic/actions.ts"
+    },
+    "40f6f2512bb8caec7d39a8a6d97ead0cecbd1a7541": {
+      "workers": {
+        "app/(portal)/admin/academic/page": {
+          "moduleId": 149354,
+          "async": false,
+          "exportedName": "updateCourseAction",
+          "filename": "src/features/academic/actions.ts"
+        }
+      },
+      "layer": {
+        "app/(portal)/admin/academic/page": "action-browser"
+      },
+      "exportedName": "updateCourseAction",
+      "filename": "src/features/academic/actions.ts"
+    }
+  },
+  "edge": {}
+}
