@@ -165,6 +165,11 @@ html {
   scroll-behavior: auto !important;
 }
 
+/* The stable root scrollbar gutter already reserves the dialog's scrollbar space. */
+html body[data-scroll-locked]:has([data-slot="dialog-overlay"]) {
+  margin-right: 0 !important;
+}
+
 /* Radix Select and Base UI Combobox lock the document while their popup is
    open (react-remove-scroll, useScrollLock). The lock puts overflow on the
    body, which propagates to the viewport: the page scrollbar disappears and

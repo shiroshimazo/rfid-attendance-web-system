@@ -30,7 +30,7 @@ const bundle = await build({
   define: { "process.env.NODE_ENV": '"production"' },
 })
 const globals = await readFile(join(root, 'src/app/globals.css'), 'utf8')
-const popupCss = globals.slice(globals.indexOf('/* Radix Select'), globals.indexOf('@media (prefers-reduced-motion: reduce)', globals.indexOf('/* Radix Select')))
+const popupCss = globals.slice(globals.indexOf('/* The stable root scrollbar'), globals.indexOf('@media (prefers-reduced-motion: reduce)', globals.indexOf('/* The stable root scrollbar')))
 const css = `html { scrollbar-gutter: stable; } body { margin: 0; min-height: 200vh; }
 [data-slot$="overlay"] { position: fixed; inset: 0; }
 [data-slot="dialog-content"], [data-slot="sheet-content"] { position: fixed; top: 100px; left: 30%; width: 40%; background: white; }
@@ -50,10 +50,12 @@ try {
   for (const width of [1200, 390]) {
     await page.setViewportSize({ width, height: 900 })
     await page.goto(`http://127.0.0.1:${server.address().port}`)
-    for (const opener of ['Open form', 'Open sheet']) {
+    const pageWidth = await page.evaluate(() => document.body.getBoundingClientRect().width)
+    for (const opener of ['Open form', 'Open form', 'Open sheet']) {
       await page.getByRole('button', { name: opener, exact: true }).click()
       const dialog = page.getByRole('dialog')
       await dialog.waitFor()
+      await page.waitForTimeout(500)
       const metrics = () => page.evaluate(() => ({
         overflow: getComputedStyle(document.body).overflow,
         margin: getComputedStyle(document.body).marginRight,
@@ -61,13 +63,27 @@ try {
       }))
       const before = await metrics()
       assert.equal(before.overflow, 'hidden')
+      if (opener === 'Open form') {
+        assert.equal(before.width, pageWidth, 'Opening a dialog must preserve page width')
+        assert.equal(before.margin, '0px', 'The stable scrollbar gutter must not receive extra compensation')
+      }
+      await page.mouse.move(10, 700)
+      await page.mouse.wheel(0, 300)
+      await page.waitForTimeout(100)
+      assert.equal(await page.evaluate(() => window.scrollY), 0, 'Modal must still block background wheel scrolling')
       await dialog.getByRole('combobox', { name: 'Gender' }).click()
       await page.getByRole('option', { name: 'Female', exact: true }).waitFor()
       assert.deepEqual(await metrics(), before, 'Opening a nested select must preserve modal scroll lock and width')
       await page.getByRole('option', { name: 'Female', exact: true }).click()
       assert.deepEqual(await metrics(), before)
+      await page.waitForTimeout(500)
+      await page.mouse.move(10, 700)
+      await page.mouse.wheel(0, 300)
+      await page.waitForTimeout(100)
+      assert.equal(await page.evaluate(() => window.scrollY), 0, 'Closing a nested select must preserve background wheel locking')
       await page.keyboard.press('Escape')
       await dialog.waitFor({ state: 'hidden' })
+      await page.waitForTimeout(500)
     }
     await page.getByRole('combobox', { name: 'Gender' }).click()
     await page.getByRole('option', { name: 'Male', exact: true }).waitFor()
