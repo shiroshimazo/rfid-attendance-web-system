@@ -1,0 +1,2851 @@
+TAP version 13
+# Subtest: seeds the pilot scope and every placement already in use
+ok 1 - seeds the pilot scope and every placement already in use
+  ---
+  duration_ms: 7035.839
+  type: 'test'
+  ...
+# Subtest: reapplying the migration twice leaves the catalog unchanged
+ok 2 - reapplying the migration twice leaves the catalog unchanged
+  ---
+  duration_ms: 72.6602
+  type: 'test'
+  ...
+# Subtest: rejects duplicate groupings in any section letter case, blank values, and unknown programs
+ok 3 - rejects duplicate groupings in any section letter case, blank values, and unknown programs
+  ---
+  duration_ms: 39.9057
+  type: 'test'
+  ...
+# Subtest: administrators write the catalog while teachers and students only read it
+ok 4 - administrators write the catalog while teachers and students only read it
+  ---
+  duration_ms: 193.6732
+  type: 'test'
+  ...
+# Subtest: the rollback script reverses the migration and reapplying rebuilds the catalog
+ok 5 - the rollback script reverses the migration and reapplying rebuilds the catalog
+  ---
+  duration_ms: 170.4726
+  type: 'test'
+  ...
+# Subtest: new programs save student and teacher placements and retain assignment identity
+ok 6 - new programs save student and teacher placements and retain assignment identity
+  ---
+  duration_ms: 288.6724
+  type: 'test'
+  ...
+# Subtest: grouping edits cascade current placements, preserve history, and reject unsafe changes atomically
+ok 7 - grouping edits cascade current placements, preserve history, and reject unsafe changes atomically
+  ---
+  duration_ms: 554.3424
+  type: 'test'
+  ...
+# Subtest: unverified administrators cannot edit class groupings
+ok 8 - unverified administrators cannot edit class groupings
+  ---
+  duration_ms: 53.7664
+  type: 'test'
+  ...
+# Subtest: a duplicate subject code is reported on its field, not as a raw Postgres message
+ok 9 - a duplicate subject code is reported on its field, not as a raw Postgres message
+  ---
+  duration_ms: 354.1969
+  type: 'test'
+  ...
+# Subtest: archiving a program still in use is refused with counts before any write
+ok 10 - archiving a program still in use is refused with counts before any write
+  ---
+  duration_ms: 248.4892
+  type: 'test'
+  ...
+# Subtest: an unused program archives with a single status update
+ok 11 - an unused program archives with a single status update
+  ---
+  duration_ms: 159.2276
+  type: 'test'
+  ...
+# Subtest: a subject cannot be restored while its program is archived
+ok 12 - a subject cannot be restored while its program is archived
+  ---
+  duration_ms: 454.015
+  type: 'test'
+  ...
+# Subtest: the BSIT pilot program can be neither archived, recoded, nor deactivated
+ok 13 - the BSIT pilot program can be neither archived, recoded, nor deactivated
+  ---
+  duration_ms: 533.6329
+  type: 'test'
+  ...
+# Subtest: editing a subject writes only its catalog row, never its program or attendance history
+ok 14 - editing a subject writes only its catalog row, never its program or attendance history
+  ---
+  duration_ms: 180.1261
+  type: 'test'
+  ...
+# Subtest: a new class grouping reuses the catalog's spelling and becomes assignable
+ok 15 - a new class grouping reuses the catalog's spelling and becomes assignable
+  ---
+  duration_ms: 245.3353
+  type: 'test'
+  ...
+# Subtest: every catalog action checks the administrator role before touching the database
+ok 16 - every catalog action checks the administrator role before touching the database
+  ---
+  duration_ms: 126.5235
+  type: 'test'
+  ...
+# Subtest: catalog usage ignores archived history and offers active catalog placements
+ok 17 - catalog usage ignores archived history and offers active catalog placements
+  ---
+  duration_ms: 3.0996
+  type: 'test'
+  ...
+# Subtest: pickers offer catalog groupings, allow new sections, and keep saved values
+ok 18 - pickers offer catalog groupings, allow new sections, and keep saved values
+  ---
+  duration_ms: 4.6621
+  type: 'test'
+  ...
+# Subtest: usage sentences name what still depends on an entry
+ok 19 - usage sentences name what still depends on an entry
+  ---
+  duration_ms: 0.9792
+  type: 'test'
+  ...
+# Subtest: grouping edits submit every field through one atomic RPC
+ok 20 - grouping edits submit every field through one atomic RPC
+  ---
+  duration_ms: 172.5561
+  type: 'test'
+  ...
+# Subtest: duplicate grouping edit reports a field error and invalid fields never write
+ok 21 - duplicate grouping edit reports a field error and invalid fields never write
+  ---
+  duration_ms: 133.8555
+  type: 'test'
+  ...
+# Subtest: pre-P01 policies reproduce disabled admin, teacher, and student access
+not ok 22 - pre-P01 policies reproduce disabled admin, teacher, and student access
+  ---
+  duration_ms: 6911.886
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:124:1'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: migration preserves every row, account status, and linked historical record
+not ok 23 - migration preserves every row, account status, and linked historical record
+  ---
+  duration_ms: 4.5548
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:131:1'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: active admin retains reads and writes, including archived student history
+not ok 24 - active admin retains reads and writes, including archived student history
+  ---
+  duration_ms: 1.4819
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:135:1'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: active teacher keeps only assigned active students, cards, attendance, and schedules
+not ok 25 - active teacher keeps only assigned active students, cards, attendance, and schedules
+  ---
+  duration_ms: 2.0738
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:148:1'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: active student keeps personal profile, card, attendance and SMS only
+not ok 26 - active student keeps personal profile, card, attendance and SMS only
+  ---
+  duration_ms: 2.9753
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:162:1'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: inactive admin: retained identity loses business reads, writes, and helper access
+not ok 27 - inactive admin: retained identity loses business reads, writes, and helper access
+  ---
+  duration_ms: 1.8627
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:174:5'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: archived admin: retained identity loses business reads, writes, and helper access
+not ok 28 - archived admin: retained identity loses business reads, writes, and helper access
+  ---
+  duration_ms: 1.2279
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:174:5'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: inactive teacher: retained identity loses business reads, writes, and helper access
+not ok 29 - inactive teacher: retained identity loses business reads, writes, and helper access
+  ---
+  duration_ms: 1.1953
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:174:5'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: archived teacher: retained identity loses business reads, writes, and helper access
+not ok 30 - archived teacher: retained identity loses business reads, writes, and helper access
+  ---
+  duration_ms: 1.2413
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:174:5'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: inactive student: retained identity loses business reads, writes, and helper access
+not ok 31 - inactive student: retained identity loses business reads, writes, and helper access
+  ---
+  duration_ms: 2.0848
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:174:5'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: archived student: retained identity loses business reads, writes, and helper access
+not ok 32 - archived student: retained identity loses business reads, writes, and helper access
+  ---
+  duration_ms: 1.2273
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:174:5'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: active teacher cannot elevate privileges or write business records
+not ok 33 - active teacher cannot elevate privileges or write business records
+  ---
+  duration_ms: 1.0851
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:197:3'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: teacher profile archive/restore revokes/restores access using the same identity
+not ok 34 - teacher profile archive/restore revokes/restores access using the same identity
+  ---
+  duration_ms: 1.3651
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:204:3'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: active student cannot elevate privileges or write business records
+not ok 35 - active student cannot elevate privileges or write business records
+  ---
+  duration_ms: 1.5682
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:197:3'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: student profile archive/restore revokes/restores access using the same identity
+not ok 36 - student profile archive/restore revokes/restores access using the same identity
+  ---
+  duration_ms: 1.3874
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:204:3'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: missing account and missing identity cannot access business data
+not ok 37 - missing account and missing identity cannot access business data
+  ---
+  duration_ms: 2.0566
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:217:1'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: anonymous role cannot invoke authorization helpers
+not ok 38 - anonymous role cannot invoke authorization helpers
+  ---
+  duration_ms: 3.2271
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:224:1'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: reapplication is idempotent and preserves rows
+not ok 39 - reapplication is idempotent and preserves rows
+  ---
+  duration_ms: 0.9021
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:231:1'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: rollback restores prior authorization definitions without modifying data
+not ok 40 - rollback restores prior authorization definitions without modifying data
+  ---
+  duration_ms: 1.0068
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:238:1'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: hosted verification script reports nine passes and rolls back every persistent change
+not ok 41 - hosted verification script reports nine passes and rolls back every persistent change
+  ---
+  duration_ms: 0.8765
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:251:1'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: hosted verification script detects old policies and rolls back failed probes
+not ok 42 - hosted verification script detects old policies and rolls back failed probes
+  ---
+  duration_ms: 0.895
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\account-access.test.mjs:261:1'
+  failureType: 'hookFailed'
+  error: 'role "service_role" does not exist'
+  code: '42704'
+  name: 'error'
+  stack: |-
+    pe.Ue (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:17959)
+    pe.tt (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:15347)
+    pe.parse (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/chunk-2BOC2OMW.js:1:14021)
+    N.qe (file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1762)
+    file:///D:/rfid-attendance-web-system/node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/dist/index.js:5:1155
+    wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d
+  ...
+# Subtest: a protected profile change without the current password is refused
+ok 43 - a protected profile change without the current password is refused
+  ---
+  duration_ms: 416.197
+  type: 'test'
+  ...
+# Subtest: a wrong current password is refused and nothing is written
+ok 44 - a wrong current password is refused and nothing is written
+  ---
+  duration_ms: 102.5235
+  type: 'test'
+  ...
+# Subtest: a proven current password saves the protected change
+ok 45 - a proven current password saves the protected change
+  ---
+  duration_ms: 174.0117
+  type: 'test'
+  ...
+# Subtest: a changed phone number is protected as well
+ok 46 - a changed phone number is protected as well
+  ---
+  duration_ms: 171.0882
+  type: 'test'
+  ...
+# Subtest: a changed photo address is protected as well
+ok 47 - a changed photo address is protected as well
+  ---
+  duration_ms: 103.1939
+  type: 'test'
+  ...
+# Subtest: a name-only change needs no password and never asks for one
+ok 48 - a name-only change needs no password and never asks for one
+  ---
+  duration_ms: 76.95
+  type: 'test'
+  ...
+# Subtest: the password change requires the current password
+ok 49 - the password change requires the current password
+  ---
+  duration_ms: 61.661
+  type: 'test'
+  ...
+# Subtest: a wrong current password blocks the password change
+ok 50 - a wrong current password blocks the password change
+  ---
+  duration_ms: 41.707
+  type: 'test'
+  ...
+# Subtest: a proven current password stores the new password
+ok 51 - a proven current password stores the new password
+  ---
+  duration_ms: 76.0364
+  type: 'test'
+  ...
+# Subtest: mismatched confirmation still blocks the password change
+ok 52 - mismatched confirmation still blocks the password change
+  ---
+  duration_ms: 74.1124
+  type: 'test'
+  ...
+# Subtest: a correct password proves the account and closes the proof session
+ok 53 - a correct password proves the account and closes the proof session
+  ---
+  duration_ms: 12.0258
+  type: 'test'
+  ...
+# Subtest: a password of another account never proves the signed-in one
+ok 54 - a password of another account never proves the signed-in one
+  ---
+  duration_ms: 8.4074
+  type: 'test'
+  ...
+# Subtest: a rejected password fails the check and still closes the proof session
+ok 55 - a rejected password fails the check and still closes the proof session
+  ---
+  duration_ms: 8.7284
+  type: 'test'
+  ...
+# Subtest: an empty password is refused before any request is made
+ok 56 - an empty password is refused before any request is made
+  ---
+  duration_ms: 11.4721
+  type: 'test'
+  ...
+# Subtest: active status filters accept only the approved contract and existing no-tap filter
+ok 57 - active status filters accept only the approved contract and existing no-tap filter
+  ---
+  duration_ms: 50.6441
+  type: 'test'
+  ...
+# Subtest: admin: legacy rows remain visible without an active status, chart slice, or attendance count
+ok 58 - admin: legacy rows remain visible without an active status, chart slice, or attendance count
+  ---
+  duration_ms: 120.9706
+  type: 'test'
+  ...
+# Subtest: admin: reports count recorded absences without turning legacy or missing rows into absences
+ok 59 - admin: reports count recorded absences without turning legacy or missing rows into absences
+  ---
+  duration_ms: 554.0796
+  type: 'test'
+  ...
+# Subtest: teacher: legacy rows remain visible without an active status, chart slice, or attendance count
+ok 60 - teacher: legacy rows remain visible without an active status, chart slice, or attendance count
+  ---
+  duration_ms: 153.3174
+  type: 'test'
+  ...
+# Subtest: teacher: reports count recorded absences without turning legacy or missing rows into absences
+ok 61 - teacher: reports count recorded absences without turning legacy or missing rows into absences
+  ---
+  duration_ms: 444.0704
+  type: 'test'
+  ...
+# Subtest: attendance panels and teacher directory preserve legacy record identity and times
+ok 62 - attendance panels and teacher directory preserve legacy record identity and times
+  ---
+  duration_ms: 209.4518
+  type: 'test'
+  ...
+# Subtest: student history retains legacy rows and SMS without treating them as attendance or scans
+ok 63 - student history retains legacy rows and SMS without treating them as attendance or scans
+  ---
+  duration_ms: 492.9767
+  type: 'test'
+  ...
+# Subtest: admin attendance rows expose their actual program with an honest missing-program label
+ok 64 - admin attendance rows expose their actual program with an honest missing-program label
+  ---
+  duration_ms: 9.5727
+  type: 'test'
+  ...
+# Subtest: teacher daily history honors the requested past date and student search
+ok 65 - teacher daily history honors the requested past date and student search
+  ---
+  duration_ms: 6.9082
+  type: 'test'
+  ...
+# Subtest: admin: dashboard present shortcut includes late arrivals without changing the Present filter
+ok 66 - admin: dashboard present shortcut includes late arrivals without changing the Present filter
+  ---
+  duration_ms: 7.7107
+  type: 'test'
+  ...
+# Subtest: teacher: dashboard present shortcut includes late arrivals without changing the Present filter
+ok 67 - teacher: dashboard present shortcut includes late arrivals without changing the Present filter
+  ---
+  duration_ms: 1.1533
+  type: 'test'
+  ...
+# Subtest: migration and reapplication preserve every existing attendance/SMS field
+ok 68 - migration and reapplication preserve every existing attendance/SMS field
+  ---
+  duration_ms: 5747.9506
+  type: 'test'
+  ...
+# Subtest: new Present rows remain writable under the existing admin RLS
+ok 69 - new Present rows remain writable under the existing admin RLS
+  ---
+  duration_ms: 6.2841
+  type: 'test'
+  ...
+# Subtest: new Late rows remain writable under the existing admin RLS
+ok 70 - new Late rows remain writable under the existing admin RLS
+  ---
+  duration_ms: 4.5435
+  type: 'test'
+  ...
+# Subtest: new Absent rows remain writable under the existing admin RLS
+ok 71 - new Absent rows remain writable under the existing admin RLS
+  ---
+  duration_ms: 6.2373
+  type: 'test'
+  ...
+# Subtest: retired status cannot be inserted by a current or older client
+ok 72 - retired status cannot be inserted by a current or older client
+  ---
+  duration_ms: 10.021
+  type: 'test'
+  ...
+# Subtest: an existing current record cannot change to the retired status
+ok 73 - an existing current record cannot change to the retired status
+  ---
+  duration_ms: 9.8967
+  type: 'test'
+  ...
+# Subtest: a historical row may keep its original status when time-out is updated
+ok 74 - a historical row may keep its original status when time-out is updated
+  ---
+  duration_ms: 14.6829
+  type: 'test'
+  ...
+# Subtest: historical status cannot be reassigned to a different attendance day
+ok 75 - historical status cannot be reassigned to a different attendance day
+  ---
+  duration_ms: 10.1539
+  type: 'test'
+  ...
+# Subtest: documented rollback removes only the guard and preserves historical records
+ok 76 - documented rollback removes only the guard and preserves historical records
+  ---
+  duration_ms: 28.1782
+  type: 'test'
+  ...
+# Subtest: current enrollment includes only own active enrollments and active schedules
+ok 77 - current enrollment includes only own active enrollments and active schedules
+  ---
+  duration_ms: 180.0992
+  type: 'test'
+  ...
+# Subtest: nonstudents and missing profiles cannot read enrollment
+ok 78 - nonstudents and missing profiles cannot read enrollment
+  ---
+  duration_ms: 90.7101
+  type: 'test'
+  ...
+# Subtest: empty enrollments skip privileged lookup; lookup errors preserve enrollment
+ok 79 - empty enrollments skip privileged lookup; lookup errors preserve enrollment
+  ---
+  duration_ms: 37.8831
+  type: 'test'
+  ...
+# Subtest: successful verification creates hashed 72-hour browser proof and keeps the code short-lived
+ok 80 - successful verification creates hashed 72-hour browser proof and keeps the code short-lived
+  ---
+  duration_ms: 1149.7019
+  type: 'test'
+  ...
+# Subtest: logout and password login reuse trust without sending a code or extending its deadline
+ok 81 - logout and password login reuse trust without sending a code or extending its deadline
+  ---
+  duration_ms: 164.8511
+  type: 'test'
+  ...
+# Subtest: another browser, tampered token, revoked proof, changed email and another account require a code
+ok 82 - another browser, tampered token, revoked proof, changed email and another account require a code
+  ---
+  duration_ms: 282.5773
+  type: 'test'
+  ...
+# Subtest: trust never skips password, account status or verified-session registration failures
+ok 83 - trust never skips password, account status or verified-session registration failures
+  ---
+  duration_ms: 118.0433
+  type: 'test'
+  ...
+# Subtest: invalid codes, expired challenges and trust-storage errors never publish a session or remember a browser
+ok 84 - invalid codes, expired challenges and trust-storage errors never publish a session or remember a browser
+  ---
+  duration_ms: 80.7254
+  type: 'test'
+  ...
+# Subtest: students: archives are excluded from live rows and filter choices, restoration returns them
+ok 85 - students: archives are excluded from live rows and filter choices, restoration returns them
+  ---
+  duration_ms: 3.5219
+  type: 'test'
+  ...
+# Subtest: teachers: archives are excluded from live rows and filter choices, restoration returns them
+ok 86 - teachers: archives are excluded from live rows and filter choices, restoration returns them
+  ---
+  duration_ms: 0.7429
+  type: 'test'
+  ...
+# Subtest: class schedules exclude archived weekdays and fully archived sections from live rows and counts
+ok 87 - class schedules exclude archived weekdays and fully archived sections from live rows and counts
+  ---
+  duration_ms: 1.9662
+  type: 'test'
+  ...
+# Subtest: latest tap sorts first, missing taps stay absent, and the recorded card is retained
+ok 88 - latest tap sorts first, missing taps stay absent, and the recorded card is retained
+  ---
+  duration_ms: 28.5678
+  type: 'test'
+  ...
+# Subtest: search and combined filters distinguish pending tap outs from completed tap outs
+ok 89 - search and combined filters distinguish pending tap outs from completed tap outs
+  ---
+  duration_ms: 0.7744
+  type: 'test'
+  ...
+# Subtest: history defaults to today in PHT, validates dates, and normalizes reversed ranges
+ok 90 - history defaults to today in PHT, validates dates, and normalizes reversed ranges
+  ---
+  duration_ms: 17.6895
+  type: 'test'
+  ...
+# Subtest: service reads an inclusive history range, paginates, and joins the recorded card
+ok 91 - service reads an inclusive history range, paginates, and joins the recorded card
+  ---
+  duration_ms: 42.4289
+  type: 'test'
+  ...
+# Subtest: page enforces administrator access before reading records and uses the school date
+ok 92 - page enforces administrator access before reading records and uses the school date
+  ---
+  duration_ms: 1085.2785
+  type: 'test'
+  ...
+# Subtest: the panel reads the records behind a Suspense boundary so only the table loads
+ok 93 - the panel reads the records behind a Suspense boundary so only the table loads
+  ---
+  duration_ms: 123.684
+  type: 'test'
+  ...
+# Subtest: the date filter keeps a plain GET form and applies the range without reloading the panel
+ok 94 - the date filter keeps a plain GET form and applies the range without reloading the panel
+  ---
+  duration_ms: 12.6381
+  type: 'test'
+  ...
+# Subtest: continuous events, reconnect, focus, offline recovery, midnight and cleanup
+ok 95 - continuous events, reconnect, focus, offline recovery, midnight and cleanup
+  ---
+  duration_ms: 160.9689
+  type: 'test'
+  ...
+# Subtest: stored timestamps use Manila across midnight while date/time-only values stay unchanged
+ok 96 - stored timestamps use Manila across midnight while date/time-only values stay unchanged
+  ---
+  duration_ms: 90.8364
+  type: 'test'
+  ...
+# Subtest: teacher: inactive program rejected before any Auth creation or write
+ok 97 - teacher: inactive program rejected before any Auth creation or write
+  ---
+  duration_ms: 557.2589
+  type: 'test'
+  ...
+# Subtest: teacher: another active program accepts catalog placement on create and edit
+ok 98 - teacher: another active program accepts catalog placement on create and edit
+  ---
+  duration_ms: 226.3458
+  type: 'test'
+  ...
+# Subtest: teacher: RPC failure leaves login email untouched
+ok 99 - teacher: RPC failure leaves login email untouched
+  ---
+  duration_ms: 105.6477
+  type: 'test'
+  ...
+# Subtest: teacher: successful update uses one RPC before the Auth email change
+ok 100 - teacher: successful update uses one RPC before the Auth email change
+  ---
+  duration_ms: 72.2739
+  type: 'test'
+  ...
+# Subtest: teacher: rejected Auth email reports saved details and refreshes the directory
+ok 101 - teacher: rejected Auth email reports saved details and refreshes the directory
+  ---
+  duration_ms: 59.5372
+  type: 'test'
+  ...
+# Subtest: teacher: ambiguous Auth response does not claim the email stayed unchanged
+ok 102 - teacher: ambiguous Auth response does not claim the email stayed unchanged
+  ---
+  duration_ms: 75.9697
+  type: 'test'
+  ...
+# Subtest: teacher: missing email-change configuration fails before profile writes
+ok 103 - teacher: missing email-change configuration fails before profile writes
+  ---
+  duration_ms: 100.2511
+  type: 'test'
+  ...
+# Subtest: teacher: unchanged email needs no service-role client
+ok 104 - teacher: unchanged email needs no service-role client
+  ---
+  duration_ms: 104.7431
+  type: 'test'
+  ...
+# Subtest: teacher: create uses the atomic RPC and no independent profile/assignment writes
+ok 105 - teacher: create uses the atomic RPC and no independent profile/assignment writes
+  ---
+  duration_ms: 88.9757
+  type: 'test'
+  ...
+# Subtest: teacher: failed create removes only an account with confirmed absent profile
+ok 106 - teacher: failed create removes only an account with confirmed absent profile
+  ---
+  duration_ms: 63.2503
+  type: 'test'
+  ...
+# Subtest: teacher: ambiguous create outcome retains committed or unreadable profiles
+ok 107 - teacher: ambiguous create outcome retains committed or unreadable profiles
+  ---
+  duration_ms: 154.1642
+  type: 'test'
+  ...
+# Subtest: teacher: failed orphan cleanup is reported
+ok 108 - teacher: failed orphan cleanup is reported
+  ---
+  duration_ms: 116.2223
+  type: 'test'
+  ...
+# Subtest: teacher: timeout retains the account even before a profile becomes visible
+ok 109 - teacher: timeout retains the account even before a profile becomes visible
+  ---
+  duration_ms: 66.852
+  type: 'test'
+  ...
+# Subtest: teacher: role check runs before any reads or writes
+ok 110 - teacher: role check runs before any reads or writes
+  ---
+  duration_ms: 64.5345
+  type: 'test'
+  ...
+# Subtest: student: inactive program rejected before any Auth creation or write
+ok 111 - student: inactive program rejected before any Auth creation or write
+  ---
+  duration_ms: 92.3258
+  type: 'test'
+  ...
+# Subtest: student: another active program accepts catalog placement on create and edit
+ok 112 - student: another active program accepts catalog placement on create and edit
+  ---
+  duration_ms: 166.0867
+  type: 'test'
+  ...
+# Subtest: student: RPC failure leaves login email untouched
+ok 113 - student: RPC failure leaves login email untouched
+  ---
+  duration_ms: 93.5211
+  type: 'test'
+  ...
+# Subtest: student: successful update uses one RPC before the Auth email change
+ok 114 - student: successful update uses one RPC before the Auth email change
+  ---
+  duration_ms: 101.5277
+  type: 'test'
+  ...
+# Subtest: student: rejected Auth email reports saved details and refreshes the directory
+ok 115 - student: rejected Auth email reports saved details and refreshes the directory
+  ---
+  duration_ms: 77.461
+  type: 'test'
+  ...
+# Subtest: student: ambiguous Auth response does not claim the email stayed unchanged
+ok 116 - student: ambiguous Auth response does not claim the email stayed unchanged
+  ---
+  duration_ms: 87.5876
+  type: 'test'
+  ...
+# Subtest: student: missing email-change configuration fails before profile writes
+ok 117 - student: missing email-change configuration fails before profile writes
+  ---
+  duration_ms: 133.0557
+  type: 'test'
+  ...
+# Subtest: student: unchanged email needs no service-role client
+ok 118 - student: unchanged email needs no service-role client
+  ---
+  duration_ms: 61.3349
+  type: 'test'
+  ...
+# Subtest: student: create uses the atomic RPC and no independent profile/assignment writes
+ok 119 - student: create uses the atomic RPC and no independent profile/assignment writes
+  ---
+  duration_ms: 75.7867
+  type: 'test'
+  ...
+# Subtest: student: failed create removes only an account with confirmed absent profile
+ok 120 - student: failed create removes only an account with confirmed absent profile
+  ---
+  duration_ms: 108.2399
+  type: 'test'
+  ...
+# Subtest: student: ambiguous create outcome retains committed or unreadable profiles
+ok 121 - student: ambiguous create outcome retains committed or unreadable profiles
+  ---
+  duration_ms: 345.481
+  type: 'test'
+  ...
+# Subtest: student: failed orphan cleanup is reported
+ok 122 - student: failed orphan cleanup is reported
+  ---
+  duration_ms: 71.2252
+  type: 'test'
+  ...
+# Subtest: student: timeout retains the account even before a profile becomes visible
+ok 123 - student: timeout retains the account even before a profile becomes visible
+  ---
+  duration_ms: 146.4353
+  type: 'test'
+  ...
+# Subtest: student: role check runs before any reads or writes
+ok 124 - student: role check runs before any reads or writes
+  ---
+  duration_ms: 106.5968
+  type: 'test'
+  ...
+# Subtest: teacher requires explicit year, section and campus in both schemas
+ok 125 - teacher requires explicit year, section and campus in both schemas
+  ---
+  duration_ms: 66.4801
+  type: 'test'
+  ...
+# Subtest: teacher rejects a subject from another program before Auth account creation
+ok 126 - teacher rejects a subject from another program before Auth account creation
+  ---
+  duration_ms: 78.3258
+  type: 'test'
+  ...
+# Subtest: schedule validation rejects weekends, duplicate days and invalid campuses before requests
+ok 127 - schedule validation rejects weekends, duplicate days and invalid campuses before requests
+  ---
+  duration_ms: 290.8409
+  type: 'test'
+  ...
+# Subtest: schedule status toggle also uses one serialized RPC
+ok 128 - schedule status toggle also uses one serialized RPC
+  ---
+  duration_ms: 428.5209
+  type: 'test'
+  ...
+# Subtest: teacher edit forwards stable assignment identity and refreshes schedules
+ok 129 - teacher edit forwards stable assignment identity and refreshes schedules
+  ---
+  duration_ms: 91.9287
+  type: 'test'
+  ...
+# Subtest: migration and reapplication preserve all existing data
+ok 130 - migration and reapplication preserve all existing data
+  ---
+  duration_ms: 5638.1954
+  type: 'test'
+  ...
+# Subtest: documented rollback and forward reapplication preserve records and restore RPCs
+ok 131 - documented rollback and forward reapplication preserve records and restore RPCs
+  ---
+  duration_ms: 141.2443
+  type: 'test'
+  ...
+# Subtest: teacher creation stores the Auth email and requested profile status
+ok 132 - teacher creation stores the Auth email and requested profile status
+  ---
+  duration_ms: 60.8153
+  type: 'test'
+  ...
+# Subtest: student creation stores the Auth email and requested profile status
+ok 133 - student creation stores the Auth email and requested profile status
+  ---
+  duration_ms: 59.6189
+  type: 'test'
+  ...
+# Subtest: teacher profile, assignments and lifecycle commit together and deduplicate
+ok 134 - teacher profile, assignments and lifecycle commit together and deduplicate
+  ---
+  duration_ms: 54.2905
+  type: 'test'
+  ...
+# Subtest: assignment insert failure rolls back profile, account status and previous assignments
+ok 135 - assignment insert failure rolls back profile, account status and previous assignments
+  ---
+  duration_ms: 121.351
+  type: 'test'
+  ...
+# Subtest: teacher create failure leaves no partial profile or assignments
+ok 136 - teacher create failure leaves no partial profile or assignments
+  ---
+  duration_ms: 126.324
+  type: 'test'
+  ...
+# Subtest: teacher rejects year_level= without clearing assignments
+ok 137 - teacher rejects year_level= without clearing assignments
+  ---
+  duration_ms: 74.2984
+  type: 'test'
+  ...
+# Subtest: teacher rejects year_level=null without clearing assignments
+ok 138 - teacher rejects year_level=null without clearing assignments
+  ---
+  duration_ms: 28.55
+  type: 'test'
+  ...
+# Subtest: teacher rejects year_level=1st Year without clearing assignments
+ok 139 - teacher rejects year_level=1st Year without clearing assignments
+  ---
+  duration_ms: 69.8159
+  type: 'test'
+  ...
+# Subtest: teacher rejects section= without clearing assignments
+ok 140 - teacher rejects section= without clearing assignments
+  ---
+  duration_ms: 84.5214
+  type: 'test'
+  ...
+# Subtest: teacher rejects section=null without clearing assignments
+ok 141 - teacher rejects section=null without clearing assignments
+  ---
+  duration_ms: 51.4268
+  type: 'test'
+  ...
+# Subtest: teacher rejects section=21011 without clearing assignments
+ok 142 - teacher rejects section=21011 without clearing assignments
+  ---
+  duration_ms: 62.2184
+  type: 'test'
+  ...
+# Subtest: teacher rejects campus= without clearing assignments
+ok 143 - teacher rejects campus= without clearing assignments
+  ---
+  duration_ms: 22.3279
+  type: 'test'
+  ...
+# Subtest: teacher rejects campus=null without clearing assignments
+ok 144 - teacher rejects campus=null without clearing assignments
+  ---
+  duration_ms: 72.2198
+  type: 'test'
+  ...
+# Subtest: teacher rejects campus=Other Campus without clearing assignments
+ok 145 - teacher rejects campus=Other Campus without clearing assignments
+  ---
+  duration_ms: 108.5713
+  type: 'test'
+  ...
+# Subtest: teacher rejects missing or wrong-program subjects and empty assignments
+ok 146 - teacher rejects missing or wrong-program subjects and empty assignments
+  ---
+  duration_ms: 45.9257
+  type: 'test'
+  ...
+# Subtest: student rejects a real non-BSIT program ID before any profile or card changes
+ok 147 - student rejects a real non-BSIT program ID before any profile or card changes
+  ---
+  duration_ms: 20.6371
+  type: 'test'
+  ...
+# Subtest: student archive saves preserve the existing card lifecycle
+ok 148 - student archive saves preserve the existing card lifecycle
+  ---
+  duration_ms: 24.8127
+  type: 'test'
+  ...
+# Subtest: failed student profile write preserves status and card
+ok 149 - failed student profile write preserves status and card
+  ---
+  duration_ms: 24.2655
+  type: 'test'
+  ...
+# Subtest: schedule save updates selected days and archives omitted days without deleting history
+ok 150 - schedule save updates selected days and archives omitted days without deleting history
+  ---
+  duration_ms: 60.3114
+  type: 'test'
+  ...
+# Subtest: schedule failure during retirement rolls back all earlier day updates
+ok 151 - schedule failure during retirement rolls back all earlier day updates
+  ---
+  duration_ms: 70.4553
+  type: 'test'
+  ...
+# Subtest: schedule insert failure preserves the prior week
+ok 152 - schedule insert failure preserves the prior week
+  ---
+  duration_ms: 77.5745
+  type: 'test'
+  ...
+# Subtest: schedule rejects invalid days [0]
+ok 153 - schedule rejects invalid days [0]
+  ---
+  duration_ms: 29.6378
+  type: 'test'
+  ...
+# Subtest: schedule rejects invalid days [6]
+ok 154 - schedule rejects invalid days [6]
+  ---
+  duration_ms: 25.3493
+  type: 'test'
+  ...
+# Subtest: schedule rejects invalid days [1,1]
+ok 155 - schedule rejects invalid days [1,1]
+  ---
+  duration_ms: 43.9504
+  type: 'test'
+  ...
+# Subtest: schedule rejects invalid days []
+ok 156 - schedule rejects invalid days []
+  ---
+  duration_ms: 53.5986
+  type: 'test'
+  ...
+# Subtest: schedule rejects invalid days null
+ok 157 - schedule rejects invalid days null
+  ---
+  duration_ms: 45.0393
+  type: 'test'
+  ...
+# Subtest: schedule rejects invalid days [null]
+ok 158 - schedule rejects invalid days [null]
+  ---
+  duration_ms: 33.1
+  type: 'test'
+  ...
+# Subtest: schedule rejects non-pilot placement and invalid grace/status
+ok 159 - schedule rejects non-pilot placement and invalid grace/status
+  ---
+  duration_ms: 53.4771
+  type: 'test'
+  ...
+# Subtest: teacher cannot call management RPCs
+ok 160 - teacher cannot call management RPCs
+  ---
+  duration_ms: 65.1959
+  type: 'test'
+  ...
+# Subtest: student cannot call management RPCs
+ok 161 - student cannot call management RPCs
+  ---
+  duration_ms: 74.5102
+  type: 'test'
+  ...
+# Subtest: disabled admin cannot call management RPCs
+ok 162 - disabled admin cannot call management RPCs
+  ---
+  duration_ms: 37.0648
+  type: 'test'
+  ...
+# Subtest: teacher Auth email change synchronizes login/account/profile in one transaction
+ok 163 - teacher Auth email change synchronizes login/account/profile in one transaction
+  ---
+  duration_ms: 13.481
+  type: 'test'
+  ...
+# Subtest: teacher email synchronization failure rolls back the Auth email too
+ok 164 - teacher email synchronization failure rolls back the Auth email too
+  ---
+  duration_ms: 73.8849
+  type: 'test'
+  ...
+# Subtest: teacher older-client email writes retain the actual Auth email until accepted
+ok 165 - teacher older-client email writes retain the actual Auth email until accepted
+  ---
+  duration_ms: 65.5564
+  type: 'test'
+  ...
+# Subtest: student Auth email change synchronizes login/account/profile in one transaction
+ok 166 - student Auth email change synchronizes login/account/profile in one transaction
+  ---
+  duration_ms: 47.5074
+  type: 'test'
+  ...
+# Subtest: student email synchronization failure rolls back the Auth email too
+ok 167 - student email synchronization failure rolls back the Auth email too
+  ---
+  duration_ms: 20.3332
+  type: 'test'
+  ...
+# Subtest: student older-client email writes retain the actual Auth email until accepted
+ok 168 - student older-client email writes retain the actual Auth email until accepted
+  ---
+  duration_ms: 12.0535
+  type: 'test'
+  ...
+# Subtest: admin: email → recovery code → password → local sign-out, preserving account metadata
+ok 169 - admin: email → recovery code → password → local sign-out, preserving account metadata
+  ---
+  duration_ms: 71.7198
+  type: 'test'
+  ...
+# Subtest: teacher: email → recovery code → password → local sign-out, preserving account metadata
+ok 170 - teacher: email → recovery code → password → local sign-out, preserving account metadata
+  ---
+  duration_ms: 10.8375
+  type: 'test'
+  ...
+# Subtest: student: email → recovery code → password → local sign-out, preserving account metadata
+ok 171 - student: email → recovery code → password → local sign-out, preserving account metadata
+  ---
+  duration_ms: 31.7675
+  type: 'test'
+  ...
+# Subtest: recovery client does not persist or import portal/URL sessions
+ok 172 - recovery client does not persist or import portal/URL sessions
+  ---
+  duration_ms: 12.2522
+  type: 'test'
+  ...
+# Subtest: password writes and verification cannot skip steps
+ok 173 - password writes and verification cannot skip steps
+  ---
+  duration_ms: 9.8351
+  type: 'test'
+  ...
+# Subtest: only six numeric digits are sent to verification, including a leading zero
+ok 174 - only six numeric digits are sent to verification, including a leading zero
+  ---
+  duration_ms: 10.1284
+  type: 'test'
+  ...
+# Subtest: otp_expired: backend rejection keeps password entry locked
+ok 175 - otp_expired: backend rejection keeps password entry locked
+  ---
+  duration_ms: 11.5963
+  type: 'test'
+  ...
+# Subtest: otp_disabled: backend rejection keeps password entry locked
+ok 176 - otp_disabled: backend rejection keeps password entry locked
+  ---
+  duration_ms: 5.7925
+  type: 'test'
+  ...
+# Subtest: mismatched, too short, and too long passwords never reach Supabase
+ok 177 - mismatched, too short, and too long passwords never reach Supabase
+  ---
+  duration_ms: 9.4239
+  type: 'test'
+  ...
+# Subtest: backend password-policy rejection allows retry without repeating code verification
+ok 178 - backend password-policy rejection allows retry without repeating code verification
+  ---
+  duration_ms: 13.0813
+  type: 'test'
+  ...
+# Subtest: successful password save is not repeated when sign-out needs retry
+ok 179 - successful password save is not repeated when sign-out needs retry
+  ---
+  duration_ms: 8.0922
+  type: 'test'
+  ...
+# Subtest: resend cooldown survives changing email and allows resend after 60 seconds
+ok 180 - resend cooldown survives changing email and allows resend after 60 seconds
+  ---
+  duration_ms: 7.5011
+  type: 'test'
+  ...
+# Subtest: server rate limits are respected and do not expose backend details
+ok 181 - server rate limits are respected and do not expose backend details
+  ---
+  duration_ms: 5.7281
+  type: 'test'
+  ...
+# Subtest: unknown or disabled account responses produce the same request step
+ok 182 - unknown or disabled account responses produce the same request step
+  ---
+  duration_ms: 67.7411
+  type: 'test'
+  ...
+# Subtest: delivery failure remains on email entry with safe retry feedback
+ok 183 - delivery failure remains on email entry with safe retry feedback
+  ---
+  duration_ms: 6.0243
+  type: 'test'
+  ...
+# Subtest: restart revokes the verified session and locks password updates again
+ok 184 - restart revokes the verified session and locks password updates again
+  ---
+  duration_ms: 18.7003
+  type: 'test'
+  ...
+# Subtest: concurrent submissions cannot send duplicate recovery emails
+ok 185 - concurrent submissions cannot send duplicate recovery emails
+  ---
+  duration_ms: 50.5069
+  type: 'test'
+  ...
+# Subtest: leaving during verification closes its eventual session
+ok 186 - leaving during verification closes its eventual session
+  ---
+  duration_ms: 13.6736
+  type: 'test'
+  ...
+# Subtest: normalizes Philippine mobile formats without network-prefix guessing or multi-recipient injection
+ok 187 - normalizes Philippine mobile formats without network-prefix guessing or multi-recipient injection
+  ---
+  duration_ms: 184.7227
+  type: 'test'
+  ...
+# Subtest: disabled or invalid configuration never claims or sends
+ok 188 - disabled or invalid configuration never claims or sends
+  ---
+  duration_ms: 81.7448
+  type: 'test'
+  ...
+# Subtest: accepted message persists Sent outcome once with recipient and campus message intact
+ok 189 - accepted message persists Sent outcome once with recipient and campus message intact
+  ---
+  duration_ms: 64.454
+  type: 'test'
+  ...
+# Subtest: already claimed or historical arrival never sends
+ok 190 - already claimed or historical arrival never sends
+  ---
+  duration_ms: 16.933
+  type: 'test'
+  ...
+# Subtest: invalid guardian number persists failure without calling provider
+ok 191 - invalid guardian number persists failure without calling provider
+  ---
+  duration_ms: 29.0487
+  type: 'test'
+  ...
+# Subtest: provider rejection is Failed; timeouts and malformed success remain unknown
+ok 192 - provider rejection is Failed; timeouts and malformed success remain unknown
+  ---
+  duration_ms: 119.6774
+  type: 'test'
+  ...
+# Subtest: Unicode names use unicode and completion failure never throws back to attendance
+ok 193 - Unicode names use unicode and completion failure never throws back to attendance
+  ---
+  duration_ms: 9.4868
+  type: 'test'
+  ...
+# Subtest: browser verification tokens are inaccessible to authenticated clients
+ok 194 - browser verification tokens are inaccessible to authenticated clients
+  ---
+  duration_ms: 6757.3517
+  type: 'test'
+  ...
+# Subtest: creating a active student synchronizes the account and new assignments
+ok 195 - creating a active student synchronizes the account and new assignments
+  ---
+  duration_ms: 60.5523
+  type: 'test'
+  ...
+# Subtest: creating a inactive student synchronizes the account and new assignments
+ok 196 - creating a inactive student synchronizes the account and new assignments
+  ---
+  duration_ms: 45.5496
+  type: 'test'
+  ...
+# Subtest: creating a archived student synchronizes the account and new assignments
+ok 197 - creating a archived student synchronizes the account and new assignments
+  ---
+  duration_ms: 24.4416
+  type: 'test'
+  ...
+# Subtest: creating a active teacher synchronizes the account and new assignments
+ok 198 - creating a active teacher synchronizes the account and new assignments
+  ---
+  duration_ms: 64.3155
+  type: 'test'
+  ...
+# Subtest: creating a inactive teacher synchronizes the account and new assignments
+ok 199 - creating a inactive teacher synchronizes the account and new assignments
+  ---
+  duration_ms: 38.6724
+  type: 'test'
+  ...
+# Subtest: creating a archived teacher synchronizes the account and new assignments
+ok 200 - creating a archived teacher synchronizes the account and new assignments
+  ---
+  duration_ms: 32.4534
+  type: 'test'
+  ...
+# Subtest: status action archives and restores students without reviving cards
+ok 201 - status action archives and restores students without reviving cards
+  ---
+  duration_ms: 155.8014
+  type: 'test'
+  ...
+# Subtest: status action keeps teacher assignments synchronized through every status
+ok 202 - status action keeps teacher assignments synchronized through every status
+  ---
+  duration_ms: 104.3159
+  type: 'test'
+  ...
+# Subtest: edit dialog archives and restores students without reviving cards
+ok 203 - edit dialog archives and restores students without reviving cards
+  ---
+  duration_ms: 126.0404
+  type: 'test'
+  ...
+# Subtest: edit dialog keeps teacher assignments synchronized through every status
+ok 204 - edit dialog keeps teacher assignments synchronized through every status
+  ---
+  duration_ms: 141.207
+  type: 'test'
+  ...
+# Subtest: temporarily inactivating a student preserves the existing card policy
+ok 205 - temporarily inactivating a student preserves the existing card policy
+  ---
+  duration_ms: 43.9497
+  type: 'test'
+  ...
+# Subtest: a dependent-write failure rolls back the entire student status change
+ok 206 - a dependent-write failure rolls back the entire student status change
+  ---
+  duration_ms: 93.9291
+  type: 'test'
+  ...
+# Subtest: a dependent-write failure rolls back the entire teacher status change
+ok 207 - a dependent-write failure rolls back the entire teacher status change
+  ---
+  duration_ms: 47.7012
+  type: 'test'
+  ...
+# Subtest: a student session cannot change its lifecycle through the profile
+ok 208 - a student session cannot change its lifecycle through the profile
+  ---
+  duration_ms: 37.1612
+  type: 'test'
+  ...
+# Subtest: admin requires verification for this exact session
+ok 209 - admin requires verification for this exact session
+  ---
+  duration_ms: 37.7415
+  type: 'test'
+  ...
+# Subtest: teacher requires verification for this exact session
+ok 210 - teacher requires verification for this exact session
+  ---
+  duration_ms: 64.4653
+  type: 'test'
+  ...
+# Subtest: student requires verification for this exact session
+ok 211 - student requires verification for this exact session
+  ---
+  duration_ms: 60.2867
+  type: 'test'
+  ...
+# Subtest: unverified RPC requests are rejected
+ok 212 - unverified RPC requests are rejected
+  ---
+  duration_ms: 15.9211
+  type: 'test'
+  ...
+# Subtest: a client cannot mark its own session verified
+ok 213 - a client cannot mark its own session verified
+  ---
+  duration_ms: 35.4031
+  type: 'test'
+  ...
+# Subtest: email challenges stop after five attempts and expire
+ok 214 - email challenges stop after five attempts and expire
+  ---
+  duration_ms: 129.8191
+  type: 'test'
+  ...
+# Subtest: email login service role can read account status before verification
+ok 215 - email login service role can read account status before verification
+  ---
+  duration_ms: 31.3227
+  type: 'test'
+  ...
+# Subtest: archives restore student through existing lifecycle rules
+ok 216 - archives restore student through existing lifecycle rules
+  ---
+  duration_ms: 150.0989
+  type: 'test'
+  ...
+# Subtest: archives restore teacher through existing lifecycle rules
+ok 217 - archives restore teacher through existing lifecycle rules
+  ---
+  duration_ms: 141.3429
+  type: 'test'
+  ...
+# Subtest: archive restore rejects non-admin identities and unsupported categories
+ok 218 - archive restore rejects non-admin identities and unsupported categories
+  ---
+  duration_ms: 20.8005
+  type: 'test'
+  ...
+# Subtest: class archive restoration changes only the selected weekday
+ok 219 - class archive restoration changes only the selected weekday
+  ---
+  duration_ms: 58.5336
+  type: 'test'
+  ...
+# Subtest: subject archive restoration retains enrollment and rejects timetable conflicts or changed assignments
+ok 220 - subject archive restoration retains enrollment and rejects timetable conflicts or changed assignments
+  ---
+  duration_ms: 135.3487
+  type: 'test'
+  ...
+# Subtest: archive migration can be reapplied without fabricating legacy dates or changing records
+ok 221 - archive migration can be reapplied without fabricating legacy dates or changing records
+  ---
+  duration_ms: 95.6583
+  type: 'test'
+  ...
+# Subtest: system logs capture changes and archive/restore without copying personal fields
+ok 222 - system logs capture changes and archive/restore without copying personal fields
+  ---
+  duration_ms: 87.4779
+  type: 'test'
+  ...
+# Subtest: system logs are admin-only and cannot be forged, edited or deleted by browser sessions
+ok 223 - system logs are admin-only and cannot be forged, edited or deleted by browser sessions
+  ---
+  duration_ms: 41.3986
+  type: 'test'
+  ...
+# Subtest: Auth audit records retain events but no password, OTP, token or raw payload
+ok 224 - Auth audit records retain events but no password, OTP, token or raw payload
+  ---
+  duration_ms: 59.1842
+  type: 'test'
+  ...
+# Subtest: system log migration is idempotent and preserves audit history
+ok 225 - system log migration is idempotent and preserves audit history
+  ---
+  duration_ms: 60.5323
+  type: 'test'
+  ...
+# Report PDF generation failed injected read failure
+# Subtest: teacher snapshot uses active assignments, stable paging, and never reads SMS
+ok 226 - teacher snapshot uses active assignments, stable paging, and never reads SMS
+  ---
+  duration_ms: 230.5464
+  type: 'test'
+  ...
+# Subtest: teacher with no assignments gets an empty snapshot
+ok 227 - teacher with no assignments gets an empty snapshot
+  ---
+  duration_ms: 36.1663
+  type: 'test'
+  ...
+# Subtest: admin snapshot retains archived history and date-filters SMS by linked attendance, including retries
+ok 228 - admin snapshot retains archived history and date-filters SMS by linked attendance, including retries
+  ---
+  duration_ms: 510.7863
+  type: 'test'
+  ...
+# Subtest: PDF route denies anonymous before report reads
+ok 229 - PDF route denies anonymous before report reads
+  ---
+  duration_ms: 418.4428
+  type: 'test'
+  ...
+# Subtest: PDF route denies student before report reads
+ok 230 - PDF route denies student before report reads
+  ---
+  duration_ms: 218.3439
+  type: 'test'
+  ...
+# Subtest: PDF route denies disabled admin before report reads
+ok 231 - PDF route denies disabled admin before report reads
+  ---
+  duration_ms: 254.1064
+  type: 'test'
+  ...
+# Subtest: PDF route denies archived teacher before report reads
+ok 232 - PDF route denies archived teacher before report reads
+  ---
+  duration_ms: 272.3051
+  type: 'test'
+  ...
+# Subtest: PDF route validates dates before report reads
+ok 233 - PDF route validates dates before report reads
+  ---
+  duration_ms: 142.6227
+  type: 'test'
+  ...
+# Subtest: teacher PDF download ignores a forged admin role parameter
+ok 234 - teacher PDF download ignores a forged admin role parameter
+  ---
+  duration_ms: 631.2243
+  type: 'test'
+  ...
+# Subtest: failed reads produce an error response, never a partial PDF
+ok 235 - failed reads produce an error response, never a partial PDF
+  ---
+  duration_ms: 262.4588
+  type: 'test'
+  ...
+# Subtest: student histories page all personal attendance, cards, and SMS under the same owner
+ok 236 - student histories page all personal attendance, cards, and SMS under the same owner
+  ---
+  duration_ms: 12.6535
+  type: 'test'
+  ...
+# Subtest: full-range history survives archiving; current roster and represented students are separate
+ok 237 - full-range history survives archiving; current roster and represented students are separate
+  ---
+  duration_ms: 65.4447
+  type: 'test'
+  ...
+# Subtest: recorded card identity and campus remain distinct after a replacement or campus transfer
+ok 238 - recorded card identity and campus remain distinct after a replacement or campus transfer
+  ---
+  duration_ms: 1.3844
+  type: 'test'
+  ...
+# Subtest: teacher aggregation keeps the same rates and has no SMS field even if supplied
+ok 239 - teacher aggregation keeps the same rates and has no SMS field even if supplied
+  ---
+  duration_ms: 3.3268
+  type: 'test'
+  ...
+# Subtest: empty reports and school-zone date defaults are explicit
+ok 240 - empty reports and school-zone date defaults are explicit
+  ---
+  duration_ms: 2.8474
+  type: 'test'
+  ...
+# Subtest: paging handles server caps below 1000 and reads beyond the previous 25,000-row ceiling
+ok 241 - paging handles server caps below 1000 and reads beyond the previous 25,000-row ceiling
+  ---
+  duration_ms: 13.7158
+  type: 'test'
+  ...
+# Subtest: real admin PDF contains every row past the preview cap and all SMS text with repeated headers
+ok 242 - real admin PDF contains every row past the preview cap and all SMS text with repeated headers
+  ---
+  duration_ms: 897.8015
+  type: 'test'
+  ...
+# Subtest: real teacher PDF excludes guardian details and renders the empty state
+ok 243 - real teacher PDF excludes guardian details and renders the empty state
+  ---
+  duration_ms: 61.2803
+  type: 'test'
+  ...
+# Subtest: both migrations and their reapplication preserve every legacy card, history, SMS and account
+ok 244 - both migrations and their reapplication preserve every legacy card, history, SMS and account
+  ---
+  duration_ms: 7009.2342
+  type: 'test'
+  ...
+# Subtest: documented P03 rollback preserves records; reapplying both migrations restores storing and assigning
+ok 245 - documented P03 rollback preserves records; reapplying both migrations restores storing and assigning
+  ---
+  duration_ms: 147.5845
+  type: 'test'
+  ...
+# Subtest: documented inventory rollback requires every stored card to have a holder first
+ok 246 - documented inventory rollback requires every stored card to have a holder first
+  ---
+  duration_ms: 80.1285
+  type: 'test'
+  ...
+# Subtest: TypeScript and SQL agree on complete UID bytes and separator normalization
+ok 247 - TypeScript and SQL agree on complete UID bytes and separator normalization
+  ---
+  duration_ms: 32.5474
+  type: 'test'
+  ...
+# Subtest: all five user-provided test UIDs are stored unassigned without losing leading zeros
+ok 248 - all five user-provided test UIDs are stored unassigned without losing leading zeros
+  ---
+  duration_ms: 36.8358
+  type: 'test'
+  ...
+# Subtest: a stored card stays unassigned and cannot be activated before a student receives it
+ok 249 - a stored card stays unassigned and cannot be activated before a student receives it
+  ---
+  duration_ms: 46.903
+  type: 'test'
+  ...
+# Subtest: assignment retires only the previous active card and preserves attendance/SMS
+ok 250 - assignment retires only the previous active card and preserves attendance/SMS
+  ---
+  duration_ms: 38.2872
+  type: 'test'
+  ...
+# Subtest: release returns a card to the card list and refuses one with attendance history
+ok 251 - release returns a card to the card list and refuses one with attendance history
+  ---
+  duration_ms: 22.6982
+  type: 'test'
+  ...
+# Subtest: repeat registration and equivalent UID styles reuse one stored card
+ok 252 - repeat registration and equivalent UID styles reuse one stored card
+  ---
+  duration_ms: 27.6774
+  type: 'test'
+  ...
+# Subtest: editing a stored card rewrites its UID and refuses one another card holds
+ok 253 - editing a stored card rewrites its UID and refuses one another card holds
+  ---
+  duration_ms: 28.4955
+  type: 'test'
+  ...
+# Subtest: editing keeps the holder of an assigned card and refuses a UID with attendance history
+ok 254 - editing keeps the holder of an assigned card and refuses a UID with attendance history
+  ---
+  duration_ms: 21.7821
+  type: 'test'
+  ...
+# Subtest: editing a legacy number to a verified UID allows activation and retires the old card
+ok 255 - editing a legacy number to a verified UID allows activation and retires the old card
+  ---
+  duration_ms: 27.7447
+  type: 'test'
+  ...
+# Subtest: insert failure restores every row
+ok 256 - insert failure restores every row
+  ---
+  duration_ms: 35.2816
+  type: 'test'
+  ...
+# Subtest: update failure restores every row
+ok 257 - update failure restores every row
+  ---
+  duration_ms: 43.3282
+  type: 'test'
+  ...
+# Subtest: a failed status activation also restores the previous active card
+ok 258 - a failed status activation also restores the previous active card
+  ---
+  duration_ms: 44.8449
+  type: 'test'
+  ...
+# Subtest: registering a UID a student already holds is refused
+ok 259 - registering a UID a student already holds is refused
+  ---
+  duration_ms: 15.7532
+  type: 'test'
+  ...
+# Subtest: assignment without history retires the destination's active card
+ok 260 - assignment without history retires the destination's active card
+  ---
+  duration_ms: 13.955
+  type: 'test'
+  ...
+# Subtest: history prevents moving or changing physical identity, preserving both holders' cards
+ok 261 - history prevents moving or changing physical identity, preserving both holders' cards
+  ---
+  duration_ms: 33.046
+  type: 'test'
+  ...
+# Subtest: inactive holder cannot activate through any operation
+ok 262 - inactive holder cannot activate through any operation
+  ---
+  duration_ms: 48.5427
+  type: 'test'
+  ...
+# Subtest: archived holder cannot activate through any operation
+ok 263 - archived holder cannot activate through any operation
+  ---
+  duration_ms: 46.6667
+  type: 'test'
+  ...
+# Subtest: disabled linked account cannot activate even if the profile is active
+ok 264 - disabled linked account cannot activate even if the profile is active
+  ---
+  duration_ms: 10.7148
+  type: 'test'
+  ...
+# Subtest: legacy invalid UID can be retired but cannot be newly activated
+ok 265 - legacy invalid UID can be retired but cannot be newly activated
+  ---
+  duration_ms: 11.72
+  type: 'test'
+  ...
+# Subtest: direct older-client writes enforce normalized uniqueness and holder eligibility
+ok 266 - direct older-client writes enforce normalized uniqueness and holder eligibility
+  ---
+  duration_ms: 17.3997
+  type: 'test'
+  ...
+# Subtest: one-active-card constraint remains enforced for direct writes
+ok 267 - one-active-card constraint remains enforced for direct writes
+  ---
+  duration_ms: 11.7364
+  type: 'test'
+  ...
+# Subtest: status-only changes preserve assigned date and other card statuses
+ok 268 - status-only changes preserve assigned date and other card statuses
+  ---
+  duration_ms: 22.1754
+  type: 'test'
+  ...
+# Subtest: bad requests and missing targets fail without changing cards
+ok 269 - bad requests and missing targets fail without changing cards
+  ---
+  duration_ms: 25.4882
+  type: 'test'
+  ...
+# Subtest: teacher cannot call any card management operation
+ok 270 - teacher cannot call any card management operation
+  ---
+  duration_ms: 13.3245
+  type: 'test'
+  ...
+# Subtest: student cannot call any card management operation
+ok 271 - student cannot call any card management operation
+  ---
+  duration_ms: 16.1446
+  type: 'test'
+  ...
+# Subtest: inactive admin and anonymous caller cannot call the save RPC
+ok 272 - inactive admin and anonymous caller cannot call the save RPC
+  ---
+  duration_ms: 8.9733
+  type: 'test'
+  ...
+# Subtest: read-only inventory identifies legacy values and detects equivalent collisions
+ok 273 - read-only inventory identifies legacy values and detects equivalent collisions
+  ---
+  duration_ms: 35.6125
+  type: 'test'
+  ...
+# Subtest: the card screen stores and edits, and the student screen assigns, through one RPC
+ok 274 - the card screen stores and edits, and the student screen assigns, through one RPC
+  ---
+  duration_ms: 353.1123
+  type: 'test'
+  ...
+# Subtest: the student screen returns a card to the card list and reports history refusals
+ok 275 - the student screen returns a card to the card list and reports history refusals
+  ---
+  duration_ms: 76.1085
+  type: 'test'
+  ...
+# Subtest: storing and editing reject malformed UIDs before any database request
+ok 276 - storing and editing reject malformed UIDs before any database request
+  ---
+  duration_ms: 56.777
+  type: 'test'
+  ...
+# Subtest: the card screen refuses a UID a student holds and the student screen refuses inactive holders
+ok 277 - the card screen refuses a UID a student holds and the student screen refuses inactive holders
+  ---
+  duration_ms: 74.342
+  type: 'test'
+  ...
+# Subtest: both screens report an injected failure while retaining every card
+ok 278 - both screens report an injected failure while retaining every card
+  ---
+  duration_ms: 92.0207
+  type: 'test'
+  ...
+# Subtest: status changes still use the same transactional writer
+ok 279 - status changes still use the same transactional writer
+  ---
+  duration_ms: 46.0177
+  type: 'test'
+  ...
+# Subtest: all server actions authorize before any database call
+ok 280 - all server actions authorize before any database call
+  ---
+  duration_ms: 42.0641
+  type: 'test'
+  ...
+# Subtest: accepts explicit UID lines, preserving zeros, and rejects boot output
+ok 281 - accepts explicit UID lines, preserving zeros, and rejects boot output
+  ---
+  duration_ms: 2.3152
+  type: 'test'
+  ...
+# Subtest: reads fragmented lines, ignores noise, closes after first UID
+ok 282 - reads fragmented lines, ignores noise, closes after first UID
+  ---
+  duration_ms: 8.8555
+  type: 'test'
+  ...
+# Subtest: cancellation releases a blocked reader and closes port
+ok 283 - cancellation releases a blocked reader and closes port
+  ---
+  duration_ms: 1.9271
+  type: 'test'
+  ...
+# Subtest: cancelled port selection never opens device
+ok 284 - cancelled port selection never opens device
+  ---
+  duration_ms: 0.4742
+  type: 'test'
+  ...
+# Subtest: oversized lines cannot inject a trailing UID
+ok 285 - oversized lines cannot inject a trailing UID
+  ---
+  duration_ms: 4.3688
+  type: 'test'
+  ...
+# Subtest: timeout releases port and preserves manual fallback
+ok 286 - timeout releases port and preserves manual fallback
+  ---
+  duration_ms: 1.7805
+  type: 'test'
+  ...
+# Subtest: disconnection releases stream lock and closes port
+ok 287 - disconnection releases stream lock and closes port
+  ---
+  duration_ms: 0.8404
+  type: 'test'
+  ...
+# Subtest: only an authenticated device reaches the service-role writer
+ok 288 - only an authenticated device reaches the service-role writer
+  ---
+  duration_ms: 410.1418
+  type: 'test'
+  ...
+# Subtest: missing server or weak device configuration fails closed
+ok 289 - missing server or weak device configuration fails closed
+  ---
+  duration_ms: 84.774
+  type: 'test'
+  ...
+# Subtest: invalid UID, JSON, timestamp injection and oversize bodies never reach SQL
+ok 290 - invalid UID, JSON, timestamp injection and oversize bodies never reach SQL
+  ---
+  duration_ms: 51.086
+  type: 'test'
+  ...
+# Subtest: normalized UID and request ID alone reach SQL; device gets uncached result
+ok 291 - normalized UID and request ID alone reach SQL; device gets uncached result
+  ---
+  duration_ms: 50.6703
+  type: 'test'
+  ...
+# Subtest: invalid card and conflict responses keep their database feedback
+ok 292 - invalid card and conflict responses keep their database feedback
+  ---
+  duration_ms: 78.8628
+  type: 'test'
+  ...
+# Subtest: failures never expose credentials/database errors or claim a successful tap
+ok 293 - failures never expose credentials/database errors or claim a successful tap
+  ---
+  duration_ms: 131.9732
+  type: 'test'
+  ...
+# Subtest: only successful arrivals (including safe retries) invoke the SMS dispatcher
+ok 294 - only successful arrivals (including safe retries) invoke the SMS dispatcher
+  ---
+  duration_ms: 140.0846
+  type: 'test'
+  ...
+# Subtest: first tap and retry record one arrival; second distinct tap fills departure only
+ok 295 - first tap and retry record one arrival; second distinct tap fills departure only
+  ---
+  duration_ms: 5983.7657
+  type: 'test'
+  ...
+# Subtest: 21001 at 06:15:00 stores Present in Manila time
+ok 296 - 21001 at 06:15:00 stores Present in Manila time
+  ---
+  duration_ms: 11.5988
+  type: 'test'
+  ...
+# Subtest: 21001 at 06:15:01 stores Late in Manila time
+ok 297 - 21001 at 06:15:01 stores Late in Manila time
+  ---
+  duration_ms: 11.2452
+  type: 'test'
+  ...
+# Subtest: 21006 at 13:15:00 stores Present in Manila time
+ok 298 - 21006 at 13:15:00 stores Present in Manila time
+  ---
+  duration_ms: 9.8187
+  type: 'test'
+  ...
+# Subtest: 21006 at 13:15:01 stores Late in Manila time
+ok 299 - 21006 at 13:15:01 stores Late in Manila time
+  ---
+  duration_ms: 11.2281
+  type: 'test'
+  ...
+# Subtest: unscheduled weekdays and out-of-pilot placement stay Present
+ok 300 - unscheduled weekdays and out-of-pilot placement stay Present
+  ---
+  duration_ms: 15.8186
+  type: 'test'
+  ...
+# Subtest: unknown, inactive cards and disabled student accounts create no attendance
+ok 301 - unknown, inactive cards and disabled student accounts create no attendance
+  ---
+  duration_ms: 16.9964
+  type: 'test'
+  ...
+# Subtest: request IDs cannot be reused for another UID
+ok 302 - request IDs cannot be reused for another UID
+  ---
+  duration_ms: 8.0749
+  type: 'test'
+  ...
+# Subtest: third tap is rejected while completed requests remain safely replayable
+ok 303 - third tap is rejected while completed requests remain safely replayable
+  ---
+  duration_ms: 14.1951
+  type: 'test'
+  ...
+# Subtest: Manila midnight starts a new day without filling yesterday's missing departure
+ok 304 - Manila midnight starts a new day without filling yesterday's missing departure
+  ---
+  duration_ms: 11.6554
+  type: 'test'
+  ...
+# Subtest: active all-campus schedule wins, with campus-specific fallback only when absent
+ok 305 - active all-campus schedule wins, with campus-specific fallback only when absent
+  ---
+  duration_ms: 21.7319
+  type: 'test'
+  ...
+# Subtest: Late is retained at departure and changed schedules do not reclassify it
+ok 306 - Late is retained at departure and changed schedules do not reclassify it
+  ---
+  duration_ms: 37.9246
+  type: 'test'
+  ...
+# Subtest: rejected invalid UID and archived student leave no new record or notification
+ok 307 - rejected invalid UID and archived student leave no new record or notification
+  ---
+  duration_ms: 10.8735
+  type: 'test'
+  ...
+# Subtest: failure saving the request receipt rolls back arrival and Pending notification together
+ok 308 - failure saving the request receipt rolls back arrival and Pending notification together
+  ---
+  duration_ms: 16.3791
+  type: 'test'
+  ...
+# Subtest: only service role can execute ingestion; portal and anonymous callers cannot read receipts
+ok 309 - only service role can execute ingestion; portal and anonymous callers cannot read receipts
+  ---
+  duration_ms: 19.259
+  type: 'test'
+  ...
+# Subtest: migration reapplication and rollback preserve attendance and retry receipts
+ok 310 - migration reapplication and rollback preserve attendance and retry receipts
+  ---
+  duration_ms: 29.1888
+  type: 'test'
+  ...
+# Subtest: read-only rollout probe returns seven PASS checks
+ok 311 - read-only rollout probe returns seven PASS checks
+  ---
+  duration_ms: 30.1081
+  type: 'test'
+  ...
+# Subtest: SMS claim is one attempt per new arrival and completion cannot be overwritten
+ok 312 - SMS claim is one attempt per new arrival and completion cannot be overwritten
+  ---
+  duration_ms: 15.8366
+  type: 'test'
+  ...
+# Subtest: SMS skips historical, expired and duplicate notifications; portal roles cannot dispatch
+ok 313 - SMS skips historical, expired and duplicate notifications; portal roles cannot dispatch
+  ---
+  duration_ms: 20.4113
+  type: 'test'
+  ...
+# Subtest: unknown SMS outcomes stay Pending and cannot be claimed again; rollback preserves evidence
+ok 314 - unknown SMS outcomes stay Pending and cannot be claimed again; rollback preserves evidence
+  ---
+  duration_ms: 23.1347
+  type: 'test'
+  ...
+# Subtest: P10 backfill preview follows tap priority and never changes stored evidence
+ok 315 - P10 backfill preview follows tap priority and never changes stored evidence
+  ---
+  duration_ms: 116.9546
+  type: 'test'
+  ...
+# Subtest: P10 business seed matches the pilot and reruns preserve existing rows and tap history
+ok 316 - P10 business seed matches the pilot and reruns preserve existing rows and tap history
+  ---
+  duration_ms: 56.4298
+  type: 'test'
+  ...
+# Subtest: USB frames require explicit protocol/mode and valid UUID/UID
+ok 317 - USB frames require explicit protocol/mode and valid UUID/UID
+  ---
+  duration_ms: 6.8807
+  type: 'test'
+  ...
+# Subtest: handshake gates writes; split frames and duplicate tap return same result
+ok 318 - handshake gates writes; split frames and duplicate tap return same result
+  ---
+  duration_ms: 19.2823
+  type: 'test'
+  ...
+# Subtest: server outage forwards uncertainty and retry uses the same ID
+ok 319 - server outage forwards uncertainty and retry uses the same ID
+  ---
+  duration_ms: 3.3989
+  type: 'test'
+  ...
+# Subtest: abort releases port even while server response is pending
+ok 320 - abort releases port even while server response is pending
+  ---
+  duration_ms: 4.8512
+  type: 'test'
+  ...
+# Subtest: disconnect releases both streams; oversized frame never submits
+ok 321 - disconnect releases both streams; oversized frame never submits
+  ---
+  duration_ms: 3.8378
+  type: 'test'
+  ...
+# Subtest: USB action authenticates admin before validation or attendance mutation
+ok 322 - USB action authenticates admin before validation or attendance mutation
+  ---
+  duration_ms: 50.0028
+  type: 'test'
+  ...
+# Subtest: USB action shares normalized attendance writer and arrival SMS, without device key
+ok 323 - USB action shares normalized attendance writer and arrival SMS, without device key
+  ---
+  duration_ms: 91.475
+  type: 'test'
+  ...
+# Subtest: admin: recorded statuses and provisional rows agree with KPIs and charts
+ok 324 - admin: recorded statuses and provisional rows agree with KPIs and charts
+  ---
+  duration_ms: 8.5089
+  type: 'test'
+  ...
+# Subtest: admin: no taps before class or on an unscheduled day never become absences
+ok 325 - admin: no taps before class or on an unscheduled day never become absences
+  ---
+  duration_ms: 1.4998
+  type: 'test'
+  ...
+# Subtest: admin: past gaps, future records and students outside the roster are excluded
+ok 326 - admin: past gaps, future records and students outside the roster are excluded
+  ---
+  duration_ms: 0.8967
+  type: 'test'
+  ...
+# Subtest: admin: empty roster has finite zero totals
+ok 327 - admin: empty roster has finite zero totals
+  ---
+  duration_ms: 0.4693
+  type: 'test'
+  ...
+# Subtest: teacher: recorded statuses and provisional rows agree with KPIs and charts
+ok 328 - teacher: recorded statuses and provisional rows agree with KPIs and charts
+  ---
+  duration_ms: 3.5893
+  type: 'test'
+  ...
+# Subtest: teacher: no taps before class or on an unscheduled day never become absences
+ok 329 - teacher: no taps before class or on an unscheduled day never become absences
+  ---
+  duration_ms: 0.8464
+  type: 'test'
+  ...
+# Subtest: teacher: past gaps, future records and students outside the roster are excluded
+ok 330 - teacher: past gaps, future records and students outside the roster are excluded
+  ---
+  duration_ms: 0.5644
+  type: 'test'
+  ...
+# Subtest: teacher: empty roster has finite zero totals
+ok 331 - teacher: empty roster has finite zero totals
+  ---
+  duration_ms: 0.3947
+  type: 'test'
+  ...
+# Subtest: shared badge renders readable labels for all four current display states
+ok 332 - shared badge renders readable labels for all four current display states
+  ---
+  duration_ms: 93.3415
+  type: 'test'
+  ...
+# Subtest: admin and teacher query the same Manila date at midnight
+ok 333 - admin and teacher query the same Manila date at midnight
+  ---
+  duration_ms: 140.6976
+  type: 'test'
+  ...
+# Subtest: reads current PhilSMS balance with server-side token, preserving provider units and zero
+ok 334 - reads current PhilSMS balance with server-side token, preserving provider units and zero
+  ---
+  duration_ms: 233.8407
+  type: 'test'
+  ...
+# Subtest: authorization and configuration failures never contact provider
+ok 335 - authorization and configuration failures never contact provider
+  ---
+  duration_ms: 28.8048
+  type: 'test'
+  ...
+# Subtest: provider failures and malformed responses show unavailable, never fake zero credits
+ok 336 - provider failures and malformed responses show unavailable, never fake zero credits
+  ---
+  duration_ms: 49.4832
+  type: 'test'
+  ...
+# Subtest: SMS filters validate dates, status and pagination using the school timezone
+ok 337 - SMS filters validate dates, status and pagination using the school timezone
+  ---
+  duration_ms: 45.0295
+  type: 'test'
+  ...
+# Subtest: uncertain outcomes are never labeled as sent or failed
+ok 338 - uncertain outcomes are never labeled as sent or failed
+  ---
+  duration_ms: 0.3697
+  type: 'test'
+  ...
+# Subtest: SMS query pages at database level with inclusive PHT dates and attendance-linked RFID
+ok 339 - SMS query pages at database level with inclusive PHT dates and attendance-linked RFID
+  ---
+  duration_ms: 55.0765
+  type: 'test'
+  ...
+# Subtest: SMS reader blocks non-admins before querying and propagates database errors
+ok 340 - SMS reader blocks non-admins before querying and propagates database errors
+  ---
+  duration_ms: 36.0645
+  type: 'test'
+  ...
+# Subtest: Present: today's card and history preserve the recorded status
+ok 341 - Present: today's card and history preserve the recorded status
+  ---
+  duration_ms: 54.4917
+  type: 'test'
+  ...
+# Subtest: Late: today's card and history preserve the recorded status
+ok 342 - Late: today's card and history preserve the recorded status
+  ---
+  duration_ms: 6.0786
+  type: 'test'
+  ...
+# Subtest: Absent: today's card and history preserve the recorded status
+ok 343 - Absent: today's card and history preserve the recorded status
+  ---
+  duration_ms: 4.7383
+  type: 'test'
+  ...
+# Subtest: No record before class remains provisional with null times
+ok 344 - No record before class remains provisional with null times
+  ---
+  duration_ms: 13.8157
+  type: 'test'
+  ...
+# Subtest: No record unscheduled Sunday remains provisional with null times
+ok 345 - No record unscheduled Sunday remains provisional with null times
+  ---
+  duration_ms: 5.1626
+  type: 'test'
+  ...
+# Subtest: empty history has no absences, and loading still renders
+ok 346 - empty history has no absences, and loading still renders
+  ---
+  duration_ms: 43.3281
+  type: 'test'
+  ...
+# Subtest: only stored absences through today count; gaps and future records do not
+ok 347 - only stored absences through today count; gaps and future records do not
+  ---
+  duration_ms: 0.4138
+  type: 'test'
+  ...
+# Subtest: a first tap preserves its status and the second-tap hint until time out
+ok 348 - a first tap preserves its status and the second-tap hint until time out
+  ---
+  duration_ms: 4.5709
+  type: 'test'
+  ...
+# Subtest: Manila midnight and year boundaries are independent of the host timezone
+ok 349 - Manila midnight and year boundaries are independent of the host timezone
+  ---
+  duration_ms: 1.019
+  type: 'test'
+  ...
+# Subtest: dashboard query and history aggregation use the same Manila date
+ok 350 - dashboard query and history aggregation use the same Manila date
+  ---
+  duration_ms: 108.2315
+  type: 'test'
+  ...
+# Subtest: inclusive range and combined filters operate on confirmation snapshots
+not ok 351 - inclusive range and combined filters operate on confirmation snapshots
+  ---
+  duration_ms: 1.8342
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\student-subject-history.test.mjs:8:1'
+  failureType: 'testCodeFailure'
+  error: 'tags.some is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    matchesAnySearchTagIn (eval at load (file:///D:/rfid-attendance-web-system/tests/helpers/load-typescript.mjs:36:5), <anonymous>:71:17)
+    eval (eval at load (file:///D:/rfid-attendance-web-system/tests/helpers/load-typescript.mjs:36:5), <anonymous>:16:49)
+    Array.filter (<anonymous>)
+    filterSubjectHistory (eval at load (file:///D:/rfid-attendance-web-system/tests/helpers/load-typescript.mjs:36:5), <anonymous>:10:17)
+    TestContext.<anonymous> (file:///D:/rfid-attendance-web-system/tests/student-subject-history.test.mjs:9:15)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1325:25)
+    Test.start (node:internal/test_runner/test:1191:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: sorting is stable, does not mutate input, and result filters never invent records
+ok 352 - sorting is stable, does not mutate input, and result filters never invent records
+  ---
+  duration_ms: 30.0024
+  type: 'test'
+  ...
+# Subtest: teacher confirmation sends only decision/session/version fields, without a fabricated tap or caller-supplied identity
+ok 353 - teacher confirmation sends only decision/session/version fields, without a fabricated tap or caller-supplied identity
+  ---
+  duration_ms: 424.0751
+  type: 'test'
+  ...
+# Subtest: invalid dates, IDs and retired statuses fail before database writes
+ok 354 - invalid dates, IDs and retired statuses fail before database writes
+  ---
+  duration_ms: 265.1237
+  type: 'test'
+  ...
+# Subtest: confirmation database failure is surfaced and never claims success
+ok 355 - confirmation database failure is surfaced and never claims success
+  ---
+  duration_ms: 51.8948
+  type: 'test'
+  ...
+# Subtest: occupied schedule returns a clear conflict message without successful-save refresh
+ok 356 - occupied schedule returns a clear conflict message without successful-save refresh
+  ---
+  duration_ms: 50.1365
+  type: 'test'
+  ...
+# Subtest: every subject mutation authorizes before RPC or validation
+ok 357 - every subject mutation authorizes before RPC or validation
+  ---
+  duration_ms: 187.9809
+  type: 'test'
+  ...
+# Subtest: enrollment save validates input and sends only roster IDs and expected version
+ok 358 - enrollment save validates input and sends only roster IDs and expected version
+  ---
+  duration_ms: 65.2726
+  type: 'test'
+  ...
+# Subtest: roster uses enrollment independently of placement, confirmations or taps
+ok 359 - roster uses enrollment independently of placement, confirmations or taps
+  ---
+  duration_ms: 52.1733
+  type: 'test'
+  ...
+# Subtest: subject schedule writes use existing assignment and reject reversed times
+ok 360 - subject schedule writes use existing assignment and reject reversed times
+  ---
+  duration_ms: 25.8836
+  type: 'test'
+  ...
+# Subtest: shared subject totals and PDF preserve separate subject results without increasing daily RFID totals
+ok 361 - shared subject totals and PDF preserve separate subject results without increasing daily RFID totals
+  ---
+  duration_ms: 964.4563
+  type: 'test'
+  ...
+# Subtest: migration preserves existing daily RFID/SMS data and creates no inferred subject results
+ok 362 - migration preserves existing daily RFID/SMS data and creates no inferred subject results
+  ---
+  duration_ms: 4051.7675
+  type: 'test'
+  ...
+# Subtest: read-only installation probe returns six PASS rows without changing data
+ok 363 - read-only installation probe returns six PASS rows without changing data
+  ---
+  duration_ms: 11.3543
+  type: 'test'
+  ...
+# Subtest: cardless student can be Present in A and teacher-confirmed Absent in B without any tap
+ok 364 - cardless student can be Present in A and teacher-confirmed Absent in B without any tap
+  ---
+  duration_ms: 34.806
+  type: 'test'
+  ...
+# Subtest: an unconfirmed subject never becomes Absent when another subject is confirmed
+ok 365 - an unconfirmed subject never becomes Absent when another subject is confirmed
+  ---
+  duration_ms: 16.5261
+  type: 'test'
+  ...
+# Subtest: teachers cannot confirm or read another teacher's subject despite sharing the same roster
+ok 366 - teachers cannot confirm or read another teacher's subject despite sharing the same roster
+  ---
+  duration_ms: 27.3172
+  type: 'test'
+  ...
+# Subtest: wrong campus, future dates, wrong weekdays, retired values and invalid confirmations are rejected
+ok 367 - wrong campus, future dates, wrong weekdays, retired values and invalid confirmations are rejected
+  ---
+  duration_ms: 21.7829
+  type: 'test'
+  ...
+# Subtest: same-result retries are idempotent and stale corrections cannot overwrite a saved decision
+ok 368 - same-result retries are idempotent and stale corrections cannot overwrite a saved decision
+  ---
+  duration_ms: 18.0653
+  type: 'test'
+  ...
+# Subtest: student sees both own subject results but cannot confirm attendance or read others
+ok 369 - student sees both own subject results but cannot confirm attendance or read others
+  ---
+  duration_ms: 16.2115
+  type: 'test'
+  ...
+# Subtest: admin cannot bypass RPC checks with direct table writes
+ok 370 - admin cannot bypass RPC checks with direct table writes
+  ---
+  duration_ms: 4.3232
+  type: 'test'
+  ...
+# Subtest: teacher cannot bypass RPC checks with direct table writes
+ok 371 - teacher cannot bypass RPC checks with direct table writes
+  ---
+  duration_ms: 4.4537
+  type: 'test'
+  ...
+# Subtest: student cannot bypass RPC checks with direct table writes
+ok 372 - student cannot bypass RPC checks with direct table writes
+  ---
+  duration_ms: 5.9829
+  type: 'test'
+  ...
+# Subtest: disabled accounts and retired assignments lose confirmation access
+ok 373 - disabled accounts and retired assignments lose confirmation access
+  ---
+  duration_ms: 16.6753
+  type: 'test'
+  ...
+# Subtest: retiring a schedule or archiving a student preserves history for the admin and prevents new confirmations
+ok 374 - retiring a schedule or archiving a student preserves history for the admin and prevents new confirmations
+  ---
+  duration_ms: 20.421
+  type: 'test'
+  ...
+# Subtest: schedule replacement cannot duplicate an already-confirmed subject slot
+ok 375 - schedule replacement cannot duplicate an already-confirmed subject slot
+  ---
+  duration_ms: 13.257
+  type: 'test'
+  ...
+# Subtest: schedule RPC requires admin and validates weekday/time and pilot assignment
+ok 376 - schedule RPC requires admin and validates weekday/time and pilot assignment
+  ---
+  duration_ms: 6.8658
+  type: 'test'
+  ...
+# Subtest: migration reapplication and write-disable rollback retain confirmations and legacy evidence
+ok 377 - migration reapplication and write-disable rollback retain confirmations and legacy evidence
+  ---
+  duration_ms: 46.6929
+  type: 'test'
+  ...
+# Subtest: Regane correction preserves times and history, rejects overlaps, and supports rollback
+ok 378 - Regane correction preserves times and history, rejects overlaps, and supports rollback
+  ---
+  duration_ms: 139.9926
+  type: 'test'
+  ...
+# Subtest: teacher Late confirmation is authorized per subject and preserves RFID evidence
+ok 379 - teacher Late confirmation is authorized per subject and preserves RFID evidence
+  ---
+  duration_ms: 34.6253
+  type: 'test'
+  ...
+# Subtest: admin time edits reject overlaps/stale saves and preserve confirmation snapshots
+ok 380 - admin time edits reject overlaps/stale saves and preserve confirmation snapshots
+  ---
+  duration_ms: 98.7877
+  type: 'test'
+  ...
+# Subtest: overlap guard rejects identical, contained and partial intervals across different subjects
+ok 381 - overlap guard rejects identical, contained and partial intervals across different subjects
+  ---
+  duration_ms: 83.2993
+  type: 'test'
+  ...
+# Subtest: overlap guard permits another weekday/campus and retirement, but rejects conflicting updates
+ok 382 - overlap guard permits another weekday/campus and retirement, but rejects conflicting updates
+  ---
+  duration_ms: 70.8154
+  type: 'test'
+  ...
+# Subtest: existing conflicts are reported without deleting schedules; installation works after retirement
+ok 383 - existing conflicts are reported without deleting schedules; installation works after retirement
+  ---
+  duration_ms: 130.8792
+  type: 'test'
+  ...
+# Subtest: assignment sync keeps IDs, updates active placement and preserves confirmation history
+ok 384 - assignment sync keeps IDs, updates active placement and preserves confirmation history
+  ---
+  duration_ms: 104.2613
+  type: 'test'
+  ...
+# Subtest: assignment schedule conflict cancels the entire profile save and foreign IDs are rejected
+ok 385 - assignment schedule conflict cancels the entire profile save and foreign IDs are rejected
+  ---
+  duration_ms: 93.6296
+  type: 'test'
+  ...
+# Subtest: removing an assignment retires its schedules without deleting confirmations
+ok 386 - removing an assignment retires its schedules without deleting confirmations
+  ---
+  duration_ms: 87.5709
+  type: 'test'
+  ...
+# Subtest: old clients can save unchanged assignments but cannot silently reassign linked schedules
+ok 387 - old clients can save unchanged assignments but cannot silently reassign linked schedules
+  ---
+  duration_ms: 84.0945
+  type: 'test'
+  ...
+# Subtest: enrollment bootstraps existing rosters once and preserves removals, history and RFID on reapply
+ok 388 - enrollment bootstraps existing rosters once and preserves removals, history and RFID on reapply
+  ---
+  duration_ms: 42.2994
+  type: 'test'
+  ...
+# Subtest: explicit enrollment supports cross-class students, rejects unassigned students and keeps tap evidence separate
+ok 389 - explicit enrollment supports cross-class students, rejects unassigned students and keeps tap evidence separate
+  ---
+  duration_ms: 41.2992
+  type: 'test'
+  ...
+# Subtest: no-tap enrolled student can be Present, Late and Absent; unenrollment retains teacher history
+ok 390 - no-tap enrolled student can be Present, Late and Absent; unenrollment retains teacher history
+  ---
+  duration_ms: 31.5654
+  type: 'test'
+  ...
+# Subtest: enrollment saves enforce admin, version, active students, active schedules and no direct writes
+ok 391 - enrollment saves enforce admin, version, active students, active schedules and no direct writes
+  ---
+  duration_ms: 36.7909
+  type: 'test'
+  ...
+# Subtest: enrollment rollback disables writes without erasing data and reapply restores access
+ok 392 - enrollment rollback disables writes without erasing data and reapply restores access
+  ---
+  duration_ms: 40.2842
+  type: 'test'
+  ...
+# Subtest: assignment placement edits preserve explicit enrollment and inactive teachers lose enrolled access
+ok 393 - assignment placement edits preserve explicit enrollment and inactive teachers lose enrolled access
+  ---
+  duration_ms: 221.743
+  type: 'test'
+  ...
+# Subtest: enrollment table inherits installed email verification requirement
+ok 394 - enrollment table inherits installed email verification requirement
+  ---
+  duration_ms: 25.4738
+  type: 'test'
+  ...
+# Subtest: action audit preserves success/failure results without retaining payloads or errors
+ok 395 - action audit preserves success/failure results without retaining payloads or errors
+  ---
+  duration_ms: 200.9458
+  type: 'test'
+  ...
+# Subtest: route audit distinguishes denied, failed and completed requests without reading bodies
+ok 396 - route audit distinguishes denied, failed and completed requests without reading bodies
+  ---
+  duration_ms: 74.6341
+  type: 'test'
+  ...
+# Subtest: audit outage does not misreport an already completed operation
+ok 397 - audit outage does not misreport an already completed operation
+  ---
+  duration_ms: 19.5598
+  type: 'test'
+  ...
+# Subtest: log filters validate dates, bound pagination and remove query grammar
+not ok 398 - log filters validate dates, bound pagination and remove query grammar
+  ---
+  duration_ms: 132.4105
+  type: 'test'
+  location: 'D:\\rfid-attendance-web-system\\tests\\system-logs.test.mjs:41:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      {
+        entity: 'all',
+        from: '2026-09-09',
+        outcome: 'all',
+        page: 1,
+    +   search: [],
+    -   search: '',
+        to: '2026-09-15'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    search: ''
+    entity: 'all'
+    outcome: 'all'
+    from: '2026-09-09'
+    to: '2026-09-15'
+    page: 1
+  actual:
+    search:
+    entity: 'all'
+    outcome: 'all'
+    from: '2026-09-09'
+    to: '2026-09-15'
+    page: 1
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///D:/rfid-attendance-web-system/tests/system-logs.test.mjs:44:10)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1325:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+    Test.postRun (node:internal/test_runner/test:1465:19)
+    Test.run (node:internal/test_runner/test:1390:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:911:7)
+  ...
+# Subtest: legacy attendance links retain query parameters when opening daily panel
+ok 399 - legacy attendance links retain query parameters when opening daily panel
+  ---
+  duration_ms: 227.3515
+  type: 'test'
+  ...
+# Subtest: teacher attendance navigation exposes three distinct panels
+ok 400 - teacher attendance navigation exposes three distinct panels
+  ---
+  duration_ms: 176.9035
+  type: 'test'
+  ...
+# Subtest: legacy teacher endpoint uses the shared upload handler
+ok 401 - legacy teacher endpoint uses the shared upload handler
+  ---
+  duration_ms: 174.32
+  type: 'test'
+  ...
+# Subtest: rejects cross-origin uploads
+ok 402 - rejects cross-origin uploads
+  ---
+  duration_ms: 70.1212
+  type: 'test'
+  ...
+# Subtest: only active administrators can upload
+ok 403 - only active administrators can upload
+  ---
+  duration_ms: 41.712
+  type: 'test'
+  ...
+# Subtest: rejects empty, oversized, disguised, and mismatched images
+ok 404 - rejects empty, oversized, disguised, and mismatched images
+  ---
+  duration_ms: 42.1359
+  type: 'test'
+  ...
+# Subtest: creates storage when missing and returns persistent image URL
+ok 405 - creates storage when missing and returns persistent image URL
+  ---
+  duration_ms: 19.0854
+  type: 'test'
+  ...
+# Subtest: reports storage failure without returning a URL
+ok 406 - reports storage failure without returning a URL
+  ---
+  duration_ms: 21.384
+  type: 'test'
+  ...
+# Subtest: weekly schedule includes inactive sessions, excludes archives, and sorts Monday to Sunday, then time
+ok 407 - weekly schedule includes inactive sessions, excludes archives, and sorts Monday to Sunday, then time
+  ---
+  duration_ms: 140.528
+  type: 'test'
+  ...
+# Subtest: schedule requires teacher access before reading data
+ok 408 - schedule requires teacher access before reading data
+  ---
+  duration_ms: 10.3763
+  type: 'test'
+  ...
+1..408
+# tests 408
+# suites 0
+# pass 385
+# fail 23
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 18379.8404
