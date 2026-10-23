@@ -9,10 +9,8 @@ import { verifyAccountPassword } from "@/features/auth/verify-password"
 import {
   adminProfileSchema,
   changeOwnPasswordSchema,
-  changePasswordSchema,
   type AdminProfileInput,
   type ChangeOwnPasswordInput,
-  type ChangePasswordInput,
 } from "@/features/profiles/schema"
 import {
   failure,
@@ -203,18 +201,34 @@ export async function changeAdminPasswordAction(
 }
 
 export async function changeStudentPasswordAction(
-  input: ChangePasswordInput
+  input: ChangeOwnPasswordInput
 ): Promise<ActionResult> {
   return auditActivity("change_student_password", "users", async () => {
-    await requireRole("student")
+    const account = await requireRole("student")
 
-    const parsed = changePasswordSchema.safeParse(input)
+    const parsed = changeOwnPasswordSchema.safeParse(input)
 
     if (!parsed.success) {
       return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
     }
 
     const supabase = await createServerSupabaseClient()
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser()
+
+    // The current password is proven before the credential is replaced, so a
+    // borrowed session cannot lock the student out of their own account.
+    const verified = await verifyAccountPassword(
+      account.id,
+      currentUser?.email ?? account.email,
+      parsed.data.currentPassword
+    )
+
+    if (!verified.ok) {
+      const message = verified.message ?? "That is not your current password."
+      return failure(message, { currentPassword: message })
+    }
 
     // Supabase hashes and stores the credential; the plain value is never kept.
     const { error } = await supabase.auth.updateUser({
@@ -233,18 +247,34 @@ export async function changeStudentPasswordAction(
 }
 
 export async function changeTeacherPasswordAction(
-  input: ChangePasswordInput
+  input: ChangeOwnPasswordInput
 ): Promise<ActionResult> {
   return auditActivity("change_teacher_password", "users", async () => {
-    await requireRole("teacher")
+    const account = await requireRole("teacher")
 
-    const parsed = changePasswordSchema.safeParse(input)
+    const parsed = changeOwnPasswordSchema.safeParse(input)
 
     if (!parsed.success) {
       return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
     }
 
     const supabase = await createServerSupabaseClient()
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser()
+
+    // The current password is proven before the credential is replaced, so a
+    // borrowed session cannot lock the teacher out of their own account.
+    const verified = await verifyAccountPassword(
+      account.id,
+      currentUser?.email ?? account.email,
+      parsed.data.currentPassword
+    )
+
+    if (!verified.ok) {
+      const message = verified.message ?? "That is not your current password."
+      return failure(message, { currentPassword: message })
+    }
 
     // Supabase hashes and stores the credential; the plain value is never kept.
     const { error } = await supabase.auth.updateUser({
