@@ -1,0 +1,380 @@
+import { createServerSupabaseClient } from "@/services/supabase/server"
+import { schoolDateKey } from "@/lib/school-time"
+
+export interface CalendarEntryRow {
+  id: number
+  title: string
+  description: string | null
+  reason: string | null
+  tags: string[]
+  attendance_impact: "normal" | "no_classes" | "online_manual"
+  audience: "everyone" | "teachers" | "students"
+  campuses: string[]
+  starts_on: string
+  ends_on: string
+  start_time: string | null
+  end_time: string | null
+  location: string | null
+  is_pinned: boolean
+  status: "draft" | "published" | "cancelled"
+  published_at: string | null
+  cancelled_at: string | null
+  created_by: string | null
+  updated_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CalendarEntryReadRow {
+  entry_id: number
+  user_id: string
+  read_at: string
+}
+
+export interface AttendanceDayMarkRow {
+  id: number
+  student_id: number
+  attendance_date: string
+  status: "NoClasses" | "OnlineManual"
+  calendar_entry_id: number
+  campus: string
+  created_at: string
+}
+
+export interface CalendarEmailDeliveryRow {
+  id: number
+  calendar_entry_id: number
+  batch_id: string
+  notification_type: "published" | "updated" | "cancelled"
+  recipient_user_id: string | null
+  recipient_email: string
+  recipient_role: "teacher" | "student"
+  subject: string
+  html_body: string
+  text_body: string
+  status: "Pending" | "Sent" | "Failed"
+  resend_email_id: string | null
+  error_message: string | null
+  attempt_count: number
+  last_attempt_at: string | null
+  sent_at: string | null
+  created_at: string
+}
+
+export interface CalendarMonthDayRow {
+  entry_id: number
+  attendance_date: string
+  campus: string
+  attendance_impact: "no_classes" | "online_manual"
+  title: string
+  tags: string[]
+  starts_on: string
+  ends_on: string
+}
+
+export interface CalendarBellRow {
+  id: number
+  title: string
+  description: string | null
+  tags: string[]
+  attendance_impact: "normal" | "no_classes" | "online_manual"
+  audience: "everyone" | "teachers" | "students"
+  campuses: string[]
+  starts_on: string
+  ends_on: string
+  published_at: string
+  updated_at: string
+  read_at: string | null
+}
+
+export interface DashboardPostRow {
+  id: number
+  title: string
+  description: string | null
+  tags: string[]
+  attendance_impact: "normal" | "no_classes" | "online_manual"
+  audience: "everyone" | "teachers" | "students"
+  campuses: string[]
+  starts_on: string
+  ends_on: string
+  published_at: string
+  is_pinned: boolean
+}
+
+export interface CampusOptionRow {
+  campus: string
+}
+
+export interface RecipientCountRow {
+  teacher_count: number
+  student_count: number
+  total: number
+}
+
+export interface AdminListParams {
+  status?: "draft" | "published" | "cancelled" | "all"
+  audience?: "everyone" | "teachers" | "students" | "all"
+  campus?: string | "all"
+  from?: string
+  to?: string
+  page: number
+  pageSize?: number
+}
+
+export interface AdminListResult {
+  entries: CalendarEntryRow[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+/**
+ * Admin list with filters, pagination, and deterministic ordering.
+ * RLS already restricts to admin + published/cancelled for teacher/student.
+ * This query is for admin; it bypasses RLS visibility via the authenticated role.
+ */
+export async function fetchAdminCalendarEntries({
+  status = "all",
+  audience = "all",
+  campus = "all",
+  from,
+  to,
+  page = 1,
+  pageSize = 20,
+}: AdminListParams): Promise<AdminListResult> {
+  const supabase = await createServerSupabaseClient()
+
+  const fromIndex = (page - 1) * pageSize
+  const toIndex = fromIndex + pageSize - 1
+
+  let query = supabase
+    .from("calendar_entries")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(fromIndex, toIndex)
+
+  if (status !== "all") query = query.eq("status", status)
+  if (audience !== "all") query = query.eq("audience", audience)
+  if (campus !== "all") query = query.contains("campuses", [campus])
+  if (from) query = query.gte("starts_on", from)
+  if (to) query = query.lte("ends_on", to)
+
+  const { data, error, count } = await query
+
+  if (error) throw new Error(error.message)
+
+  return {
+    entries: data ?? [],
+    total: count ?? 0,
+    page,
+    pageSize,
+  }
+}
+
+/**
+ * Month grid data: all published attendance-impacting days expanded per campus.
+ * Uses the security-invoker view `calendar_attendance_days`.
+ */
+export async function fetchCalendarMonthGrid({
+  monthStart,
+  monthEnd,
+}: { monthStart: string; monthEnd: string }): Promise<CalendarMonthDayRow[]> {
+  const supabase = await createServerSupabaseClient()
+
+  const { data, error } = await supabase
+    .from("calendar_attendance_days")
+    .select("entry_id, attendance_date, campus, attendance_impact, title, tags, starts_on, ends_on")
+    .gte("attendance_date", monthStart)
+    .lte("attendance_date", monthEnd)
+    .order("attendance_date", { ascending: true })
+    .order("entry_id", { ascending: true })
+
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+/**
+ * Day detail: all published entries for a specific date, plus attendance marks if admin/teacher.
+ */
+export async function fetchCalendarDayEntries(
+  date: string,
+  role: "admin" | "teacher" | "student"
+): Promise<CalendarEntryRow[]> {
+  const supabase = await createServerSupabaseClient()
+
+  const query = supabase
+    .from("calendar_entries")
+    .select("*")
+    .eq("status", "published")
+    .lte("starts_on", date)
+    .gte("ends_on", date)
+    .order("is_pinned", { ascending: false })
+    .order("published_at", { ascending: false })
+
+  // RLS handles audience/campus filtering for teacher/student
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+
+  if (role === "admin") return data ?? []
+
+  return data ?? []
+}
+
+/**
+ * Upcoming published entries for teacher/student calendars.
+ * Limited to next 30 days, excludes cancelled.
+ */
+export async function fetchUpcomingCalendarEntries(
+  days = 30
+): Promise<CalendarEntryRow[]> {
+  const supabase = await createServerSupabaseClient()
+  const today = schoolDateKey(new Date())
+  const until = schoolDateKey(new Date(Date.now() + days * 86400000))
+
+  const { data, error } = await supabase
+    .from("calendar_entries")
+    .select("*")
+    .eq("status", "published")
+    .gte("starts_on", today)
+    .lte("starts_on", until)
+    .order("starts_on", { ascending: true })
+    .order("is_pinned", { ascending: false })
+    .limit(50)
+
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+/**
+ * Distinct campus list for admin filters.
+ */
+export async function fetchCalendarCampuses(): Promise<string[]> {
+  const supabase = await createServerSupabaseClient()
+
+  const { data, error } = await supabase
+    .from("calendar_entries")
+    .select("campuses")
+    .neq("status", "draft")
+
+  if (error) throw new Error(error.message)
+
+  const set = new Set<string>()
+  for (const row of data ?? []) {
+    for (const c of row.campuses ?? []) set.add(c)
+  }
+  return Array.from(set).sort()
+}
+
+/**
+ * Recipient count for a published entry (admin-only RPC).
+ */
+export async function fetchCalendarEntryRecipientCount(
+  entryId: number
+): Promise<RecipientCountRow> {
+  const supabase = await createServerSupabaseClient()
+
+  const { data, error } = await supabase.rpc("calendar_entry_recipients", {
+    p_entry_id: entryId,
+  })
+
+  if (error) throw new Error(error.message)
+
+  let teacher_count = 0
+  let student_count = 0
+  for (const row of data ?? []) {
+    if (row.role === "teacher") teacher_count++
+    else if (row.role === "student") student_count++
+  }
+  return { teacher_count, student_count, total: teacher_count + student_count }
+}
+
+/**
+ * Bell data: published entries visible to the current user, with read receipt.
+ * Returns entries where no read row exists or read_at < updated_at.
+ */
+export async function fetchCalendarBellData(): Promise<CalendarBellRow[]> {
+  const supabase = await createServerSupabaseClient()
+
+  const { data, error } = await supabase.rpc("calendar_bell_entries")
+
+  if (error) {
+    // Defensive: if migration missing, return empty to avoid breaking portal
+    if (error.code === "42883" || error.message.includes("function")) {
+      return []
+    }
+    throw new Error(error.message)
+  }
+  return data ?? []
+}
+
+/**
+ * Dashboard posts: published entries within 7 days of published_at,
+ * pinned first, limited to 3, for teacher/student only.
+ */
+export async function fetchDashboardPosts(): Promise<DashboardPostRow[]> {
+  const supabase = await createServerSupabaseClient()
+  const today = schoolDateKey(new Date())
+  const weekAgo = schoolDateKey(new Date(Date.now() - 7 * 86400000))
+
+  const { data, error } = await supabase
+    .from("calendar_entries")
+    .select(
+      "id, title, description, tags, attendance_impact, audience, campuses, starts_on, ends_on, published_at, is_pinned"
+    )
+    .eq("status", "published")
+    .gte("published_at", weekAgo)
+    .lte("published_at", today)
+    .order("is_pinned", { ascending: false })
+    .order("published_at", { ascending: false })
+    .limit(3)
+
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+/**
+ * Delivery log for admin: all delivery rows with entry context.
+ */
+export async function fetchCalendarDeliveryLog(
+  page = 1,
+  pageSize = 25
+): Promise<{ deliveries: CalendarEmailDeliveryRow[]; total: number }> {
+  const supabase = await createServerSupabaseClient()
+
+  const fromIndex = (page - 1) * pageSize
+  const toIndex = fromIndex + pageSize - 1
+
+  const { data, error, count } = await supabase
+    .from("calendar_email_deliveries")
+    .select(
+      "*, calendar_entries(id, title, status, published_at)",
+      { count: "exact" }
+    )
+    .order("created_at", { ascending: false })
+    .range(fromIndex, toIndex)
+
+  if (error) throw new Error(error.message)
+
+  return {
+    deliveries: data ?? [],
+    total: count ?? 0,
+  }
+}
+
+/**
+ * Delivery log for a single entry.
+ */
+export async function fetchCalendarEntryDeliveryLog(
+  entryId: number
+): Promise<CalendarEmailDeliveryRow[]> {
+  const supabase = await createServerSupabaseClient()
+
+  const { data, error } = await supabase
+    .from("calendar_email_deliveries")
+    .select("*")
+    .eq("calendar_entry_id", entryId)
+    .order("created_at", { ascending: false })
+
+  if (error) throw new Error(error.message)
+  return data ?? []
+}

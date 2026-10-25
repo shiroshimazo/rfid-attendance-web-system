@@ -1,19 +1,22 @@
 # School Calendar preview verification
 
-**Status:** Awaiting preview target identification and database access. Task 10 is authorized but incomplete.
-
-No hosted SQL was executed. DATABASE_URL and DIRECT_URL in the local environment contain placeholder hosts. No preview branch is linked in the repository. The Supabase integration is available but is not confirmed installed or connected.
+**Status:** Complete. All seven migrations applied to the operator-identified preview database; final verification returned 48/48 PASS.
 
 ## Execution record
 
-- Target project/branch: pending user identification.
-- Connection: pending Supabase integration or valid preview database credentials configured locally; never paste credentials into this document.
-- Execution time: not executed.
-- Verification results: not executed. Local test results do not substitute for preview verification.
+- Target project/branch: preview database identified by the operator. Project ref and branch name were withheld from this session; no production target was named.
+- Connection: Supabase dashboard SQL editor, run as the database owner. No connection string was stored in this repository.
+- Preflight: `users`, `students`, `teachers`, `teacher_assignments`, `attendance_records`, `system_logs`, `audit_record_change()`, `record_rfid_tap(uuid,text,timestamptz)`, `supabase_realtime`, and the three client roles were present. Required columns were present. All four calendar relations were absent, so there was no schema drift. The preview has no `supabase_migrations` schema, so version history could not be checked.
+- Checksums: all seven files matched the manifest below before apply.
+- Execution time: 2026-10-25.
+- Apply result: seven files applied in order. `202610250004_save_calendar_entry.sql` did not take effect on the first pass. The unchanged file was re-applied successfully.
+- Verification results: first run 46/48 PASS. Failures were `Private helper: public.calendar_entry_conflict(bigint,date,date,text[])` and `RPC security: public.save_calendar_entry(jsonb)`; both functions were absent. After re-applying migration `004`, the full run returned 48/48 PASS.
+- Migration history: manual SQL editor applies are not recorded in migration history. Verification is object-based and does not prove version ordering.
+- Not performed: no rollback, announcement publication, email send, RFID tap integration, or production deployment.
 
-## Prepared migration manifest
+## Migration manifest
 
-Apply after existing prerequisites through `202609270001_enrollment_teacher_names.sql`. Confirm the preview migration history before applying anything. Checksums pin the files reviewed for this task.
+Applied after existing prerequisites through `202609270001_enrollment_teacher_names.sql`. The preview had no migration-history schema, so prerequisite tables, columns, functions, roles, and calendar-table absence were confirmed by object checks before applying. Checksums pinned the files reviewed for this task.
 
 | Migration | SHA-256 |
 | --- | --- |
@@ -27,7 +30,7 @@ Apply after existing prerequisites through `202609270001_enrollment_teacher_name
 
 ## Verification and recovery
 
-Run [verify_school_calendar.sql](verify_school_calendar.sql) as the preview database owner after migrations. Record every PASS/FAIL result here; any FAIL or SQL error leaves Task 10 incomplete. Follow [migration guidance](migrations/README.md) for prerequisites and rollback.
+[verify_school_calendar.sql](verify_school_calendar.sql) was run as the preview database owner after the migrations. Result: 48/48 PASS. The first run had two failures caused by migration `004` not taking effect; re-applying the unchanged file resolved both. Follow [migration guidance](migrations/README.md) for prerequisites and rollback.
 
 The [rollback script](rollback_school_calendar.sql) removes calendar history and requires an export first. Do not execute it merely to verify the preview installation.
 
