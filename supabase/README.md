@@ -13,15 +13,24 @@ The database implementation follows `rfid-docs/rfid-docs/Database Design/Databas
 - `rfid_cards`, `attendance_records`, and `sms_notifications` for the attendance workflow
 - Constraints, indexes, automatic `updated_at` triggers, Auth synchronization, and Row Level Security policies
 
-## Planned calendar extension (R06; not implemented)
+## Calendar extension (R06; locally implemented database)
 
-[Calendar.md](../Calendar.md) defines calendar entries, own-user read receipts,
-email deliveries, and per-student NoClasses/OnlineManual exception snapshots.
-These are separate from RFID evidence; attendance_status and Subject Attendance
-remain unchanged. Student-roster and calendar mutations will reconcile today/future
-snapshots; past snapshots preserve historical report exclusions. Follow the
-individually approved tasks in [Calendar-TODO.md](../Calendar-TODO.md); no calendar
-migration or verification script is supplied by this documentation-only task.
+[Calendar.md](../Calendar.md) defines the partially implemented calendar feature.
+Seven calendar migrations now supply these tables:
+
+- `calendar_entries`: scoped announcements and lifecycle state.
+- `calendar_entry_reads`: protected own-user read receipts.
+- `attendance_day_marks`: NoClasses/OnlineManual snapshots, separate from RFID evidence.
+- `calendar_email_deliveries`: stored delivery payloads and retry metadata; sending is not implemented yet.
+
+Calendar and student-roster changes reconcile today/future snapshots; past
+snapshots remain immutable. Existing attendance_status and Subject Attendance
+remain unchanged. Structural audit logs exclude announcement text and email
+payloads; all four tables join the existing realtime publication.
+See [migration, verification, and rollback guidance](migrations/README.md).
+[Verification SQL](verify_school_calendar.sql) and [rollback SQL](rollback_school_calendar.sql)
+are tested locally. Hosted execution and application rollout remain pending under
+the individually approved tasks in [Calendar-TODO.md](../Calendar-TODO.md).
 
 ## Setup and existing data
 

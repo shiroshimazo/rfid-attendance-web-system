@@ -24,15 +24,49 @@ Cancellation preserves past snapshots and delivery/read history. New entries mus
 start as drafts, and published/cancelled entries cannot be hard-deleted or reset
 to draft. Use the calendar RPCs so state changes and mark reconciliation stay
 in one transaction. Cancellation emails remain a later task.
+Task 09 adds `202610250007_calendar_audit_realtime.sql`: structural audit records
+for entries, marks, and deliveries, plus realtime publication of all four tables.
+Announcement text, reasons, locations, recipient emails, and rendered email bodies
+are excluded from audit values. Application action events remain part of later tasks.
 These migrations are tested locally only; they do not authorize hosted execution.
-Audit/realtime integration, RFID integration, verification SQL, and rollback SQL
-remain pending. The feature is not ready for rollout.
+RFID integration and the application feature remain pending. The feature is not ready for rollout.
+
+### Calendar preview verification (Task 10; separate confirmation required)
+
+1. Identify the preview database and confirm its target before execution.
+2. Apply the existing prerequisite migrations, then calendar migrations
+   `202610250001` through `202610250007` in filename order.
+3. Run [verify_school_calendar.sql](../verify_school_calendar.sql) as the database
+   owner. Every result must be PASS; any SQL error or FAIL blocks deployment.
+   The script is read-only and checks schema/security metadata, publication,
+   overlaps, current/future snapshot consistency, and guards. Behavioral role
+   and recipient checks also run in `tests/calendar-migration.test.mjs`.
+4. Preserve the target, execution time, migration list, and verification output.
+   Local PGlite results do not prove hosted realtime delivery or multi-session locking.
+
+### Calendar rollback
+
+1. Restore the previous application and export all four calendar tables first.
+   Rollback permanently removes calendar entries, receipts, snapshots, and delivery history.
+2. Compare the hosted RFID/audit functions with the documented baseline before
+   using [rollback_school_calendar.sql](../rollback_school_calendar.sql). Its restored
+   functions come from `202609140001_rfid_tap_processing.sql` and
+   `202609210001_system_logs.sql`; reconcile any later unrelated customization first.
+3. Run the rollback as the database owner. One transaction restores the shared
+   functions/grants, removes roster hooks, then drops calendar objects without CASCADE.
+   Existing RFID, subject attendance, SMS, and append-only system logs are retained.
+4. Verify normal taps and existing reports. Reinstallation uses all seven migrations
+   in order; deleted calendar history is recoverable only from the export.
+
+Local tests cover migration reapplication, rollback reapplication, unchanged
+existing data/audit history, restored tap processing, and clean reinstallation.
+Task 16 must recheck the rollback baseline when calendar checks enter the tap RPC.
 
 [Calendar.md](../../Calendar.md) defines the planned calendar schema and separate
 RFID-function integration migration. [Calendar-TODO.md](../../Calendar-TODO.md)
 requires confirmation before each task; this section does not authorize applying
-migrations. Later work supplies migration, verification, and rollback SQL, then
-verifies a named preview database before app deployment.
+migrations. Verification and rollback SQL are now supplied; Task 10 verifies a
+named preview database before later application rollout.
 
 Rollback first restores the previous app, then the pre-calendar record_rfid_tap
 function and grants, restores any changed shared audit helper, and removes

@@ -3,7 +3,7 @@
 **Project:** RFID Attendance Web System  
 **Execution checklist:** [Calendar-TODO.md](Calendar-TODO.md) — separate confirmation before each task
 **Prepared:** 2026-10-25  
-**Status:** Tasks 01–08 complete: scope/rules, validation, and core database workflows through cancellation and draft deletion, tested locally. Audit/realtime integration, recovery scripts, hosted migration execution, and UI remain pending; see the execution checklist.
+**Status:** Tasks 01–09 complete: scope/rules, validation, core database workflows, audit/realtime registration, verification SQL, and rollback SQL, tested locally. Hosted migration execution, realtime delivery, and UI remain pending; see the execution checklist.
 **Scope change:** **R06 — School Calendar & Announcements** (supersedes the holiday-management deferral only for this feature; existing R05 cleanup remains separate)
 
 ---
@@ -1112,6 +1112,7 @@ otherwise reuse the already imported `CalendarClockIcon` or
 | `supabase/migrations/202610250004_save_calendar_entry.sql` | Task 06: validated full-entry saves, lifecycle preservation, normalized campus/tag arrays, private overlap helper, published-edit reconciliation |
 | `supabase/migrations/202610250005_publish_calendar_entry.sql` | Task 07: validated draft/cancelled publication, shared overlap lock, refreshed publish timestamp, atomic mark reconciliation |
 | `supabase/migrations/202610250006_cancel_delete_calendar_entry.sql` | Task 08: cancellation, never-published draft deletion, lifecycle/history/overlap guards, shared statement lock |
+| `supabase/migrations/202610250007_calendar_audit_realtime.sql` | Task 09: structural audit allowlist, audit triggers, guarded realtime publication registration |
 | `supabase/verify_school_calendar.sql` | PASS/FAIL checks for schema, constraints, RLS, overlap, marks, recipients |
 | `supabase/rollback_school_calendar.sql` | Restore pre-calendar RFID function/grants and any changed audit helper, remove roster hooks, then drop new objects in dependency order; preserve existing attendance data |
 | `supabase/migrations/README.md` | Apply/verify/rollback instructions |

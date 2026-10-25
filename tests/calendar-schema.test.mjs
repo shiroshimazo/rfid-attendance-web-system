@@ -125,3 +125,13 @@ test("publish cutoff uses Manila midnight; drafts and normal past events remain 
   assert.equal(midnight.safeParse({ ...entry, startsOn: "2020-01-01", endsOn: "2020-01-01" }).success, true)
   assert.equal(midnight.safeParse({ ...noClasses, startsOn: "2026-10-26", endsOn: "2026-10-26" }).success, true)
 })
+
+
+test("system-log filters accept calendar entities and preserve their URLs", () => {
+  const { parseLogQuery, logPageUrl } = createSourceLoader()("src/features/system-logs/query.ts")
+  for (const entity of ["calendar_entries", "attendance_day_marks", "calendar_email_deliveries"]) {
+    const query = parseLogQuery({ entity }, new Date("2026-10-25T00:00:00Z"))
+    assert.equal(query.entity, entity)
+    assert(logPageUrl(query, 1).includes(`entity=${entity}`))
+  }
+})

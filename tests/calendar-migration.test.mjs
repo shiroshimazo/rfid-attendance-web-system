@@ -1064,3 +1064,92 @@ test("cancel and delete validate ids and require active verified administrators"
   await rejects(() => cancelEntry(fixture.main.id), "42501")
   await rejects(() => deleteDraft(draft.id), "42501")
 })
+
+async function auditFixture() {
+  const fixture = await lifecycleFixture()
+  const auditBefore = (await db.query("select pg_get_functiondef('public.audit_record_change()'::regprocedure) as definition")).rows
+  const sql = (await readFile(new URL("202610250007_calendar_audit_realtime.sql", directory), "utf8"))
+    .replace(/^begin;$/m, "").replace(/^commit;$/m, "")
+  await db.exec(sql)
+  await db.exec(sql)
+  return { ...fixture, auditBefore }
+}
+
+test("calendar audit records structural changes without announcement or email payload values", async () => {
+  const fixture = await auditFixture()
+  await asCalendarUser("admin")
+  const draft = await saveEntry(entryPayload(fixture, { title: "PRIVATE TITLE", description: "PRIVATE DESCRIPTION",
+    reason: "PRIVATE REASON", location: "PRIVATE LOCATION", tags: ["online_class"], attendanceImpact: "online_manual" }))
+  await cancelEntry(fixture.main.id)
+  await cancelEntry(fixture.mv.id)
+  await publishEntry(draft.id)
+  await cancelEntry(draft.id)
+  await db.exec("reset role")
+  await db.query(`insert into public.calendar_email_deliveries(calendar_entry_id,batch_id,notification_type,
+    recipient_user_id,recipient_email,recipient_role,subject,html_body,text_body,error_message)
+    values ($1,'40000000-0000-4000-8000-000000000009','cancelled',$2,'PRIVATE EMAIL','student',
+      'PRIVATE SUBJECT','PRIVATE HTML','PRIVATE TEXT','PRIVATE ERROR')`, [draft.id, userId])
+  const { rows } = await db.query("select * from public.system_logs where entity in ('calendar_entries','attendance_day_marks','calendar_email_deliveries') order by id")
+  assert(rows.some((row) => row.entity === "calendar_entries" && row.details.after.status === "published"))
+  assert(rows.some((row) => row.entity === "calendar_entries" && row.details.after.status === "cancelled"))
+  assert(rows.some((row) => row.entity === "attendance_day_marks" && row.details.after.status === "OnlineManual"))
+  assert(rows.some((row) => row.entity === "calendar_email_deliveries" && row.details.after.notification_type === "cancelled"))
+  assert(!JSON.stringify(rows.map((row) => row.details)).includes("PRIVATE"))
+  assert(rows.filter((row) => row.entity === "calendar_entries").every((row) => row.actor_id === accessUsers.admin))
+  await asCalendarUser("student")
+  assert.deepEqual((await db.query("select * from public.system_logs")).rows, [])
+})
+
+test("verification SQL passes populated schema and detects missing guards and stale marks", async () => {
+  const fixture = await auditFixture()
+  await asCalendarUser("admin")
+  await syncMarks(fixture.today, fixture.last)
+  await db.exec("reset role")
+  const sql = await readFile(new URL("../supabase/verify_school_calendar.sql", import.meta.url), "utf8")
+  let rows = (await db.query(sql)).rows
+  assert(rows.length >= 40)
+  assert.deepEqual(rows.filter((row) => row.result !== "PASS"), [])
+  await db.exec("savepoint verification_drift; drop trigger calendar_entries_lifecycle on public.calendar_entries")
+  await db.query("delete from public.attendance_day_marks where student_id=1 and attendance_date=$1", [fixture.today])
+  rows = (await db.query(sql)).rows
+  assert(rows.some((row) => row.check_name === "Guard/hook: calendar_entries.calendar_entries_lifecycle" && row.result === "FAIL"))
+  assert(rows.some((row) => row.check_name === "Today/future marks match effective calendar" && row.result === "FAIL"))
+  await db.exec("rollback to savepoint verification_drift; release savepoint verification_drift")
+  assert.deepEqual((await db.query(sql)).rows.filter((row) => row.result !== "PASS"), [])
+})
+
+test("rollback restores shared functions and preserves existing data, audit history, and unrelated realtime tables", async () => {
+  const fixture = await auditFixture()
+  await asCalendarUser("admin")
+  await syncMarks(fixture.today, fixture.last)
+  await db.exec("reset role")
+  const logs = (await db.query("select * from public.system_logs order by id")).rows
+  const rollback = (await readFile(new URL("../supabase/rollback_school_calendar.sql", import.meta.url), "utf8"))
+    .replace(/^begin;$/m, "").replace(/^commit;$/m, "")
+  await db.exec(rollback)
+  await db.exec(rollback)
+  assert.deepEqual(await existingData(), original)
+  assert.deepEqual((await db.query("select * from public.system_logs order by id")).rows, logs)
+  assert.deepEqual((await db.query("select pg_get_functiondef('public.audit_record_change()'::regprocedure) as definition")).rows, fixture.auditBefore)
+  assert.equal((await db.query("select to_regclass('public.calendar_entries') as entry, to_regprocedure('public.current_user_campuses()') as campuses")).rows[0].entry, null)
+  assert.equal((await db.query("select to_regprocedure('public.current_user_campuses()') as campuses")).rows[0].campuses, null)
+  const names = (await db.query("select tablename from pg_publication_tables where pubname='supabase_realtime'")).rows.map((row) => row.tablename)
+  assert(names.includes("attendance_records"))
+  assert(names.includes("system_logs"))
+  assert(!names.includes("calendar_entries"))
+  assert.equal((await db.query("select has_function_privilege('service_role','public.record_rfid_tap(uuid,text,timestamptz)','EXECUTE') as allowed")).rows[0].allowed, true)
+  assert.equal((await db.query("select has_function_privilege('authenticated','public.record_rfid_tap(uuid,text,timestamptz)','EXECUTE') as allowed")).rows[0].allowed, false)
+  await db.exec("savepoint restored_tap")
+  await db.exec("select setval(pg_get_serial_sequence('public.attendance_records','id'),(select max(id) from public.attendance_records),true)")
+  const tap = (await db.query("select public.record_rfid_tap('80000000-0000-4000-8000-000000000001','04AABBCC','2030-01-02T00:00:00Z') as result")).rows[0].result
+  assert.equal(tap.ok, true)
+  assert.equal(tap.action, "time_in")
+  await db.exec("rollback to savepoint restored_tap; release savepoint restored_tap")
+  for (const name of (await readdir(directory)).filter((name) => name.startsWith('20261025') && name.endsWith('.sql')).sort()) {
+    const sql = (await readFile(new URL(name, directory), "utf8")).replace(/^begin;$/m, "").replace(/^commit;$/m, "")
+    await db.exec(sql)
+  }
+  const verification = await readFile(new URL("../supabase/verify_school_calendar.sql", import.meta.url), "utf8")
+  assert.deepEqual((await db.query(verification)).rows.filter((row) => row.result !== "PASS"), [])
+  assert.deepEqual(await existingData(), original)
+})
