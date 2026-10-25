@@ -5,9 +5,14 @@ foundation: enums, tables, constraints, indexes, and default-deny access.
 Task 04 adds `202610250002_school_calendar_access.sql`: verified-session
 campus/recipient functions, role-scoped reads, protected own-user receipts,
 and the security-invoker effective calendar view. Apply order is foundation
-before access. Both migrations are tested locally only; neither authorizes
-hosted execution. Entry mutations, reconciliation, RFID integration,
-verification SQL, and rollback SQL remain pending. The feature is not ready for rollout.
+before access. Task 05 adds `202610250003_calendar_attendance_marks.sql` after
+access: verified-admin mark sync, private reconciliation, student roster hooks,
+and immutable past snapshots. The shared lock is acquired before student row
+changes; future entry RPCs must use the same lock. Historical snapshot guards
+also reject hard deletion of students with past calendar history; use archive.
+These migrations are tested locally only; they do not authorize hosted execution.
+Entry mutation integration, RFID integration, verification SQL, and rollback SQL
+remain pending. The feature is not ready for rollout.
 
 [Calendar.md](../../Calendar.md) defines the planned calendar schema and separate
 RFID-function integration migration. [Calendar-TODO.md](../../Calendar-TODO.md)

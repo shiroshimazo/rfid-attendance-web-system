@@ -3,7 +3,7 @@
 **Project:** RFID Attendance Web System  
 **Execution checklist:** [Calendar-TODO.md](Calendar-TODO.md) — separate confirmation before each task
 **Prepared:** 2026-10-25  
-**Status:** Tasks 01–04 complete: scope/rules, validation, database foundation, access policies, recipient functions, and calendar view, tested locally. Entry mutation workflows, hosted migration execution, and UI remain pending; see the execution checklist.
+**Status:** Tasks 01–05 complete: scope/rules, validation, database foundation, access policies, recipient functions, calendar view, and mark reconciliation, tested locally. Entry mutation workflows, hosted migration execution, and UI remain pending; see the execution checklist.
 **Scope change:** **R06 — School Calendar & Announcements** (supersedes the holiday-management deferral only for this feature; existing R05 cleanup remains separate)
 
 ---
@@ -1081,6 +1081,7 @@ otherwise reuse the already imported `CalendarClockIcon` or
 |---|---|
 | `supabase/migrations/202610250001_school_calendar.sql` | Enums, tables, view, helpers, RPCs, RLS, indexes, triggers, realtime |
 | `supabase/migrations/202610250002_school_calendar_access.sql` | Task 04: campus/recipient functions, read/receipt policies and grants, receipt guard, security-invoker view; later tasks add mutation and realtime behavior separately |
+| `supabase/migrations/202610250003_calendar_attendance_marks.sql` | Task 05: admin sync RPC, private reconciliation helper, historical snapshot guard, student roster hooks, shared advisory lock |
 | `supabase/verify_school_calendar.sql` | PASS/FAIL checks for schema, constraints, RLS, overlap, marks, recipients |
 | `supabase/rollback_school_calendar.sql` | Restore pre-calendar RFID function/grants and any changed audit helper, remove roster hooks, then drop new objects in dependency order; preserve existing attendance data |
 | `supabase/migrations/README.md` | Apply/verify/rollback instructions |

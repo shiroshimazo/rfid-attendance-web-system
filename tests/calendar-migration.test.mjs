@@ -417,3 +417,168 @@ test("unverified, inactive, unknown, and anonymous callers cannot bypass calenda
   await rejects(() => db.query("select public.current_user_campuses()"), "42501")
   await rejects(() => recipients(entries.main.id), "42501")
 })
+
+async function marksFixture() {
+  await accessFixture()
+  await db.exec("delete from public.attendance_day_marks; delete from public.calendar_entries")
+  const dates = (await db.query(`select
+    ((now() at time zone 'Asia/Manila')::date - 1)::text as yesterday,
+    (now() at time zone 'Asia/Manila')::date::text as today,
+    ((now() at time zone 'Asia/Manila')::date + 1)::text as tomorrow,
+    ((now() at time zone 'Asia/Manila')::date + 2)::text as last`)).rows[0]
+  const main = await entry({ title: "Break", tags: ["no_classes"], attendance_impact: "no_classes",
+    reason: "Storm", campuses: ["Main Campus"], starts_on: dates.yesterday, ends_on: dates.last,
+    status: "published", published_at: `${dates.yesterday}T00:00:00Z` })
+  const mv = await entry({ title: "Online", tags: ["online_class"], attendance_impact: "online_manual",
+    reason: "Storm", campuses: ["MV Campus"], starts_on: dates.yesterday, ends_on: dates.last,
+    status: "published", published_at: `${dates.yesterday}T00:00:00Z` })
+  await entry({ title: "Draft break", tags: ["no_classes"], attendance_impact: "no_classes", reason: "Draft",
+    starts_on: dates.today, ends_on: dates.last })
+  await entry({ title: "Normal", starts_on: dates.today, ends_on: dates.last,
+    status: "published", published_at: `${dates.today}T00:00:00Z` })
+  await db.query(`insert into public.attendance_day_marks(student_id,attendance_date,status,calendar_entry_id,campus)
+    values (1,$1,'NoClasses',$2,'Main Campus'),(2,$1,'OnlineManual',$3,'MV Campus')`, [dates.yesterday, main.id, mv.id])
+  const history = (await db.query("select * from public.attendance_day_marks order by student_id")).rows
+  const sql = (await readFile(new URL("202610250003_calendar_attendance_marks.sql", directory), "utf8"))
+    .replace(/^begin;$/m, "").replace(/^commit;$/m, "")
+  await db.exec(sql)
+  await db.exec(sql)
+  return { ...dates, main, mv, history }
+}
+
+const syncMarks = async (from, to) => (await db.query("select public.sync_attendance_day_marks($1,$2) as result", [from, to])).rows[0].result
+const currentMarks = async (today) => (await db.query("select student_id::int,attendance_date::text,status,campus,calendar_entry_id from public.attendance_day_marks where attendance_date >= $1 order by student_id,attendance_date", [today])).rows
+
+async function assertHistory(fixture) {
+  assert.deepEqual((await db.query("select * from public.attendance_day_marks where attendance_date < $1 order by student_id", [fixture.today])).rows, fixture.history)
+  assert.deepEqual(await existingData(), original)
+}
+
+test("mark sync creates both exception statuses, clamps past dates, and is idempotent", async () => {
+  const fixture = await marksFixture()
+  await db.exec("set local time zone 'Pacific/Honolulu'")
+  await asCalendarUser("admin")
+  assert.deepEqual(await syncMarks(fixture.yesterday, fixture.last), { inserted: 6, deleted: 0 })
+  const marks = await currentMarks(fixture.today)
+  assert.equal(marks.length, 6)
+  assert(marks.filter((row) => row.student_id === 1).every((row) => row.status === "NoClasses"))
+  assert(marks.filter((row) => row.student_id === 2).every((row) => row.status === "OnlineManual"))
+  assert.deepEqual(await syncMarks(fixture.today, fixture.last), { inserted: 0, deleted: 0 })
+  assert.deepEqual(await syncMarks(fixture.yesterday, fixture.yesterday), { inserted: 0, deleted: 0 })
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("sync removes cancelled and shortened exceptions, including today, without changing history", async () => {
+  const fixture = await marksFixture()
+  await asCalendarUser("admin")
+  await syncMarks(fixture.today, fixture.last)
+  await db.exec("reset role")
+  await db.query("update public.calendar_entries set status='cancelled',cancelled_at=now() where id=$1", [fixture.main.id])
+  await db.query("update public.calendar_entries set ends_on=$1 where id=$2", [fixture.today, fixture.mv.id])
+  await asCalendarUser("admin")
+  assert.deepEqual(await syncMarks(fixture.yesterday, fixture.last), { inserted: 0, deleted: 5 })
+  assert.equal((await currentMarks(fixture.today)).length, 1)
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("online precedence replaces no-class snapshots and falls back when online is cancelled", async () => {
+  const fixture = await marksFixture()
+  await asCalendarUser("admin")
+  await syncMarks(fixture.today, fixture.last)
+  await db.exec("reset role")
+  await db.query("update public.calendar_entries set campuses='{}' where id=$1", [fixture.mv.id])
+  await asCalendarUser("admin")
+  assert.deepEqual(await syncMarks(fixture.today, fixture.last), { inserted: 3, deleted: 3 })
+  assert((await currentMarks(fixture.today)).every((row) => row.status === "OnlineManual"))
+  await db.exec("reset role")
+  await db.query("update public.calendar_entries set status='cancelled',cancelled_at=now() where id=$1", [fixture.mv.id])
+  await asCalendarUser("admin")
+  assert.deepEqual(await syncMarks(fixture.today, fixture.last), { inserted: 3, deleted: 6 })
+  assert((await currentMarks(fixture.today)).every((row) => row.status === "NoClasses" && row.student_id === 1))
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("student transfers and lifecycle changes reconcile immediately without report reads", async () => {
+  const fixture = await marksFixture()
+  await asCalendarUser("admin")
+  await db.exec("update public.students set campus='MV Campus' where id=1")
+  let marks = await currentMarks(fixture.today)
+  assert.equal(marks.length, 3)
+  assert(marks.every((row) => row.student_id === 1 && row.status === "OnlineManual" && row.campus === "MV Campus"))
+  await db.exec("update public.students set status='inactive' where id=1")
+  assert.deepEqual(await currentMarks(fixture.today), [])
+  await db.exec("update public.students set status='active' where id=1")
+  assert.equal((await currentMarks(fixture.today)).length, 3)
+  await db.exec("update public.students set status='archived' where id=1")
+  assert.deepEqual(await currentMarks(fixture.today), [])
+  await db.exec("update public.students set status='active',campus='Main Campus' where id=1")
+  marks = await currentMarks(fixture.today)
+  assert.equal(marks.length, 3)
+  assert(marks.every((row) => row.status === "NoClasses" && row.campus === "Main Campus"))
+  await db.exec("update public.students set campus='Bulacan Campus' where id=1")
+  assert.deepEqual(await currentMarks(fixture.today), [])
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("new students receive today/future snapshots but no historical backfill", async () => {
+  const fixture = await marksFixture()
+  const newUser = "30000000-0000-4000-8000-000000000003"
+  await db.query("insert into auth.users(id,email,raw_app_meta_data) values ($1,'new@example.test',$2)", [newUser, JSON.stringify({ role: "student" })])
+  await db.query(`insert into public.students(id,user_id,student_id,full_name,email,parent_name,
+    parent_contact_number,program_id,year_level,section,campus)
+    select 3,$1,'CAL-3','New Student','new@example.test','Guardian','+639171234569',id,'2nd Year','21001','Main Campus'
+    from public.programs where program_code='BSIT'`, [newUser])
+  const marks = await currentMarks(fixture.today)
+  assert.equal(marks.length, 3)
+  assert(marks.every((row) => row.student_id === 3 && row.status === "NoClasses"))
+  await assertHistory(fixture)
+})
+
+test("roster changes and automatic snapshots roll back together", async () => {
+  const fixture = await marksFixture()
+  await asCalendarUser("admin")
+  await db.exec("savepoint roster_change")
+  await db.exec("update public.students set campus='MV Campus' where id=1")
+  assert.equal((await currentMarks(fixture.today)).length, 3)
+  await db.exec("rollback to savepoint roster_change; release savepoint roster_change")
+  assert.deepEqual(await currentMarks(fixture.today), [])
+  assert.equal((await db.query("select campus from public.students where id=1")).rows[0].campus, "Main Campus")
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("historical snapshots reject inserts, updates, deletion, and cascade deletion", async () => {
+  const fixture = await marksFixture()
+  await rejects(() => db.exec("update public.attendance_day_marks set campus='MV Campus' where student_id=1"))
+  await rejects(() => db.exec("delete from public.attendance_day_marks where student_id=2"))
+  await rejects(() => db.query("insert into public.attendance_day_marks(student_id,attendance_date,status,calendar_entry_id,campus) values (1,$1::date-1,'NoClasses',$2,'Main Campus')", [fixture.yesterday, fixture.main.id]))
+  await rejects(() => db.exec("delete from public.students where id=2"))
+  await asCalendarUser("admin")
+  await syncMarks(fixture.today, fixture.last)
+  await db.exec("reset role")
+  await rejects(() => db.query("update public.attendance_day_marks set attendance_date=$1::date-1 where student_id=1 and attendance_date=$2", [fixture.yesterday, fixture.today]))
+  await assertHistory(fixture)
+})
+
+test("sync rejects invalid ranges and unauthorized callers; internal helpers stay private", async () => {
+  const fixture = await marksFixture()
+  await asCalendarUser("admin")
+  for (const [from, to] of [[null, fixture.last], [fixture.today, null], [fixture.last, fixture.today], ["-infinity", fixture.last], [fixture.today, "infinity"]]) {
+    await rejects(() => syncMarks(from, to), "22023")
+  }
+  await rejects(() => db.query("select public.reconcile_calendar_marks($1,$2)", [fixture.today, fixture.last]), "42501")
+  for (const [name, verified] of [["student", true], ["teacher", true], ["admin", false], ["missing", true]]) {
+    await asCalendarUser(name, verified)
+    await rejects(() => syncMarks(fixture.today, fixture.last), "42501")
+  }
+  await db.exec("reset role")
+  await db.query("update public.users set status='inactive' where id=$1", [accessUsers.admin])
+  await asCalendarUser("admin")
+  await rejects(() => syncMarks(fixture.today, fixture.last), "42501")
+  await db.exec("reset role; set local role anon")
+  await rejects(() => syncMarks(fixture.today, fixture.last), "42501")
+})
