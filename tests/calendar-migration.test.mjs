@@ -582,3 +582,178 @@ test("sync rejects invalid ranges and unauthorized callers; internal helpers sta
   await db.exec("reset role; set local role anon")
   await rejects(() => syncMarks(fixture.today, fixture.last), "42501")
 })
+
+async function saveFixture() {
+  const fixture = await marksFixture()
+  const sql = (await readFile(new URL("202610250004_save_calendar_entry.sql", directory), "utf8"))
+    .replace(/^begin;$/m, "").replace(/^commit;$/m, "")
+  await db.exec(sql)
+  await db.exec(sql)
+  return fixture
+}
+const saveEntry = async (payload) => (await db.query("select public.save_calendar_entry($1::jsonb) as result", [JSON.stringify(payload)])).rows[0].result
+const entryPayload = (fixture, overrides = {}) => ({
+  title: "School event", tags: ["event"], attendanceImpact: "normal", audience: "everyone",
+  campuses: [], startsOn: fixture.today, endsOn: fixture.today, ...overrides,
+})
+const mainPayload = (fixture, overrides = {}) => entryPayload(fixture, {
+  id: fixture.main.id, title: "Break", tags: ["no_classes"], attendanceImpact: "no_classes",
+  reason: "Storm", campuses: ["Main Campus"], startsOn: fixture.yesterday, endsOn: fixture.last, ...overrides,
+})
+
+test("save RPC normalizes drafts, assigns actors, and never publishes or creates marks", async () => {
+  const fixture = await saveFixture()
+  await asCalendarUser("admin")
+  const result = await saveEntry(entryPayload(fixture, {
+    title: "  Meeting  ", campuses: [" MV Campus ", "Main Campus", "MV Campus"],
+    tags: ["meeting", "meeting"], reason: " ", location: " Room 1 ", startTime: "", endTime: null,
+  }))
+  assert.equal(result.ok, true)
+  let row = (await db.query("select * from public.calendar_entries where id=$1", [result.id])).rows[0]
+  assert.equal(row.title, "Meeting")
+  assert.deepEqual(row.campuses, ["MV Campus", "Main Campus"])
+  assert.equal(row.reason, null)
+  assert.equal(row.location, "Room 1")
+  assert.equal(row.start_time, null)
+  assert.equal(row.status, "draft")
+  assert.equal(row.created_by, accessUsers.admin)
+  assert.equal(row.updated_by, accessUsers.admin)
+  assert.equal(row.published_at, null)
+  assert.equal(row.cancelled_at, null)
+  assert.equal((await saveEntry(entryPayload(fixture, { id: result.id, title: "Edited", isPinned: true }))).ok, true)
+  row = (await db.query("select * from public.calendar_entries where id=$1", [result.id])).rows[0]
+  assert.equal(row.title, "Edited")
+  assert.equal(row.is_pinned, true)
+  assert.equal(row.status, "draft")
+  assert.deepEqual(await currentMarks(fixture.today), [])
+  assert.equal((await saveEntry(entryPayload(fixture, { id: 999999 }))).code, "NOT_FOUND")
+})
+
+test("save RPC rejects malformed, forged, and constraint-breaking input atomically", async () => {
+  const fixture = await saveFixture()
+  await asCalendarUser("admin")
+  const count = (await db.query("select count(*) as count from public.calendar_entries")).rows
+  for (const payload of [null, [], "entry", {}, ...[
+    { status: "published" }, { publishedAt: "2026-10-25" }, { created_by: accessUsers.student },
+    { id: "1" }, { id: -1 }, { id: 1.2 }, { title: 7 }, { description: {} }, { reason: false },
+    { isPinned: "true" }, { isPinned: null }, { tags: null }, { tags: [null] },
+    { campuses: "Main Campus" }, { campuses: [1] }, { startsOn: "10/25/2026" },
+    { startTime: "08:00:00", endTime: "09:00" },
+  ].map((invalid) => entryPayload(fixture, invalid))]) {
+    await rejects(() => saveEntry(payload), "22023")
+  }
+  for (const invalid of [
+    { title: " " }, { title: "x".repeat(161) }, { campuses: [" "] }, { tags: [] },
+    { startsOn: fixture.last, endsOn: fixture.today },
+    { tags: ["no_classes"], attendanceImpact: "normal" },
+    { tags: ["no_classes"], attendanceImpact: "no_classes", reason: null },
+    { tags: ["online_class"], attendanceImpact: "online_manual", reason: "Storm", audience: "students" },
+    { startTime: "08:00", endTime: null },
+  ]) await rejects(() => saveEntry(entryPayload(fixture, invalid)))
+  assert.deepEqual((await db.query("select count(*) as count from public.calendar_entries")).rows, count)
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("published save rejects overlap while drafts and normal events may overlap", async () => {
+  const fixture = await saveFixture()
+  await db.query("update public.calendar_entries set starts_on=$1 where id=$2", [fixture.today, fixture.main.id])
+  await asCalendarUser("admin")
+  const valid = mainPayload(fixture, { startsOn: fixture.today })
+  assert.equal((await saveEntry(valid)).ok, true)
+  const before = (await db.query("select * from public.calendar_entries where id=$1", [fixture.main.id])).rows
+  const marks = await currentMarks(fixture.today)
+  for (const campuses of [["MV Campus"], [], ["Main Campus", "MV Campus"]]) {
+    const result = await saveEntry({ ...valid, campuses })
+    assert.equal(result.code, "CALENDAR_CONFLICT")
+    assert.match(result.message, /Online/)
+  }
+  assert.deepEqual((await db.query("select * from public.calendar_entries where id=$1", [fixture.main.id])).rows, before)
+  assert.deepEqual(await currentMarks(fixture.today), marks)
+  assert.equal((await saveEntry({ ...valid, id: null, campuses: [] })).ok, true)
+  assert.equal((await saveEntry(entryPayload(fixture, { id: fixture.main.id, endsOn: fixture.last }))).ok, true)
+  assert.equal((await currentMarks(fixture.today)).filter((row) => row.student_id === 1).length, 0)
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("published edits reconcile old/new ranges, campus scope, and exception status", async () => {
+  const fixture = await saveFixture()
+  await db.query("update public.calendar_entries set starts_on=$1 where id=$2", [fixture.today, fixture.main.id])
+  await asCalendarUser("admin")
+  const valid = mainPayload(fixture, { startsOn: fixture.today })
+  await saveEntry(valid)
+  assert.equal((await currentMarks(fixture.today)).filter((row) => row.student_id === 1).length, 3)
+  assert.equal((await saveEntry({ ...valid, startsOn: fixture.tomorrow })).ok, true)
+  assert.equal((await currentMarks(fixture.today)).filter((row) => row.student_id === 1).length, 2)
+  assert.equal((await saveEntry({ ...valid, campuses: ["Bulacan Campus"] })).ok, true)
+  assert.equal((await currentMarks(fixture.today)).filter((row) => row.student_id === 1).length, 0)
+  assert.equal((await saveEntry({ ...valid, tags: ["online_class"], attendanceImpact: "online_manual" })).ok, true)
+  const marks = (await currentMarks(fixture.today)).filter((row) => row.student_id === 1)
+  assert.equal(marks.length, 3)
+  assert(marks.every((row) => row.status === "OnlineManual"))
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("overlap checks include shared endpoints and existing all-campus entries", async () => {
+  const fixture = await saveFixture()
+  await db.query("update public.calendar_entries set starts_on=$1 where id=$2", [fixture.today, fixture.main.id])
+  const dates = (await db.query("select ($1::date+1)::text as next, ($1::date+2)::text as later", [fixture.last])).rows[0]
+  await entry({ title: "All-campus break", tags: ["no_classes"], attendance_impact: "no_classes", reason: "Break",
+    starts_on: dates.next, ends_on: dates.next, status: "published", published_at: `${fixture.today}T00:00:00Z` })
+  await asCalendarUser("admin")
+  const valid = mainPayload(fixture, { startsOn: fixture.today })
+  assert.equal((await saveEntry({ ...valid, startsOn: fixture.last, campuses: ["MV Campus"] })).code, "CALENDAR_CONFLICT")
+  const conflict = await saveEntry({ ...valid, startsOn: dates.next, endsOn: dates.next })
+  assert.equal(conflict.code, "CALENDAR_CONFLICT")
+  assert.match(conflict.message, /All-campus break/)
+  assert.equal((await saveEntry({ ...valid, startsOn: dates.later, endsOn: dates.later })).ok, true)
+})
+
+test("historical attendance scope stays locked while descriptive edits preserve lifecycle", async () => {
+  const fixture = await saveFixture()
+  await asCalendarUser("admin")
+  const before = (await db.query("select published_at,cancelled_at,status,created_by from public.calendar_entries where id=$1", [fixture.main.id])).rows
+  assert.equal((await saveEntry(mainPayload(fixture, { title: "Updated reason", description: "Details", reason: "New explanation" }))).ok, true)
+  assert.deepEqual((await db.query("select published_at,cancelled_at,status,created_by from public.calendar_entries where id=$1", [fixture.main.id])).rows, before)
+  for (const changes of [
+    { startsOn: fixture.today }, { endsOn: fixture.today }, { campuses: [] },
+    { tags: ["no_classes", "holiday"] }, { audience: "students" },
+    { tags: ["event"], attendanceImpact: "normal" },
+  ]) assert.equal((await saveEntry(mainPayload(fixture, changes))).code, "HISTORICAL_SCOPE")
+  await db.exec("reset role")
+  await db.query("update public.calendar_entries set status='cancelled',cancelled_at=now() where id=$1", [fixture.main.id])
+  await asCalendarUser("admin")
+  assert.equal((await saveEntry(mainPayload(fixture, { title: "Cancelled details" }))).ok, true)
+  assert.equal((await db.query("select status from public.calendar_entries where id=$1", [fixture.main.id])).rows[0].status, "cancelled")
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("normal entries cannot become backdated exceptions; drafts retain dates for later publication validation", async () => {
+  const fixture = await saveFixture()
+  const normal = await entry({ starts_on: fixture.yesterday, ends_on: fixture.today,
+    status: "published", published_at: `${fixture.yesterday}T00:00:00Z` })
+  await asCalendarUser("admin")
+  const payload = mainPayload(fixture, { id: normal.id })
+  assert.equal((await saveEntry(payload)).code, "PAST_ATTENDANCE_DATE")
+  assert.equal((await saveEntry({ ...payload, id: null })).ok, true)
+  assert.equal((await saveEntry(entryPayload(fixture, { id: normal.id, startsOn: fixture.yesterday }))).ok, true)
+})
+
+test("save requires an active verified admin and keeps overlap helper private", async () => {
+  const fixture = await saveFixture()
+  for (const [name, verified] of [["student", true], ["teacher", true], ["admin", false], ["missing", true]]) {
+    await asCalendarUser(name, verified)
+    await rejects(() => saveEntry(entryPayload(fixture)), "42501")
+  }
+  await asCalendarUser("admin")
+  await rejects(() => db.query("select * from public.calendar_entry_conflict(null,$1,$2,'{}')", [fixture.today, fixture.last]), "42501")
+  await db.exec("reset role")
+  await db.query("update public.users set status='inactive' where id=$1", [accessUsers.admin])
+  await asCalendarUser("admin")
+  await rejects(() => saveEntry(entryPayload(fixture)), "42501")
+  await db.exec("reset role; set local role anon")
+  await rejects(() => saveEntry(entryPayload(fixture)), "42501")
+})

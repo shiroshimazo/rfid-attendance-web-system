@@ -1,6 +1,6 @@
 # School Calendar & Announcements — approval checklist
 
-Source: `Calendar.md`. Tasks 01–05 are complete. Validation, database foundation, access policies, recipient resolution, the effective calendar view, and mark reconciliation are implemented locally; entry mutation workflows and UI remain pending.
+Source: `Calendar.md`. Tasks 01–06 are complete. Validation, database foundation, access policies, recipient resolution, calendar view, mark reconciliation, and entry saves are implemented locally; publish/cancel/delete workflows and UI remain pending.
 
 ## Execution rule
 
@@ -26,7 +26,7 @@ Reuse existing shadcn/ui components in `src/components/ui`, existing action/auth
 - [x] **03 — Database foundation.** Added `202610250001_school_calendar.sql` with seven enums, four tables, planned indexes, constraints, campus validation, and the existing updated-at trigger. NoClasses/OnlineManual snapshots remain separate from RFID records. RLS is enabled and client table/sequence grants are revoked until Task 04. Eleven PGlite tests cover real prior migrations, reapplication, enum parity, constraints, uniqueness, foreign keys, access denial, and existing-data preservation. All 27 calendar/schema/academic regression tests and focused ESLint pass. Hosted migration execution, role policies, historical mutation guards, reconciliation, and RPCs remain pending.
 - [x] **04 — Access and recipient functions.** Added `202610250002_school_calendar_access.sql` with verified-session campus/recipient functions, role/campus/audience RLS, own-only receipt upserts with protected identity and server timestamps, scoped snapshot reads, admin-only delivery reads, and a security-invoker calendar view. Direct entry/mark/delivery writes remain unavailable. Six added PGlite tests cover role visibility, active/archived accounts, verification, unknown/anonymous callers, teacher deduplication, admin exclusion, receipt protection, inclusive date expansion, and history visibility. All 33 calendar/schema/academic regression tests and focused ESLint pass. No hosted migration execution.
 - [x] **05 — Mark reconciliation function.** Added `202610250003_calendar_attendance_marks.sql`: verified-admin sync RPC, private reconciliation helper, student insert/campus/status hooks, shared advisory locking, and historical snapshot guards. Sync returns insertion/deletion counts, clamps dates to today in Manila, preserves past snapshots, and gives online exceptions precedence. Roster changes materialize today/future snapshots without a report read; changes roll back atomically. Eight added PGlite tests cover counts, idempotence, date bounds, source cancellation/range changes, transfers/lifecycle, new students, historical guards, and authorization. All 73 calendar/schema/academic/lifecycle tests and focused ESLint pass. Real midnight rollover and concurrent hosted sessions were not exercised. Save/publish/cancel RPC integration remains in Tasks 06–08.
-- [ ] **06 — Save function.** Implement save_calendar_entry with lifecycle validation, campus normalization, concurrency-safe overlap protection for published edits, and reconciliation. Test invalid input and historical protection.
+- [x] **06 — Save function.** Added `202610250004_save_calendar_entry.sql` with a verified-admin save RPC, strict camelCase payload validation, normalized/deduplicated campuses and tags, protected lifecycle/actor fields, and a private overlap helper. Saves acquire the shared advisory lock before row locking and overlap checks. Drafts may overlap; published edits reconcile old/new ranges; historical attendance scope is locked. Eight added tests cover invalid payloads, lifecycle preservation, overlap boundaries/all-campus conflicts, mark reconciliation, historical protection, and authorization. All 81 calendar/schema/academic/lifecycle tests pass; two affected tests pass again after lint cleanup. Focused ESLint is clean. Concurrent hosted sessions remain untested; publish/cancel/delete RPCs remain Tasks 07–08.
 - [ ] **07 — Publish/republish function.** Implement publish_calendar_entry, permitted transitions, overlap lock, publish timestamps, and marks. Test concurrent/conflicting publication and republish behavior.
 - [ ] **08 — Cancel/delete functions.** Implement cancellation and draft-only deletion, preserving history and reconciling affected dates. Test forbidden hard deletes and transitions, including direct database access.
 - [ ] **09 — Database audit/realtime and recovery scripts.** Wire existing audit patterns and publication guards; add verification SQL, rollback SQL, and database docs. Test rollback dependency order and existing-data preservation.
@@ -54,8 +54,8 @@ Reuse existing shadcn/ui components in `src/components/ui`, existing action/auth
 
 ## Current status
 
-- Completed: Tasks 01–05, including scope/rule documentation, validation, database foundation, access policies, recipient functions, calendar view, and transactional mark reconciliation.
-- Awaiting confirmation: task 06 only. Task 05 approval does not authorize later tasks.
+- Completed: Tasks 01–06, including scope/rule documentation, validation, database foundation, access policies, recipient functions, calendar view, mark reconciliation, and validated entry saves.
+- Awaiting confirmation: task 07 only. Task 06 approval does not authorize later tasks.
 - Database migration execution was limited to disposable local PGlite tests. No hosted database changes, UI changes, deployment, or email sends were performed.
 
-Suggested Task 05 commit: `feat(calendar): reconcile attendance marks on roster changes`
+Suggested Task 06 commit: `feat(calendar): add validated saves and overlap protection`

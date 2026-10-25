@@ -10,9 +10,13 @@ access: verified-admin mark sync, private reconciliation, student roster hooks,
 and immutable past snapshots. The shared lock is acquired before student row
 changes; future entry RPCs must use the same lock. Historical snapshot guards
 also reject hard deletion of students with past calendar history; use archive.
+Task 06 adds `202610250004_save_calendar_entry.sql` after mark reconciliation:
+verified-admin draft creation and full-entry edits, protected lifecycle fields,
+historical-scope restrictions, locked overlap checks, and published-edit mark
+reconciliation. The save payload/result contract is documented in Calendar.md.
 These migrations are tested locally only; they do not authorize hosted execution.
-Entry mutation integration, RFID integration, verification SQL, and rollback SQL
-remain pending. The feature is not ready for rollout.
+Publish/cancel/delete workflows, RFID integration, verification SQL, and rollback
+SQL remain pending. The feature is not ready for rollout.
 
 [Calendar.md](../../Calendar.md) defines the planned calendar schema and separate
 RFID-function integration migration. [Calendar-TODO.md](../../Calendar-TODO.md)
