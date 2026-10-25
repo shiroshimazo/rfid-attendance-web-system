@@ -222,3 +222,198 @@ test("foundation denies client access until role policies are installed", async 
     await db.exec("reset role")
   }
 })
+
+const accessUsers = {
+  student: userId,
+  mv: "30000000-0000-4000-8000-000000000002",
+  admin: "10000000-0000-4000-8000-000000000001",
+  teacher: "20000000-0000-4000-8000-000000000001",
+  both: "20000000-0000-4000-8000-000000000002",
+  unassigned: "20000000-0000-4000-8000-000000000003",
+}
+const accessSession = (name) => accessUsers[name].replace("-0000-", "-9999-")
+
+async function asCalendarUser(name, verified = true) {
+  await db.exec("reset role")
+  await db.query("select set_config('request.jwt.claim.sub', $1, true)", [accessUsers[name] ?? ""])
+  await db.query("select set_config('request.jwt.claims', $1, true)", [JSON.stringify({
+    role: "authenticated", session_id: verified && accessUsers[name] ? accessSession(name) : "unknown",
+  })])
+  await db.exec("set local role authenticated")
+}
+
+async function accessFixture() {
+  const sql = (await readFile(new URL("202610250002_school_calendar_access.sql", directory), "utf8"))
+    .replace(/^begin;$/m, "").replace(/^commit;$/m, "")
+  await db.exec(sql)
+  await db.exec(sql)
+  for (const [name, id] of Object.entries(accessUsers)) {
+    const role = ["student", "mv"].includes(name) ? "student" : name === "admin" ? "admin" : "teacher"
+    if (name !== "student") {
+      await db.query("insert into auth.users(id,email,raw_app_meta_data) values ($1,$2,$3)", [id, `${name}@example.test`, JSON.stringify({ role })])
+    }
+    await db.query("insert into public.email_verified_sessions(session_id,user_id) values ($1,$2)", [accessSession(name), id])
+    if (role === "teacher") {
+      await db.query("insert into public.teachers(user_id,teacher_id,full_name,email,department) values ($1,$2,$2,$3,'BSIT')", [id, name, `${name}@example.test`])
+    }
+  }
+  await db.query(`insert into public.students(id,user_id,student_id,full_name,email,parent_name,
+    parent_contact_number,program_id,year_level,section,campus)
+    select 2,$1,'CAL-2','MV Student','mv@example.test','Guardian','+639171234568',id,'2nd Year','21001','MV Campus'
+    from public.programs where program_code='BSIT'`, [accessUsers.mv])
+  for (const [name, campuses] of [["teacher", ["Main Campus"]], ["both", ["Main Campus", "MV Campus"]]]) {
+    for (const campus of campuses) {
+      await db.query(`insert into public.teacher_assignments(teacher_id,program_id,course_id,year_level,section,campus)
+        select t.id,c.program_id,c.id,'2nd Year','21001',$2 from public.teachers t
+        cross join public.courses c where t.user_id=$1 order by c.id limit 1`, [accessUsers[name], campus])
+    }
+  }
+  const entries = {}
+  for (const [title, overrides] of Object.entries({
+    draft: { status: "draft", published_at: null },
+    all: {},
+    main: { tags: ["no_classes"], attendance_impact: "no_classes", campuses: ["Main Campus"], ends_on: "2026-10-26", reason: "Storm" },
+    mv: { tags: ["online_class"], attendance_impact: "online_manual", campuses: ["MV Campus"], reason: "Storm" },
+    teachers: { audience: "teachers", campuses: ["Main Campus"] },
+    students: { audience: "students", campuses: ["Main Campus"] },
+    cancelled: { status: "cancelled", cancelled_at: "2026-10-25T02:00:00Z", campuses: ["Main Campus"] },
+    other: { campuses: ["Bulacan Campus"] },
+    caseMismatch: { campuses: ["main campus"] },
+    allImpact: { tags: ["online_class"], attendance_impact: "online_manual", starts_on: "2026-10-28", ends_on: "2026-10-29", reason: "Storm" },
+  })) entries[title] = await entry({ title, status: "published", published_at: "2026-10-25T00:00:00Z", ...overrides })
+  await db.query(`insert into public.attendance_day_marks(student_id,attendance_date,status,calendar_entry_id,campus)
+    values (1,'2026-10-25','NoClasses',$1,'Main Campus'),(2,'2026-10-25','OnlineManual',$2,'MV Campus')`, [entries.main.id, entries.mv.id])
+  await db.query(`insert into public.calendar_email_deliveries(calendar_entry_id,batch_id,notification_type,
+    recipient_user_id,recipient_email,recipient_role,subject,html_body,text_body)
+    values ($1,'40000000-0000-4000-8000-000000000001','published',$2,'student@example.test','student','Subject','Body','Body')`, [entries.main.id, userId])
+  return entries
+}
+
+const visibleTitles = async () => (await db.query("select title from public.calendar_entries order by title")).rows.map((row) => row.title)
+const recipients = async (id) => (await db.query("select * from public.calendar_entry_recipients($1)", [id])).rows.map((row) => row.user_id).sort()
+
+test("calendar RLS isolates drafts, audiences, exact campuses, and cancelled entries", async () => {
+  await accessFixture()
+  await asCalendarUser("admin")
+  assert.equal((await visibleTitles()).length, 10)
+  await asCalendarUser("student")
+  assert.deepEqual(await visibleTitles(), ["all", "allImpact", "cancelled", "main", "students"])
+  await asCalendarUser("mv")
+  assert.deepEqual(await visibleTitles(), ["all", "allImpact", "mv"])
+  await asCalendarUser("teacher")
+  assert.deepEqual(await visibleTitles(), ["all", "allImpact", "cancelled", "main", "teachers"])
+  await asCalendarUser("unassigned")
+  assert.deepEqual(await visibleTitles(), ["all", "allImpact"])
+})
+
+test("campus helper resolves active assignments and recipient resolver deduplicates teachers", async () => {
+  const entries = await accessFixture()
+  await asCalendarUser("both")
+  assert.deepEqual((await db.query("select public.current_user_campuses() as campuses")).rows[0].campuses, ["MV Campus", "Main Campus"])
+  await asCalendarUser("student")
+  assert.deepEqual((await db.query("select public.current_user_campuses() as campuses")).rows[0].campuses, ["Main Campus"])
+  await asCalendarUser("admin")
+  assert.deepEqual(await recipients(entries.all.id), ["student", "mv", "teacher", "both", "unassigned"].map((name) => accessUsers[name]).sort())
+  assert.deepEqual(await recipients(entries.main.id), ["student", "teacher", "both"].map((name) => accessUsers[name]).sort())
+  assert.deepEqual(await recipients(entries.teachers.id), [accessUsers.teacher, accessUsers.both].sort())
+  assert.deepEqual(await recipients(entries.students.id), [userId])
+  assert.deepEqual(await recipients(entries.caseMismatch.id), [])
+  assert.deepEqual(await recipients(999999), [])
+  await db.exec("reset role")
+  await db.query("update public.teacher_assignments set status='inactive' where teacher_id=(select id from public.teachers where user_id=$1) and campus='Main Campus'", [accessUsers.both])
+  await db.exec("update public.students set status='inactive' where id=1")
+  await asCalendarUser("admin")
+  assert.deepEqual(await recipients(entries.main.id), [accessUsers.teacher])
+  await asCalendarUser("both")
+  assert.deepEqual((await db.query("select public.current_user_campuses() as campuses")).rows[0].campuses, ["MV Campus"])
+  await db.exec("reset role")
+  await db.query("update public.teachers set status='archived' where user_id=$1", [accessUsers.unassigned])
+  await asCalendarUser("admin")
+  assert.deepEqual(await recipients(entries.all.id), ["mv", "teacher", "both"].map((name) => accessUsers[name]).sort())
+  await asCalendarUser("student")
+  assert.deepEqual(await visibleTitles(), [])
+  assert.deepEqual((await db.query("select public.current_user_campuses() as campuses")).rows[0].campuses, [])
+  await asCalendarUser("unassigned")
+  assert.deepEqual(await visibleTitles(), [])
+})
+
+test("security-invoker view expands inclusive dates using only caller-visible students", async () => {
+  const entries = await accessFixture()
+  for (const [name, campuses] of [["student", ["Main Campus"]], ["teacher", ["Main Campus"]], ["mv", ["MV Campus"]], ["admin", ["MV Campus", "Main Campus"]]]) {
+    await asCalendarUser(name)
+    const { rows } = await db.query("select campus,attendance_date::text from public.calendar_attendance_days where entry_id=$1 order by campus,attendance_date", [entries.allImpact.id])
+    assert.deepEqual(rows, campuses.flatMap((campus) => ["2026-10-28", "2026-10-29"].map((attendance_date) => ({ campus, attendance_date }))))
+    assert.equal((await db.query("select count(*)::int as count from public.calendar_attendance_days where entry_id in ($1,$2,$3)", [entries.draft.id, entries.cancelled.id, entries.all.id])).rows[0].count, 0)
+  }
+  await asCalendarUser("student")
+  assert.equal((await db.query("select count(*)::int as count from public.calendar_attendance_days where entry_id=$1", [entries.main.id])).rows[0].count, 2)
+  assert.equal((await db.query("select count(*)::int as count from public.calendar_attendance_days where entry_id=$1", [entries.mv.id])).rows[0].count, 0)
+})
+
+test("receipts upsert safely with server timestamps and immutable identity", async () => {
+  const entries = await accessFixture()
+  await asCalendarUser("student")
+  const upsert = () => db.query(`insert into public.calendar_entry_reads(entry_id,user_id,read_at)
+    values ($1,$2,'2999-01-01') on conflict(entry_id,user_id) do update
+    set entry_id=excluded.entry_id,user_id=excluded.user_id,read_at=excluded.read_at
+    returning read_at < '2999-01-01'::timestamptz as server_time`, [entries.main.id, userId])
+  assert.equal((await upsert()).rows[0].server_time, true)
+  await db.exec("reset role")
+  await db.query("update public.calendar_entries set title='Edited main' where id=$1", [entries.main.id])
+  await asCalendarUser("student")
+  assert.equal((await upsert()).rows[0].server_time, true)
+  assert.equal((await db.query("select r.read_at >= e.updated_at as read from public.calendar_entry_reads r join public.calendar_entries e on e.id=r.entry_id")).rows[0].read, true)
+  await rejects(() => db.query("update public.calendar_entry_reads set entry_id=$1", [entries.all.id]))
+  for (const [id, recipient] of [[entries.mv.id, userId], [entries.draft.id, userId], [entries.cancelled.id, userId], [entries.main.id, accessUsers.mv]]) {
+    await rejects(() => db.query("insert into public.calendar_entry_reads(entry_id,user_id) values ($1,$2)", [id, recipient]), "42501")
+  }
+  await rejects(() => db.exec("delete from public.calendar_entry_reads"), "42501")
+  await asCalendarUser("mv")
+  assert.deepEqual((await db.query("select * from public.calendar_entry_reads")).rows, [])
+  assert.equal((await db.query("update public.calendar_entry_reads set read_at=now() returning *")).rows.length, 0)
+  await asCalendarUser("admin")
+  await rejects(() => db.query("insert into public.calendar_entry_reads(entry_id,user_id) values ($1,$2)", [entries.all.id, accessUsers.admin]), "42501")
+})
+
+test("marks use student scope independently of source visibility; deliveries are admin-only", async () => {
+  const entries = await accessFixture()
+  await db.query("update public.calendar_entries set status='cancelled',cancelled_at=now(),campuses=array['Bulacan Campus'] where id=$1", [entries.main.id])
+  for (const [name, ids] of [["student", [1]], ["mv", [2]], ["teacher", [1]], ["both", [1, 2]], ["admin", [1, 2]], ["unassigned", []]]) {
+    await asCalendarUser(name)
+    assert.deepEqual((await db.query("select student_id::int from public.attendance_day_marks order by student_id")).rows.map((row) => row.student_id), ids)
+    assert.equal((await db.query("select * from public.calendar_email_deliveries")).rows.length, name === "admin" ? 1 : 0)
+    for (const table of ["calendar_entries", "attendance_day_marks", "calendar_email_deliveries"]) {
+      for (const privilege of ["INSERT", "UPDATE", "DELETE"]) {
+        assert.equal((await db.query("select has_table_privilege('authenticated',$1,$2) as allowed", [`public.${table}`, privilege])).rows[0].allowed, false)
+      }
+    }
+  }
+})
+
+test("unverified, inactive, unknown, and anonymous callers cannot bypass calendar access", async () => {
+  const entries = await accessFixture()
+  for (const [name, verified] of [["admin", false], ["student", false], ["teacher", false], ["missing", true]]) {
+    await asCalendarUser(name, verified)
+    assert.deepEqual(await visibleTitles(), [])
+    for (const table of ["calendar_entry_reads", "attendance_day_marks", "calendar_email_deliveries", "calendar_attendance_days"]) {
+      assert.deepEqual((await db.query(`select * from public.${table}`)).rows, [])
+    }
+    assert.deepEqual((await db.query("select public.current_user_campuses() as campuses")).rows[0].campuses, [])
+    await rejects(() => recipients(entries.main.id), "42501")
+    await rejects(() => db.query("insert into public.calendar_entry_reads(entry_id,user_id) values ($1,$2)", [entries.all.id, userId]), "42501")
+  }
+  for (const name of ["teacher", "student"]) {
+    await asCalendarUser(name)
+    await rejects(() => recipients(entries.main.id), "42501")
+  }
+  await db.exec("reset role")
+  await db.query("update public.users set status='inactive' where id=$1", [accessUsers.admin])
+  await asCalendarUser("admin")
+  assert.deepEqual(await visibleTitles(), [])
+  await rejects(() => recipients(entries.main.id), "42501")
+  assert.deepEqual((await db.query("select * from public.calendar_email_deliveries")).rows, [])
+  await db.exec("reset role; set local role anon")
+  await rejects(() => visibleTitles(), "42501")
+  await rejects(() => db.query("select public.current_user_campuses()"), "42501")
+  await rejects(() => recipients(entries.main.id), "42501")
+})
