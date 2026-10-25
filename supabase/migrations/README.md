@@ -14,9 +14,13 @@ Task 06 adds `202610250004_save_calendar_entry.sql` after mark reconciliation:
 verified-admin draft creation and full-entry edits, protected lifecycle fields,
 historical-scope restrictions, locked overlap checks, and published-edit mark
 reconciliation. The save payload/result contract is documented in Calendar.md.
+Task 07 adds `202610250005_publish_calendar_entry.sql` after saves: draft/cancelled
+publication, refreshed publish timestamps, overlap protection under the same lock,
+and atomic exception snapshots. Email sending remains a later task. PGlite tests
+cover queued conflicts and lock ownership, not true multi-session scheduling.
 These migrations are tested locally only; they do not authorize hosted execution.
-Publish/cancel/delete workflows, RFID integration, verification SQL, and rollback
-SQL remain pending. The feature is not ready for rollout.
+Cancel/delete workflows, RFID integration, verification SQL, and rollback SQL
+remain pending. The feature is not ready for rollout.
 
 [Calendar.md](../../Calendar.md) defines the planned calendar schema and separate
 RFID-function integration migration. [Calendar-TODO.md](../../Calendar-TODO.md)

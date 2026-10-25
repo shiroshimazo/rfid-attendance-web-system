@@ -3,7 +3,7 @@
 **Project:** RFID Attendance Web System  
 **Execution checklist:** [Calendar-TODO.md](Calendar-TODO.md) — separate confirmation before each task
 **Prepared:** 2026-10-25  
-**Status:** Tasks 01–06 complete: scope/rules, validation, database foundation, access policies, recipient functions, calendar view, mark reconciliation, and entry saves, tested locally. Publish/cancel/delete workflows, hosted migration execution, and UI remain pending; see the execution checklist.
+**Status:** Tasks 01–07 complete: scope/rules, validation, database foundation, access policies, recipient functions, calendar view, mark reconciliation, entry saves, and publish/republish, tested locally. Cancel/delete workflows, hosted migration execution, and UI remain pending; see the execution checklist.
 **Scope change:** **R06 — School Calendar & Announcements** (supersedes the holiday-management deferral only for this feature; existing R05 cleanup remains separate)
 
 ---
@@ -653,6 +653,13 @@ and historical-scope violations return `{ ok: false, code, message }`. Invalid
 types/constraints and authorization failures raise database errors. Save never
 publishes, cancels, or republishes an entry.
 
+Publish/republish accepts a positive integer id and returns `{ ok: true, id }`
+on success. Missing entries, already-published entries, past attendance dates,
+and overlaps return `{ ok: false, code, message }`. Invalid ids and unauthorized
+calls raise database errors. Publication refreshes published_at, clears
+cancelled_at, and reconciles attendance-impacting entries in the same transaction;
+a reconciliation failure rolls back publication. Email dispatch is a later task.
+
 All public mutation RPCs are security definer, require an active, verified admin, and grant execute only to authenticated (revoke the default PUBLIC grant). Role checks must fail closed for a null role. Internal reconciliation helpers have no client execute grant.
 
 Authenticated users, including admins, have no direct entry INSERT/UPDATE/DELETE grants or policies. Mutations go through these RPCs; database guards also reject deletion of ever-published entries and invalid lifecycle changes. Save cannot modify lifecycle timestamps supplied by the caller. Publish accepts only draft/cancelled, cancel only published, and no transition returns an entry to draft. All calendar mutations and roster reconciliation share the advisory lock. Overlap validation applies to publish/republish and published edits, never merely to the form.
@@ -1094,6 +1101,7 @@ otherwise reuse the already imported `CalendarClockIcon` or
 | `supabase/migrations/202610250002_school_calendar_access.sql` | Task 04: campus/recipient functions, read/receipt policies and grants, receipt guard, security-invoker view; later tasks add mutation and realtime behavior separately |
 | `supabase/migrations/202610250003_calendar_attendance_marks.sql` | Task 05: admin sync RPC, private reconciliation helper, historical snapshot guard, student roster hooks, shared advisory lock |
 | `supabase/migrations/202610250004_save_calendar_entry.sql` | Task 06: validated full-entry saves, lifecycle preservation, normalized campus/tag arrays, private overlap helper, published-edit reconciliation |
+| `supabase/migrations/202610250005_publish_calendar_entry.sql` | Task 07: validated draft/cancelled publication, shared overlap lock, refreshed publish timestamp, atomic mark reconciliation |
 | `supabase/verify_school_calendar.sql` | PASS/FAIL checks for schema, constraints, RLS, overlap, marks, recipients |
 | `supabase/rollback_school_calendar.sql` | Restore pre-calendar RFID function/grants and any changed audit helper, remove roster hooks, then drop new objects in dependency order; preserve existing attendance data |
 | `supabase/migrations/README.md` | Apply/verify/rollback instructions |

@@ -757,3 +757,152 @@ test("save requires an active verified admin and keeps overlap helper private", 
   await db.exec("reset role; set local role anon")
   await rejects(() => saveEntry(entryPayload(fixture)), "42501")
 })
+
+async function publishFixture() {
+  const fixture = await saveFixture()
+  await db.exec("update public.calendar_entries set status='cancelled',cancelled_at=now() where status='published'")
+  const sql = (await readFile(new URL("202610250005_publish_calendar_entry.sql", directory), "utf8"))
+    .replace(/^begin;$/m, "").replace(/^commit;$/m, "")
+  await db.exec(sql)
+  await db.exec(sql)
+  return fixture
+}
+const publishEntry = async (id) => (await db.query("select public.publish_calendar_entry($1) as result", [id])).rows[0].result
+
+async function draftException(fixture, overrides = {}) {
+  return entry({ title: "Publish break", tags: ["no_classes"], attendance_impact: "no_classes",
+    reason: "Storm", campuses: ["Main Campus"], starts_on: fixture.today, ends_on: fixture.last, ...overrides })
+}
+
+test("publishing no-class entries creates scoped marks atomically and exposes the announcement", async () => {
+  const fixture = await publishFixture()
+  const draft = await draftException(fixture)
+  await asCalendarUser("admin")
+  assert.deepEqual(await publishEntry(draft.id), { ok: true, id: draft.id })
+  const row = (await db.query("select * from public.calendar_entries where id=$1", [draft.id])).rows[0]
+  assert.equal(row.status, "published")
+  assert(row.published_at)
+  assert.equal(row.cancelled_at, null)
+  assert.equal(row.updated_by, accessUsers.admin)
+  const marks = await currentMarks(fixture.today)
+  assert.equal(marks.length, 3)
+  assert(marks.every((mark) => mark.student_id === 1 && mark.status === "NoClasses" && mark.calendar_entry_id === draft.id))
+  assert.equal((await db.query("select count(*)::int as count from public.calendar_email_deliveries")).rows[0].count, 0)
+  await asCalendarUser("student")
+  assert((await visibleTitles()).includes("Publish break"))
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("normal publication creates no marks; all-campus online publication creates only OnlineManual", async () => {
+  const fixture = await publishFixture()
+  const normal = await entry({ starts_on: fixture.today, ends_on: fixture.last })
+  const online = await draftException(fixture, { tags: ["no_classes", "online_class"], attendance_impact: "online_manual", campuses: [] })
+  await asCalendarUser("admin")
+  assert.equal((await publishEntry(normal.id)).ok, true)
+  assert.deepEqual(await currentMarks(fixture.today), [])
+  assert.equal((await publishEntry(online.id)).ok, true)
+  const marks = await currentMarks(fixture.today)
+  assert.equal(marks.length, 6)
+  assert(marks.every((mark) => mark.status === "OnlineManual"))
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("publication allows different campuses and rejects same-campus and all-campus overlap", async () => {
+  const fixture = await publishFixture()
+  const main = await draftException(fixture)
+  const mv = await draftException(fixture, { campuses: ["MV Campus"], tags: ["online_class"], attendance_impact: "online_manual" })
+  const conflicts = [await draftException(fixture), await draftException(fixture, { campuses: [] })]
+  await asCalendarUser("admin")
+  assert.equal((await publishEntry(main.id)).ok, true)
+  assert.equal((await publishEntry(mv.id)).ok, true)
+  const marks = await currentMarks(fixture.today)
+  for (const draft of conflicts) {
+    const result = await publishEntry(draft.id)
+    assert.equal(result.code, "CALENDAR_CONFLICT")
+    assert.match(result.message, /Publish break/)
+    assert.equal((await db.query("select status from public.calendar_entries where id=$1", [draft.id])).rows[0].status, "draft")
+  }
+  assert.deepEqual(await currentMarks(fixture.today), marks)
+})
+
+test("republishing resets the publish window and rejects repeated publication", async () => {
+  const fixture = await publishFixture()
+  const cancelled = await draftException(fixture, { status: "cancelled",
+    published_at: "2020-01-01T00:00:00Z", cancelled_at: "2020-01-02T00:00:00Z" })
+  await asCalendarUser("admin")
+  assert.equal((await publishEntry(cancelled.id)).ok, true)
+  const published = (await db.query("select * from public.calendar_entries where id=$1", [cancelled.id])).rows
+  assert.equal(published[0].cancelled_at, null)
+  assert(new Date(published[0].published_at) > new Date(cancelled.published_at))
+  assert.equal((await currentMarks(fixture.today)).length, 3)
+  assert.equal((await publishEntry(cancelled.id)).code, "INVALID_TRANSITION")
+  assert.deepEqual((await db.query("select * from public.calendar_entries where id=$1", [cancelled.id])).rows, published)
+})
+
+test("publish and republish reject past attendance dates but allow past normal events", async () => {
+  const fixture = await publishFixture()
+  const draft = await draftException(fixture, { starts_on: fixture.yesterday })
+  const normal = await entry({ starts_on: fixture.yesterday, ends_on: fixture.yesterday })
+  await asCalendarUser("admin")
+  await db.exec("set local time zone 'Pacific/Honolulu'")
+  assert.equal((await publishEntry(draft.id)).code, "PAST_ATTENDANCE_DATE")
+  assert.equal((await publishEntry(fixture.mv.id)).code, "PAST_ATTENDANCE_DATE")
+  assert.equal((await publishEntry(normal.id)).ok, true)
+  assert.deepEqual(await currentMarks(fixture.today), [])
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("a mark insertion failure rolls back publication and all generated snapshots", async () => {
+  const fixture = await publishFixture()
+  const draft = await draftException(fixture, { campuses: [] })
+  await db.exec(`create function public.test_reject_calendar_mark() returns trigger language plpgsql as $$
+    begin if new.student_id = 2 then raise exception 'Test snapshot failure' using errcode='23514'; end if; return new; end $$;
+    create trigger test_reject_calendar_mark before insert on public.attendance_day_marks
+    for each row execute function public.test_reject_calendar_mark();`)
+  await asCalendarUser("admin")
+  await rejects(() => publishEntry(draft.id))
+  assert.deepEqual((await db.query("select * from public.calendar_entries where id=$1", [draft.id])).rows, [draft])
+  assert.deepEqual(await currentMarks(fixture.today), [])
+  await db.exec("reset role; drop trigger test_reject_calendar_mark on public.attendance_day_marks; drop function public.test_reject_calendar_mark()")
+  await asCalendarUser("admin")
+  assert.equal((await publishEntry(draft.id)).ok, true)
+  assert.equal((await currentMarks(fixture.today)).length, 6)
+})
+
+test("queued competing publications choose one winner and retain the shared transaction lock", async () => {
+  const fixture = await publishFixture()
+  const first = await draftException(fixture)
+  const second = await draftException(fixture)
+  await asCalendarUser("admin")
+  // PGlite serializes requests; this checks competing outcomes, not multi-session scheduling.
+  const results = await Promise.all([publishEntry(first.id), publishEntry(second.id)])
+  assert.equal(results.filter((result) => result.ok).length, 1)
+  assert.equal(results.filter((result) => result.code === "CALENDAR_CONFLICT").length, 1)
+  const { rows } = await db.query(`select count(*)::int as locks from pg_locks
+    where locktype='advisory' and granted and pid=pg_backend_pid()
+      and classid::bigint = ((hashtextextended('calendar-entry-save',0) >> 32) & 4294967295)
+      and objid::bigint = (hashtextextended('calendar-entry-save',0) & 4294967295)`)
+  assert.equal(rows[0].locks, 1)
+  assert.equal((await currentMarks(fixture.today)).length, 3)
+})
+
+test("publish validates ids and requires an active verified admin", async () => {
+  const fixture = await publishFixture()
+  const draft = await draftException(fixture)
+  await asCalendarUser("admin")
+  for (const id of [null, 0, -1]) await rejects(() => publishEntry(id), "22023")
+  assert.equal((await publishEntry(999999)).code, "NOT_FOUND")
+  for (const [name, verified] of [["student", true], ["teacher", true], ["admin", false], ["missing", true]]) {
+    await asCalendarUser(name, verified)
+    await rejects(() => publishEntry(draft.id), "42501")
+  }
+  await db.exec("reset role")
+  await db.query("update public.users set status='inactive' where id=$1", [accessUsers.admin])
+  await asCalendarUser("admin")
+  await rejects(() => publishEntry(draft.id), "42501")
+  await db.exec("reset role; set local role anon")
+  await rejects(() => publishEntry(draft.id), "42501")
+})
