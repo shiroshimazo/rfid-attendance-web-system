@@ -18,8 +18,14 @@ Task 07 adds `202610250005_publish_calendar_entry.sql` after saves: draft/cancel
 publication, refreshed publish timestamps, overlap protection under the same lock,
 and atomic exception snapshots. Email sending remains a later task. PGlite tests
 cover queued conflicts and lock ownership, not true multi-session scheduling.
+Task 08 adds `202610250006_cancel_delete_calendar_entry.sql`: atomic cancellation,
+never-published draft deletion, and database lifecycle/history/overlap guards.
+Cancellation preserves past snapshots and delivery/read history. New entries must
+start as drafts, and published/cancelled entries cannot be hard-deleted or reset
+to draft. Use the calendar RPCs so state changes and mark reconciliation stay
+in one transaction. Cancellation emails remain a later task.
 These migrations are tested locally only; they do not authorize hosted execution.
-Cancel/delete workflows, RFID integration, verification SQL, and rollback SQL
+Audit/realtime integration, RFID integration, verification SQL, and rollback SQL
 remain pending. The feature is not ready for rollout.
 
 [Calendar.md](../../Calendar.md) defines the planned calendar schema and separate

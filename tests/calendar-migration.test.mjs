@@ -906,3 +906,161 @@ test("publish validates ids and requires an active verified admin", async () => 
   await db.exec("reset role; set local role anon")
   await rejects(() => publishEntry(draft.id), "42501")
 })
+
+async function lifecycleFixture() {
+  const fixture = await saveFixture()
+  for (const name of ["202610250005_publish_calendar_entry.sql", "202610250006_cancel_delete_calendar_entry.sql"]) {
+    const sql = (await readFile(new URL(name, directory), "utf8"))
+      .replace(/^begin;$/m, "").replace(/^commit;$/m, "")
+    await db.exec(sql)
+    await db.exec(sql)
+  }
+  return fixture
+}
+const cancelEntry = async (id) => (await db.query("select public.cancel_calendar_entry($1) as result", [id])).rows[0].result
+const deleteDraft = async (id) => (await db.query("select public.delete_calendar_draft($1) as result", [id])).rows[0].result
+
+test("cancellation removes today's and future snapshots while retaining both historical statuses", async () => {
+  const fixture = await lifecycleFixture()
+  await asCalendarUser("admin")
+  await syncMarks(fixture.today, fixture.last)
+  assert.equal((await currentMarks(fixture.today)).length, 6)
+  assert.deepEqual(await cancelEntry(fixture.main.id), { ok: true, id: fixture.main.id })
+  const cancelled = (await db.query("select * from public.calendar_entries where id=$1", [fixture.main.id])).rows[0]
+  assert.equal(cancelled.status, "cancelled")
+  assert.equal(cancelled.published_at.getTime(), fixture.main.published_at.getTime())
+  assert(cancelled.cancelled_at)
+  assert.equal(cancelled.updated_by, accessUsers.admin)
+  assert.equal((await currentMarks(fixture.today)).length, 3)
+  assert.equal((await cancelEntry(fixture.mv.id)).ok, true)
+  assert.deepEqual(await currentMarks(fixture.today), [])
+  await asCalendarUser("student")
+  assert((await visibleTitles()).includes("Break"))
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("cancellation preserves receipt and delivery history without creating new emails", async () => {
+  const fixture = await lifecycleFixture()
+  await db.query(`insert into public.calendar_email_deliveries(calendar_entry_id,batch_id,notification_type,
+    recipient_user_id,recipient_email,recipient_role,subject,html_body,text_body)
+    values ($1,'40000000-0000-4000-8000-000000000002','published',$2,'student@example.test','student','Original','Body','Body')`, [fixture.main.id, userId])
+  await asCalendarUser("student")
+  await db.query("insert into public.calendar_entry_reads(entry_id,user_id) values ($1,$2)", [fixture.main.id, userId])
+  await asCalendarUser("admin")
+  const deliveries = (await db.query("select * from public.calendar_email_deliveries")).rows
+  assert.equal((await cancelEntry(fixture.main.id)).ok, true)
+  assert.deepEqual((await db.query("select * from public.calendar_email_deliveries")).rows, deliveries)
+  await asCalendarUser("student")
+  assert.deepEqual((await db.query("select * from public.calendar_entry_reads")).rows, [])
+  await db.exec("reset role")
+  assert.equal((await db.query("select count(*)::int as count from public.calendar_entry_reads")).rows[0].count, 1)
+})
+
+test("only never-published drafts can be deleted; invalid and repeated transitions preserve rows", async () => {
+  const fixture = await lifecycleFixture()
+  const draft = await entry({ starts_on: fixture.today, ends_on: fixture.today })
+  await asCalendarUser("admin")
+  assert.equal((await cancelEntry(draft.id)).code, "INVALID_TRANSITION")
+  assert.equal((await deleteDraft(fixture.main.id)).code, "INVALID_TRANSITION")
+  assert.equal((await cancelEntry(fixture.main.id)).ok, true)
+  const before = (await db.query("select * from public.calendar_entries where id=$1", [fixture.main.id])).rows
+  assert.equal((await cancelEntry(fixture.main.id)).code, "INVALID_TRANSITION")
+  assert.equal((await deleteDraft(fixture.main.id)).code, "INVALID_TRANSITION")
+  assert.deepEqual((await db.query("select * from public.calendar_entries where id=$1", [fixture.main.id])).rows, before)
+  assert.deepEqual(await deleteDraft(draft.id), { ok: true, id: draft.id })
+  assert.equal((await deleteDraft(draft.id)).code, "NOT_FOUND")
+  assert.deepEqual((await db.query("select * from public.calendar_entries where id=$1", [draft.id])).rows, [])
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("database guards reject lifecycle bypass, timestamp forgery, historical changes, and hard deletion", async () => {
+  const fixture = await lifecycleFixture()
+  const draft = await entry({ starts_on: fixture.today, ends_on: fixture.today })
+  await rejects(() => entry({ status: "published", published_at: `${fixture.today}T00:00:00Z` }))
+  await rejects(() => db.query("update public.calendar_entries set status='cancelled',published_at=now(),cancelled_at=now() where id=$1", [draft.id]))
+  for (const id of [fixture.main.id, fixture.mv.id]) {
+    await rejects(() => db.query("delete from public.calendar_entries where id=$1", [id]))
+    await rejects(() => db.query("update public.calendar_entries set status='draft',published_at=null,cancelled_at=null where id=$1", [id]))
+    await rejects(() => db.query("update public.calendar_entries set published_at=now() where id=$1", [id]))
+  }
+  await rejects(() => db.query("update public.calendar_entries set campuses='{}' where id=$1", [fixture.main.id]))
+  await asCalendarUser("admin")
+  await rejects(() => db.query("delete from public.calendar_entries where id=$1", [draft.id]), "42501")
+  await cancelEntry(fixture.main.id)
+  await db.exec("reset role")
+  await rejects(() => db.query("delete from public.calendar_entries where id=$1", [fixture.main.id]))
+  await rejects(() => db.query("update public.calendar_entries set status='draft',published_at=null,cancelled_at=null where id=$1", [fixture.main.id]))
+  await rejects(() => db.query("update public.calendar_entries set status='published' where id=$1", [fixture.main.id]))
+  await assertHistory(fixture)
+})
+
+test("direct publication cannot bypass overlap checks and valid RPC transitions still work", async () => {
+  const fixture = await lifecycleFixture()
+  const conflict = await draftException(fixture)
+  await rejects(() => db.query("update public.calendar_entries set status='published',published_at=now() where id=$1", [conflict.id]))
+  await asCalendarUser("admin")
+  const normal = await saveEntry(entryPayload(fixture))
+  assert.equal((await publishEntry(normal.id)).ok, true)
+  assert.equal((await saveEntry(entryPayload(fixture, { id: normal.id, title: "Edited published" }))).ok, true)
+  assert.equal((await cancelEntry(normal.id)).ok, true)
+  assert.equal((await saveEntry(entryPayload(fixture, { id: normal.id, title: "Edited cancelled" }))).ok, true)
+  assert.equal((await publishEntry(normal.id)).ok, true)
+  assert.equal((await deleteDraft(normal.id)).code, "INVALID_TRANSITION")
+})
+
+test("failed mark cleanup rolls back cancellation and preserves snapshots", async () => {
+  const fixture = await lifecycleFixture()
+  await asCalendarUser("admin")
+  await syncMarks(fixture.today, fixture.last)
+  const before = (await db.query("select * from public.calendar_entries where id=$1", [fixture.mv.id])).rows
+  const marks = await currentMarks(fixture.today)
+  await db.exec("reset role")
+  await db.exec(`create function public.test_reject_calendar_delete() returns trigger language plpgsql as $$
+    begin raise exception 'Test cleanup failure' using errcode='23514'; end $$;
+    create trigger test_reject_calendar_delete before delete on public.attendance_day_marks
+    for each row execute function public.test_reject_calendar_delete();`)
+  await asCalendarUser("admin")
+  await rejects(() => cancelEntry(fixture.mv.id))
+  assert.deepEqual((await db.query("select * from public.calendar_entries where id=$1", [fixture.mv.id])).rows, before)
+  assert.deepEqual(await currentMarks(fixture.today), marks)
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("attendance-impacting entries complete publish/cancel/republish with lifecycle guards installed", async () => {
+  const fixture = await lifecycleFixture()
+  await asCalendarUser("admin")
+  await cancelEntry(fixture.main.id)
+  const draft = await saveEntry(mainPayload(fixture, { id: null, startsOn: fixture.today }))
+  assert.equal((await publishEntry(draft.id)).ok, true)
+  assert.equal((await currentMarks(fixture.today)).filter((row) => row.student_id === 1).length, 3)
+  assert.equal((await cancelEntry(draft.id)).ok, true)
+  assert.equal((await currentMarks(fixture.today)).filter((row) => row.student_id === 1).length, 0)
+  assert.equal((await publishEntry(draft.id)).ok, true)
+  assert.equal((await currentMarks(fixture.today)).filter((row) => row.student_id === 1).length, 3)
+  await db.exec("reset role")
+  await assertHistory(fixture)
+})
+
+test("cancel and delete validate ids and require active verified administrators", async () => {
+  const fixture = await lifecycleFixture()
+  const draft = await entry({ starts_on: fixture.today, ends_on: fixture.today })
+  for (const [operation, id] of [[cancelEntry, fixture.main.id], [deleteDraft, draft.id]]) {
+    await asCalendarUser("admin")
+    for (const invalid of [null, 0, -1]) await rejects(() => operation(invalid), "22023")
+    assert.equal((await operation(999999)).code, "NOT_FOUND")
+    for (const [name, verified] of [["student", true], ["teacher", true], ["admin", false], ["missing", true]]) {
+      await asCalendarUser(name, verified)
+      await rejects(() => operation(id), "42501")
+    }
+    await db.exec("reset role; set local role anon")
+    await rejects(() => operation(id), "42501")
+  }
+  await db.exec("reset role")
+  await db.query("update public.users set status='inactive' where id=$1", [accessUsers.admin])
+  await asCalendarUser("admin")
+  await rejects(() => cancelEntry(fixture.main.id), "42501")
+  await rejects(() => deleteDraft(draft.id), "42501")
+})
