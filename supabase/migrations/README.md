@@ -1,3 +1,17 @@
+## Planned school calendar migrations (R06; not implemented)
+
+[Calendar.md](../../Calendar.md) defines the planned calendar schema and separate
+RFID-function integration migration. [Calendar-TODO.md](../../Calendar-TODO.md)
+requires confirmation before each task; this section does not authorize applying
+migrations. Later work supplies migration, verification, and rollback SQL, then
+verifies a named preview database before app deployment.
+
+Rollback first restores the previous app, then the pre-calendar record_rfid_tap
+function and grants, restores any changed shared audit helper, and removes
+calendar roster hooks before dropping new objects. Export calendar history and
+delivery records before a destructive rollback; existing RFID, subject attendance,
+and SMS data must remain intact. No database changes were made in Task 01.
+
 ## RFID card inventory and student assignment
 
 Apply `202609250001_rfid_card_inventory.sql` after the P03 migration and before

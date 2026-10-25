@@ -450,9 +450,15 @@ scope checklist; module READMEs and the UI/UX plan must follow it.
   attendance confirmation, SMS, Realtime, and PDF reports.
 - **Excluded:** the Excused attendance workflow (historical values are preserved
   but not writable or charted).
+- **Approved plan, not implemented (R06):** [School Calendar & Announcements](Calendar.md),
+  executed one confirmed task at a time through [Calendar-TODO.md](Calendar-TODO.md).
+  It will reuse existing shadcn/ui components for campus-aware announcements,
+  no-class/online RFID exceptions, and teacher/student notifications. Daily
+  Attendance stays read-only; Subject Attendance remains the manual confirmation
+  surface. Historical exceptions will be preserved separately from RFID evidence.
 - **Deferred:** standalone Programs/Courses CRUD, assignment matrix, automatic
   nightly absence job, teacher schedule page, per-period attendance, holiday/exam
-  overrides, and extra onboarding programs.
+  overrides beyond the R06 calendar plan, and extra onboarding programs.
 
 Pending live verification (tracked in the audit): PhilSMS live delivery
 acceptance and the P11 physical device end-to-end checklist. Hosted rollout of a

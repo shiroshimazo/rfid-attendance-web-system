@@ -16,6 +16,8 @@ hosted SQL verification results as PASS on 2026-09-06.
 
 ## 1. Which documents control the scope?
 
+**R06 scope amendment (2026-10-25):** the user requested School Calendar & Announcements and approved Task 01 to resolve its scope/rules. [Calendar.md](Calendar.md) defines this planned feature; [Calendar-TODO.md](Calendar-TODO.md) tracks separate approval for each implementation task. This amendment supersedes older holiday-management exclusions only for that feature. It does not claim implementation or authorize executing later tasks without confirmation.
+
 Use your instruction for this audit first: **no Excused workflow and no additional features outside the RFID requirements.** Then use the current requirements and role interaction documents below. A future-improvement entry does not by itself authorize a new feature now. Existing code, tests, READMEs, and generated roadmaps are evidence of implementation, not proof that a feature is required.
 
 | Reference | Source | What it establishes |
@@ -132,7 +134,7 @@ tasks and not a claim that these features previously existed in application code
 | Automatic nightly absence job | Removed web roadmap, item 8; attendance READMEs | REMOVED from the implementation instructions. Absent remains required; resolve P05 before selecting a finalization/storage/job mechanism. |
 | Teacher schedule page | LATE deferred ideas | DEFERRED outside this release. Keep the admin schedules screen and existing access foundations. |
 | Per-subject timetable/period attendance | LATE deferred ideas | DEFERRED outside this release. Keep the eight-subject catalog and section-based v1 start times. |
-| Holiday/exam override management | LATE deferred ideas | DEFERRED outside this release. Do not turn a missing policy into a new calendar module. |
+| Holiday/exam override management | LATE deferred ideas; amended by R06 | School Calendar & Announcements is approved as planned scope under R06, with task-by-task execution approval. Other override workflows remain deferred. |
 | Additional program/year onboarding | LATE deferred ideas | DEFERRED outside this release. Preserve historical data and current BSIT 2nd Year restrictions. |
 | Early-departure classification | LATE Class Schedule | EXCLUDED. Class end stays informational in v1. |
 | Teacher access to guardian SMS records | Removed hardware roadmap, S4 | REMOVED as an automatic access expansion. SMS/report READMEs preserve current permissions pending a defined report-visibility rule. |
@@ -183,6 +185,19 @@ These have no consumers in the searched application/test source:
 - `components/motion-primitives/sliding-number.tsx` — unused root-level version. Current imports use `@/components/motion-primitives/sliding-number`, which resolves to the **used** `src/components/motion-primitives/sliding-number.tsx`; keep that implementation.
 
 Do not mass-delete shadcn components or libraries because a business document does not list them. Verify imports before removing dependencies. This cleanup is lower priority than the required RFID path.
+
+### R06 - School Calendar & Announcements - PLANNED
+
+- [x] Task 01: document the user-requested scope expansion and resolve plan inconsistencies; implementation has not started.
+- [ ] Implement and verify the individually approved tasks in [Calendar-TODO.md](Calendar-TODO.md), following [Calendar.md](Calendar.md).
+
+Admin-managed entries target campuses and teacher/student audiences. Published no-class and online/manual days affect RFID acceptance, daily rates, dashboards, and reports. Normal events do not change attendance. Only one published attendance-impacting entry may cover a campus/date; all-campus entries conflict with campus-specific entries, while normal events may overlap.
+
+Daily Attendance remains read-only. Subject Attendance remains the editable manual confirmation/override surface on all dates. No fake attendance_records or calendar SMS are created; the existing attendance_status enum is unchanged. Calendar-only NoClasses and OnlineManual snapshots preserve historical exclusions and campus identity. Today/future snapshots reconcile transactionally on calendar and student-roster changes; past snapshots are immutable.
+
+Draft deletion, lifecycle transitions, and overlap checks are enforced at the database boundary. Recipients may upsert only their own receipts for visible published entries. Cancelled entries stay in calendars but leave bell/toast/dashboard lists; cancellation emails still send. Admins receive no announcement posts or emails. Reuse existing shadcn/ui components.
+
+Calendar migrations, application behavior, Resend setup, preview verification, hardware checks, and rollout remain pending. Rollback restores the pre-calendar RFID function/grants and changed audit helpers before removing calendar objects; existing attendance, subject attendance, and SMS data remain intact. R05 retains its original cleanup meaning.
 
 ## 4. What must remain
 
@@ -563,7 +578,7 @@ flow, finalize the absence policy, alter permissions, or complete R03–R05.
 | 5. Prove the full system | P11 and role-based acceptance checks | A physical card completes the documented device-to-web-to-SMS flow. |
 | 6. Close the work | Optional R05; update the single active checklist | No unapproved feature was introduced; relevant checks pass; remaining deployment limitations are recorded. |
 
-**Stop when the documented pilot works.** Do not continue into catalog administration pages, Excused, holiday management, per-subject attendance, new programs, or a visual redesign simply because the critical tasks are finished.
+**Stop when the documented pilot works.** Do not infer additional feature authorization from completion of the pilot. The explicitly requested R06 calendar expansion is tracked separately with confirmation before each task; other exclusions remain subject to their own recorded scope decisions.
 
 ### Acceptance checklist
 

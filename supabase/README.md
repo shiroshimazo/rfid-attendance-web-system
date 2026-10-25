@@ -13,6 +13,16 @@ The database implementation follows `rfid-docs/rfid-docs/Database Design/Databas
 - `rfid_cards`, `attendance_records`, and `sms_notifications` for the attendance workflow
 - Constraints, indexes, automatic `updated_at` triggers, Auth synchronization, and Row Level Security policies
 
+## Planned calendar extension (R06; not implemented)
+
+[Calendar.md](../Calendar.md) defines calendar entries, own-user read receipts,
+email deliveries, and per-student NoClasses/OnlineManual exception snapshots.
+These are separate from RFID evidence; attendance_status and Subject Attendance
+remain unchanged. Student-roster and calendar mutations will reconcile today/future
+snapshots; past snapshots preserve historical report exclusions. Follow the
+individually approved tasks in [Calendar-TODO.md](../Calendar-TODO.md); no calendar
+migration or verification script is supplied by this documentation-only task.
+
 ## Setup and existing data
 
 Use the versioned migrations in [migrations/](migrations/README.md) for schema

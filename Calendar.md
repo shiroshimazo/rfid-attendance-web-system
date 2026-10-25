@@ -1,10 +1,10 @@
 # School Calendar & Announcements — Implementation Plan
 
 **Project:** RFID Attendance Web System  
-**Target file after approval:** `D:\rfid-attendance-web-system\Calendar.md`  
+**Execution checklist:** [Calendar-TODO.md](Calendar-TODO.md) — separate confirmation before each task
 **Prepared:** 2026-10-25  
-**Status:** Build-ready after the overlap-rule confirmation in §14  
-**Scope change:** **R05 — School Calendar & Announcements** (supersedes the current “holiday management deferred” instruction)
+**Status:** Tasks 01–02 complete: scope/rules and tested validation. Database and UI implementation remain pending; see the execution checklist.
+**Scope change:** **R06 — School Calendar & Announcements** (supersedes the holiday-management deferral only for this feature; existing R05 cleanup remains separate)
 
 ---
 
@@ -83,9 +83,9 @@ Add an admin-managed school calendar whose published entries:
 
 ### 3.3 Scope change note
 
-`RFID-DOCS-SCOPE-AUDIT.md` currently defers holiday/exam override management and says not to turn a missing policy into a calendar module. This plan changes attendance behavior, so it cannot be treated as display-only.
+`RFID-DOCS-SCOPE-AUDIT.md` records this user-requested expansion under **R06**. Its older holiday/exam-management deferral is superseded only within this plan. This plan changes attendance behavior, so it cannot be treated as display-only. R05 remains the original optional source-cleanup task.
 
-The audit must gain an **R05** entry that:
+The audit's **R06** entry:
 
 - records the user-approved scope change,
 - states that no-class/online days affect attendance,
@@ -147,7 +147,7 @@ The mark exists for reports and exports. It is not a new `attendance_status` val
 
 When a published entry has `attendance_impact = 'online_manual'`:
 
-1. No `NoClasses` marks are created.
+1. No `NoClasses` marks are created. An `OnlineManual` calendar-exception snapshot is stored in `attendance_day_marks` for historical reporting; it is not a student attendance confirmation.
 2. RFID taps are rejected because there is no face-to-face campus attendance to capture.
 3. Teachers continue to use **Subject Attendance** exactly as today.
 4. The teacher can mark Present, Late, or Absent even if the day is also tagged No classes.
@@ -207,10 +207,11 @@ Rules:
 
 Add a shared calendar state resolver:
 
-- Effective state for a student/date:
+- Effective state for a student/date today or later:
   - `NoClasses` if a published no-class entry covers the student’s campus on that date.
   - `OnlineManual` if a published online/manual entry covers the student’s campus on that date.
   - `Normal` otherwise.
+- For dates before today, use immutable `attendance_day_marks` snapshots for both `NoClasses` and `OnlineManual`, including their stored campus. Never reconstruct historical exceptions from today's published entries or the student's current campus.
 - The resolver must be campus-aware. A Main Campus no-class entry must not affect MV Campus students on the same date.
 
 Dashboard behavior:
@@ -241,8 +242,10 @@ Dashboard behavior:
 
 ### 5.8 Why both a view and a marks table
 
-- **Effective view** (`calendar_attendance_days`): current truth for behavior and calculations. It expands published entries to campus/date rows, so late roster changes are handled immediately.
-- **Marks table** (`attendance_day_marks`): durable per-student snapshot for reports/exports and historical evidence.
+- **Effective view** (`calendar_attendance_days`): current truth for today/future behavior and calculations. It expands published entries to campus/date rows, so late roster changes are handled immediately. It is not authoritative for historical dates after edits or cancellation.
+- **Marks table** (`attendance_day_marks`): durable per-student exception snapshots for both `NoClasses` and `OnlineManual`. Past snapshots are authoritative for historical report exclusions and campus labels. Online snapshots never claim Present, Late, or Absent; those confirmations remain in Subject Attendance.
+
+Snapshots are materialized on publication and reconciled on entry changes and student roster changes (insert, campus transfer, activation/deactivation). Roster reconciliation must run transactionally at the database boundary, including changes made without the app. It uses the same lock as calendar writes, updates today/future dates, and never backfills past dates for newly added students. This prevents a transfer from leaving missing/stale history when no admin report is opened before midnight; no scheduled worker is required.
 
 The view is not a replacement for the marks table. The marks table is not used on the tap hot path.
 
@@ -270,7 +273,7 @@ create type public.calendar_audience as enum (
   'everyone', 'teachers', 'students'
 );
 
-create type public.attendance_day_status as enum ('NoClasses');
+create type public.attendance_day_status as enum ('NoClasses', 'OnlineManual');
 
 create type public.calendar_email_type as enum (
   'published', 'updated', 'cancelled'
@@ -398,9 +401,10 @@ create index attendance_day_marks_campus_date_idx
 
 Notes:
 
-- One mark per student per date.
+- One calendar-exception snapshot per student per date: `NoClasses` or `OnlineManual`. Set status explicitly when inserting; online snapshots are not manual attendance confirmations.
 - `campus` is the student’s campus at mark time.
 - Past marks are immutable.
+- Reconcile today/future snapshots when roster or entry state changes; historical reports use stored status/campus even if the source is later cancelled or republished.
 - No direct user writes. The sync/publish RPCs write this table with security-definer privileges.
 
 ### 6.5 `calendar_email_deliveries`
@@ -632,21 +636,26 @@ end if;
 
 RPCs:
 
-- `save_calendar_entry(p_payload jsonb)` — insert/update draft or published entry.
+- `save_calendar_entry(p_payload jsonb)` — insert a draft or edit a draft/published/cancelled entry without changing its lifecycle state.
 - `publish_calendar_entry(p_id bigint)` — validate, check overlap, set `published_at`, materialize marks.
-- `cancel_calendar_entry(p_id bigint)` — set `cancelled_at`, remove future marks.
+- `cancel_calendar_entry(p_id bigint)` — set `cancelled_at`, remove today/future snapshots.
 - `sync_attendance_day_marks(p_from date, p_to date)` — reconcile marks from today forward.
+- `delete_calendar_draft(p_id bigint)` — delete only a never-published draft.
 
-All are security definer, check `current_user_role() = 'admin'`, and grant execute to authenticated.
+All public mutation RPCs are security definer, require an active, verified admin, and grant execute only to authenticated (revoke the default PUBLIC grant). Role checks must fail closed for a null role. Internal reconciliation helpers have no client execute grant.
+
+Authenticated users, including admins, have no direct entry INSERT/UPDATE/DELETE grants or policies. Mutations go through these RPCs; database guards also reject deletion of ever-published entries and invalid lifecycle changes. Save cannot modify lifecycle timestamps supplied by the caller. Publish accepts only draft/cancelled, cancel only published, and no transition returns an entry to draft. All calendar mutations and roster reconciliation share the advisory lock. Overlap validation applies to publish/republish and published edits, never merely to the form.
+
+All boundaries use the transaction's date in `Asia/Manila`. Today is mutable; dates before today are immutable. New publication/republish of an attendance-impacting entry requires `starts_on >= today`. Once such an entry has started in the past, its dates, campuses, tags/impact, and audience are locked; descriptive fields may still be edited, and cancellation may end its effect today/future while preserving historical snapshots. To replace its remaining schedule, cancel it and create a new entry starting today or later. A normal entry cannot be changed into a backdated attendance-impacting entry.
 
 ### 6.10 Mark reconciliation
 
 `sync_attendance_day_marks(p_from, p_to)`:
 
 1. Clamp `p_from` to today in `Asia/Manila`. Never touch past dates.
-2. Delete future marks whose source entry is no longer published, no longer `no_classes`, no longer covers the date, or no longer covers the marked campus.
-3. Insert missing marks for every active student in a targeted campus/date with a published `no_classes` entry.
-4. Do **not** insert marks for dates covered by an `online_manual` entry.
+2. Delete today/future snapshots whose source is no longer published/impacting, whose date/campus/status no longer matches, or whose student is no longer active or has changed campus. Reconcile both the old and new affected ranges on an edit.
+3. Insert missing snapshots for every active student in a targeted campus/date: `no_classes` maps to `NoClasses`; `online_manual` maps to `OnlineManual`.
+4. Never create a `NoClasses` snapshot for an online/manual date. `OnlineManual` records only the calendar exception, with no attendance confirmation or SMS.
 5. Use `on conflict (student_id, attendance_date) do nothing`.
 6. Return `{ inserted, deleted }`.
 
@@ -655,14 +664,17 @@ Called by:
 - publish / save / cancel RPCs,
 - Admin → Calendar → **Sync attendance marks** maintenance action,
 - admin report/export before reading marks.
+- database student-roster triggers on insert or campus/status changes (including changes propagated from account lifecycle actions), via an internal helper using the same reconciliation rules and lock.
 
 Past marks are never deleted or rewritten.
+
+Same-day publish/edit/cancel applies to the entire local calendar day for daily RFID calculations; it does not split the denominator by hour. Existing RFID evidence and already-sent SMS remain intact. Cancelling today removes today's exception and makes normal tap processing available again. Preserved historical snapshots remain accessible under student-scoped RLS even if current entry visibility changes. Reports never backfill historical exceptions from current roster membership.
 
 ### 6.11 RLS policies
 
 **`calendar_entries`**
 
-- Admin: select/insert/update/delete all.
+- Admin: select all; writes only through the validated RPCs in §6.9. Revoke direct authenticated INSERT/UPDATE/DELETE grants.
 - Teacher/student select:
 
 ```sql
@@ -684,8 +696,8 @@ and (
 
 **`calendar_entry_reads`**
 
-- Select/insert own rows only: `user_id = auth.uid()`.
-- No update/delete policies.
+- Select/insert/update only own rows for a currently visible published entry, restricted to teacher/student recipients. UPDATE requires matching `USING` and `WITH CHECK`; protect both entry/user keys and use a database-generated read timestamp. This permits upsert after an edit makes an entry unread again.
+- No delete policy. Admins cannot create announcement receipts.
 - Restrictive active-account and verified-email policies.
 
 **`attendance_day_marks`**
@@ -995,7 +1007,7 @@ Behavior:
 - Times are disabled for attendance-impacting entries.
 - The publish confirmation shows the recipient count and campus scope.
 - The cancel confirmation warns when the entry is in the past:
-  “Historical No-classes marks will not be changed.”
+  “Historical calendar exceptions will not be changed. Today's exception will be removed.”
 - The form shows inline errors for conflicts and invalid combinations.
 - Use existing `Dialog`, `DateRangePicker`, `Input`, `Textarea`, `Select`,
   `Checkbox`, `RadioGroup`, and `Button` components.
@@ -1069,7 +1081,7 @@ otherwise reuse the already imported `CalendarClockIcon` or
 |---|---|
 | `supabase/migrations/202610250001_school_calendar.sql` | Enums, tables, view, helpers, RPCs, RLS, indexes, triggers, realtime |
 | `supabase/verify_school_calendar.sql` | PASS/FAIL checks for schema, constraints, RLS, overlap, marks, recipients |
-| `supabase/rollback_school_calendar.sql` | Drop new objects in dependency order; no existing-table changes |
+| `supabase/rollback_school_calendar.sql` | Restore pre-calendar RFID function/grants and any changed audit helper, remove roster hooks, then drop new objects in dependency order; preserve existing attendance data |
 | `supabase/migrations/README.md` | Apply/verify/rollback instructions |
 | `supabase/README.md` | New table summary |
 
@@ -1147,18 +1159,18 @@ fake `attendance_records` rows.
 
 | File | Work |
 |---|---|
-| `RFID-DOCS-SCOPE-AUDIT.md` | Add R05 and supersede the deferral |
+| `RFID-DOCS-SCOPE-AUDIT.md` | Add R06 and supersede the deferral |
 | `README.md` | Feature list, deferred list, env vars, calendar behavior |
 | `UI-UX-IMPROVEMENT-PLAN.md` | Update the holiday-management exclusion note |
 | `.env.example` | Resend and app URL variables |
-| `src/features/README.md` | Link the new module to R05 |
+| `src/features/README.md` | Link the new module to R06 |
 
 ---
 
 ## 11. Build order
 
 1. **Scope docs**
-   - Add R05 to `RFID-DOCS-SCOPE-AUDIT.md`.
+   - Add R06 to `RFID-DOCS-SCOPE-AUDIT.md`.
    - Update `README.md`, `supabase/README.md`, `supabase/migrations/README.md`.
 2. **Migration and SQL helpers**
    - Enums, tables, indexes, view, `current_user_campuses`,
@@ -1205,6 +1217,8 @@ fake `attendance_records` rows.
   - other-campus entries hidden,
   - admins excluded from recipients,
   - reads are own-only,
+  - edited-entry receipt upserts succeed for the recipient; cross-user, hidden-entry, and admin writes fail,
+  - direct authenticated entry mutations cannot bypass RPC validation,
   - marks are admin/teacher/student scoped.
 - Overlap:
   - Main no-class + MV online allowed,
@@ -1213,9 +1227,11 @@ fake `attendance_records` rows.
   - normal events overlap allowed.
 - Marks:
   - no-class publish creates marks for active students in scope,
-  - online publish creates none,
-  - cancellation removes future marks and keeps past,
-  - edit reconciles future marks,
+  - online publish creates only OnlineManual exception snapshots, never NoClasses or attendance confirmations,
+  - cancellation removes today/future snapshots and keeps both kinds of past snapshots,
+  - edit reconciles old/new today/future ranges; started historical attendance scope is locked,
+  - student insert/transfer/status changes reconcile today/future snapshots transactionally without changing past campus/status,
+  - past report exclusions survive cancellation, republish, and campus transfer without requiring a previous report read,
   - sync is idempotent.
 - Tap RPC:
   - no-class returns `NO_CLASSES`, no attendance row, no SMS,
@@ -1231,6 +1247,7 @@ fake `attendance_records` rows.
   - status transitions,
   - retry uses the stored payload,
   - unique batch/recipient.
+- Rollback restores the pre-calendar tap function/grants and shared audit behavior before dropping dependencies; existing attendance/SMS rows survive.
 
 ### 12.2 Server actions
 
@@ -1301,30 +1318,31 @@ but the admin page requires the tables.
 ### 13.2 Rollback
 
 1. Roll back the app deployment first.
-2. Run `supabase/rollback_school_calendar.sql`.
-3. Confirm existing attendance, subject attendance, SMS, and reports are
-   untouched.
+2. Export calendar snapshots and delivery history before dropping the new tables.
+3. Run `supabase/rollback_school_calendar.sql`: restore the pre-calendar
+   `record_rfid_tap` implementation and grants, restore any modified shared audit
+   helper, remove calendar roster triggers, then drop new objects in dependency order.
+4. Verify normal tap processing and existing attendance, subject attendance,
+   SMS, and reports against their pre-calendar behavior.
 
-The rollback drops only the new calendar objects. It does not modify existing
-attendance data.
+Rollback removes the calendar feature and its stored history; retain the export
+if needed. It does not modify existing RFID attendance or subject attendance/SMS
+data. Restoring the tap function before dropping its calendar dependencies is required.
 
 ---
 
-## 14. Assumptions and final confirmation
+## 14. Task 01 rule decisions
 
-These defaults are applied in this plan. Change them before build if needed.
+Recorded on 2026-10-25 while executing the user-approved scope-resolution task. These rules govern subsequent tasks; their implementation still requires each task's separate confirmation.
 
 1. **Overlap rule:** one published attendance-impacting entry per campus per
    date. All campuses conflicts with any campus-specific entry. Normal events
-   may overlap. *(This is the only rule that was inferred rather than explicitly
-   confirmed.)*
+   may overlap. Retain this planned rule; enforce it under the shared database lock.
 2. **Cancelled visibility:** cancelled entries remain visible in teacher/student
    calendars with a badge, but are excluded from the bell, toast, dashboard post,
-   and email. If cancelled entries should disappear entirely, change the RLS
-   read policy to `status = 'published'` only.
+   and ordinary announcement email selection. Cancellation itself sends one cancellation notification batch to the resolved audience; retry uses its stored payload.
 3. **Past-date immutability:** attendance-impacting entries cannot be backdated
-   or edited before today. Normal events can be backdated. This protects
-   historical reports.
+   or republished before today. Started historical attendance scope is locked as specified in §6.9. Cancellation affects today/future only; immutable NoClasses/OnlineManual snapshots protect historical reports. Normal events can be backdated.
 4. **Attendance-impact audience:** must be Everyone. This ensures teachers and
    students see the same no-class/online state.
 5. **Dashboard window:** exactly 7 days after `published_at`; republishing resets
@@ -1332,6 +1350,8 @@ These defaults are applied in this plan. Change them before build if needed.
 6. **Email sender:** a verified Resend domain is an operational prerequisite.
    The code ships with configuration checks and a Failed delivery state when
    Resend is not configured.
+7. **Same-day behavior and transfers:** today is mutable as a whole day in Asia/Manila. Roster changes reconcile today/future snapshots transactionally; past snapshots keep their campus/status. Existing RFID evidence and SMS are never removed by calendar actions.
+8. **UI reuse:** use existing shadcn/ui calendar, date range, dialog, form, table, badge, and loading components; no replacement UI library is needed.
 
 ---
 
@@ -1340,6 +1360,8 @@ These defaults are applied in this plan. Change them before build if needed.
 - Admin can create a draft, publish it, edit it, cancel it, and republish it.
 - Drafts are invisible to teachers/students and blocked by RLS.
 - Published/cancelled entries are never hard-deleted.
+- Direct authenticated table writes cannot bypass lifecycle or overlap validation; receipt upserts remain own-only and visibility-scoped.
+- Past NoClasses and OnlineManual exclusions survive cancellation, republish, and roster changes. Same-day reconciliation preserves existing RFID/SMS evidence.
 - All eight tags are available; reason is free text.
 - Single-day and multi-day semestral-break ranges work.
 - Campus targeting works; Main no-class + MV face-to-face on the same date is
@@ -1352,6 +1374,7 @@ These defaults are applied in this plan. Change them before build if needed.
   - reports/PDF include `NoClasses`, not Absent.
 - Online-only or no-class + online day:
   - no automatic `NoClasses` marks,
+  - `OnlineManual` exception snapshots preserve historical exclusions without creating attendance confirmations,
   - RFID taps are rejected with the online message,
   - Subject Attendance remains available and editable,
   - daily rate/trend excludes the affected student-days,
@@ -1364,6 +1387,7 @@ These defaults are applied in this plan. Change them before build if needed.
 - Email sends on publish, cancellation, and checked important edits.
 - Delivery log shows Sent/Failed and supports retry.
 - Realtime updates the bell, dashboard, and delivery log.
+- Rollback restores the previous RFID function/grants and audit behavior before dropping calendar dependencies; existing attendance/SMS data is preserved.
 - All existing tests pass.
 - Scope audit, README, migration docs, verification, and rollback are updated.
 

@@ -9,6 +9,11 @@ do not add teacher SMS access, a retry console, or a new PDF library to satisfy
 this review. Under R03, the user has now explicitly approved email-code password
 recovery for all three roles; keep the login link and follow its exact three-step flow.
 
+**R06 scope amendment (2026-10-25):** [School Calendar & Announcements](Calendar.md)
+is a user-requested plan, not an implemented feature. Its [approval checklist](Calendar-TODO.md)
+requires confirmation before each task. Reuse existing shadcn/ui components;
+the older holiday-management exclusion does not block this specific scope.
+
 The main improvement is to make attendance information trustworthy and daily tasks easier to complete. Prioritize accurate status labels, accessible sign-in, reliable recovery, visible connection status, and complete reports. Then improve mobile controls and reduce interruptions during everyday work.
 
 This is a source-based professional assessment with 15 findings: **5 HIGH and 10 MEDIUM**. It proposes changes; it does not implement them.
@@ -157,7 +162,7 @@ references in the historical findings are provenance, not active tasks.
 | UX08–UX10, UX14 | Supporting review only | These proposals do not authorize new features or change current-release priorities. |
 | UX12 | P06, P08 | Match notification copy to actual delivery states and existing permissions; no retry console or automatic teacher SMS-access expansion. |
 
-The pilot's [Late Attendance Ruling](<rfid-docs/rfid-docs/Functional Requirements/Late Attendance Ruling.md>) remains the business reference. Do not expand this UI work into per-subject timetables, holiday management, or additional academic programs.
+The pilot's [Late Attendance Ruling](<rfid-docs/rfid-docs/Functional Requirements/Late Attendance Ruling.md>) remains the business reference, subject to recorded scope amendments. Do not expand this UI review into per-subject timetables or additional academic programs. Holiday/calendar work is limited to the separately approved R06 plan and its task-by-task confirmation process.
 
 ## 6. Considered but not recommended for this pass
 

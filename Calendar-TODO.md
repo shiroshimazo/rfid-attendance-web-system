@@ -1,6 +1,6 @@
 # School Calendar & Announcements — approval checklist
 
-Source: `Calendar.md`. Implementation has not started.
+Source: `Calendar.md`. Tasks 01 and 02 are complete. Calendar validation is implemented; database and UI implementation have not started.
 
 ## Execution rule
 
@@ -8,24 +8,24 @@ Execute exactly one numbered task after the user's explicit confirmation. Report
 
 Reuse existing shadcn/ui components in `src/components/ui`, existing action/auth/audit patterns, and the current feature/service split. Each implementation task includes focused tests where it adds behavior. Names below describe responsibilities; use repository naming conventions when implementing.
 
-## Decisions to resolve in task 1
+## Task 01 decisions (2026-10-25)
 
-- Confirm the plan's overlap rule: only one published attendance-impacting entry per campus/date; all-campus entries conflict with campus-specific entries; normal events may overlap.
-- R05 already means optional source cleanup in the scope audit. Preserve its history and give the calendar scope change an unambiguous identifier; update Calendar.md references consistently.
-- Read receipts use upsert but the proposed RLS forbids updates. Allow authenticated recipients to update only their own receipts for visible entries, with active-account and verified-email checks.
-- Enforce draft-only deletion and lifecycle/overlap checks at the database boundary, not just through UI actions. Broad admin table-write policies must not bypass those invariants.
-- Cancellation emails are explicitly required in sections 2, 8, and 15. Interpret section 14's email exclusion as excluding cancelled entries from ordinary announcement selection, not suppressing the cancellation notification.
-- Preserve historical reporting after edits/cancellation: past NoClasses marks survive, but the published-only view loses cancelled exceptions and there are no online-day marks. Resolve historical online state storage before schema work; do not silently recalculate past rates as absences.
-- Define same-day edits/cancellation and transfers: reconciliation clamps to today, and existing future marks must not survive a student's move out of the targeted campus. Preserve immutable past campus snapshots.
-- Restore the previous record_rfid_tap implementation before dropping calendar objects during rollback; preserve any audit helper changes appropriately.
+- Retain the overlap rule: one published attendance-impacting entry per campus/date; all-campus entries conflict with campus-specific entries; normal events may overlap.
+- Use R06 for the calendar scope amendment. Preserve R05 as optional source cleanup.
+- Allow own-user receipt insert/update for visible published entries, with active-account and verified-email checks, protected identity keys, and database-generated timestamps.
+- Require validated admin RPCs for entry mutations; revoke direct authenticated table writes. Enforce draft-only deletion, lifecycle rules, and overlap locking at the database boundary.
+- Send cancellation notifications; exclude cancelled entries only from ordinary announcement selection, bell, toast, and dashboard posts.
+- Store NoClasses and OnlineManual exception snapshots in attendance_day_marks. Online snapshots never claim attendance confirmation. Use immutable past snapshots for historical reporting after cancellation/republish/transfers; use the effective calendar for today/future.
+- Today is mutable as a whole Asia/Manila day; dates before today are immutable. Lock started historical attendance scope; replace its remaining schedule by cancelling and creating a new entry. Reconcile today/future snapshots transactionally on calendar and student-roster changes, including transfers and activation/deactivation. Preserve existing RFID/SMS evidence.
+- Rollback restores the previous record_rfid_tap implementation/grants and modified audit helpers, removes roster hooks, then drops calendar objects. Export calendar history before destructive rollback.
 
 ## Ordered tasks — each requires separate confirmation
 
-- [ ] **01 — Finalize scope and rules.** Resolve the decisions above; update Calendar.md, the scope audit, and related scope/exclusion documentation. Record implementation as planned, not shipped. Check references and acceptance criteria for consistency.
-- [ ] **02 — Calendar validation functions.** Add schema/enums and date, time, campus, tag/impact normalization and validation. Cover all-day rules, 366-day range, required reason, audience, and Manila dates with focused tests.
+- [x] **01 — Finalize scope and rules.** Resolved the decisions above; updated Calendar.md, the scope audit, and related scope/exclusion documentation. Implementation is recorded as planned, not shipped. Verified documentation links, scope references, and diff whitespace; no application/database tests run for this documentation-only task.
+- [x] **02 — Calendar validation functions.** Added `src/features/calendar/schema.ts` with domain enums, date/range and campus schemas, tag/impact suggestion, editable-entry validation, and publish-date validation using the existing Manila date helper. Reused shared text validation and the existing test loader. Eight tests in `tests/calendar-schema.test.mjs` pass, covering inclusive 366-day ranges, leap dates, times, text limits, normalization, invalid payloads, tag/impact rules, and Manila midnight. Focused ESLint and project TypeScript checks pass. Database lifecycle/overlap enforcement remains in later tasks.
 - [ ] **03 — Database foundation.** Add enums, entries, receipts, marks, delivery storage, indexes, constraints, and the agreed historical representation. Include migration tests; do not alter attendance_status or invent attendance_records.
 - [ ] **04 — Access and recipient functions.** Implement current_user_campuses and calendar_entry_recipients; add RLS/grants and effective calendar view. Test role, campus, active account, verified email, own receipts, deduplication, and admin exclusion.
-- [ ] **05 — Mark reconciliation function.** Implement sync_attendance_day_marks, today/future reconciliation, transfers, online exclusion, idempotence, and immutable historical marks. Test insertion/deletion counts.
+- [ ] **05 — Mark reconciliation function.** Implement sync_attendance_day_marks and transactional student-roster hooks, today/future reconciliation, transfers/status changes, NoClasses/OnlineManual snapshots, idempotence, and immutable historical marks. Online dates never create NoClasses marks. Test insertion/deletion counts and rollover history without an admin report read.
 - [ ] **06 — Save function.** Implement save_calendar_entry with lifecycle validation, campus normalization, concurrency-safe overlap protection for published edits, and reconciliation. Test invalid input and historical protection.
 - [ ] **07 — Publish/republish function.** Implement publish_calendar_entry, permitted transitions, overlap lock, publish timestamps, and marks. Test concurrent/conflicting publication and republish behavior.
 - [ ] **08 — Cancel/delete functions.** Implement cancellation and draft-only deletion, preserving history and reconciling affected dates. Test forbidden hard deletes and transitions, including direct database access.
@@ -54,8 +54,8 @@ Reuse existing shadcn/ui components in `src/components/ui`, existing action/auth
 
 ## Current status
 
-- Completed: read Calendar.md; inspected existing UI components, package/test inventory, schedule action pattern, RFID service, and scope identifiers.
-- Awaiting confirmation: task 01 only.
-- No implementation code, database changes, deployment, or email sends performed.
+- Completed: Tasks 01 and 02, including scope/rule documentation and tested calendar validation.
+- Awaiting confirmation: task 03 only. Task 02 approval does not authorize later tasks.
+- No database changes, UI changes, deployment, or email sends performed. Existing Task 01 documentation changes are retained.
 
-Suggested planning commit: `docs(calendar): add approval-gated implementation checklist`
+Suggested Task 02 commit: `feat(calendar): add entry validation and focused tests`
