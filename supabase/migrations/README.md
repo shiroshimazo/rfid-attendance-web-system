@@ -1,5 +1,10 @@
 ## Planned school calendar migrations (R06; not implemented)
 
+Task 03 now supplies `202610250001_school_calendar.sql` as a locally tested
+foundation: enums, tables, constraints, indexes, and default-deny access. The
+feature is not ready for rollout. Role policies, mutation RPCs, reconciliation,
+RFID integration, verification SQL, and rollback SQL remain separate tasks.
+
 [Calendar.md](../../Calendar.md) defines the planned calendar schema and separate
 RFID-function integration migration. [Calendar-TODO.md](../../Calendar-TODO.md)
 requires confirmation before each task; this section does not authorize applying

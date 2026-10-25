@@ -3,7 +3,7 @@
 **Project:** RFID Attendance Web System  
 **Execution checklist:** [Calendar-TODO.md](Calendar-TODO.md) — separate confirmation before each task
 **Prepared:** 2026-10-25  
-**Status:** Tasks 01–02 complete: scope/rules and tested validation. Database and UI implementation remain pending; see the execution checklist.
+**Status:** Tasks 01–03 complete: scope/rules, validation, and locally tested database foundation. Access policies, mutation workflows, hosted migration execution, and UI remain pending; see the execution checklist.
 **Scope change:** **R06 — School Calendar & Announcements** (supersedes the holiday-management deferral only for this feature; existing R05 cleanup remains separate)
 
 ---
