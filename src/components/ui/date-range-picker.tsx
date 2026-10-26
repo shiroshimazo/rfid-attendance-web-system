@@ -93,7 +93,7 @@ export function DateRangePicker({
         <Button
           variant="outline"
           className={cn(
-            "h-11 w-full justify-between rounded-lg px-3 font-normal",
+            "h-11 w-full justify-between rounded-lg px-3 font-normal tabular-nums",
             "hover:bg-background",
             className
           )}

@@ -120,6 +120,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Dashboard default: every digit gets the same width, so clocks, counters,
+       dates, and table columns do not shift as values change. Inter ships
+       tabular figures through `tnum`. Long-form prose opts back into
+       proportional figures with the `proportional-nums` utility. */
+    font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

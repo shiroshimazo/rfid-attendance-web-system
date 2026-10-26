@@ -51,7 +51,7 @@ function PhoneInput({
     <div
       data-slot="phone-input"
       className={cn(
-        "flex h-9 w-full min-w-0 items-center rounded-md border border-input bg-transparent shadow-xs transition-[color,box-shadow] dark:bg-input/30",
+        "flex h-9 w-full min-w-0 items-center rounded-md border border-input bg-transparent tabular-nums shadow-xs transition-[color,box-shadow] dark:bg-input/30",
         "focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50",
         isInvalid &&
           "border-destructive ring-destructive/20 dark:ring-destructive/40",

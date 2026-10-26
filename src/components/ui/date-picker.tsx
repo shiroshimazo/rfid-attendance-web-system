@@ -100,7 +100,7 @@ export function DatePicker({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full justify-start gap-2 px-3 font-normal",
+            "w-full justify-start gap-2 px-3 font-normal tabular-nums",
             !selected && "text-muted-foreground",
             className
           )}
