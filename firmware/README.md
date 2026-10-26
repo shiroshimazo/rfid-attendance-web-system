@@ -205,6 +205,48 @@ of an already saved request returns its original date/time.
 
 ## Physical acceptance checklist
 
+### Calendar acceptance (Task 17)
+
+Status: deferred at the user's request on 2026-10-26; no physical testing for now.
+The workstation reported no
+serial ports. The user confirmed a reader is available; its transport and the test
+target have not been confirmed. Source inspection is not a hardware pass.
+
+Before testing, identify the reader transport, test app/database, and designated
+active student/card. Verify that the target has the calendar RFID migration
+`202610260002_calendar_rfid_tap.sql`. Use an isolated test environment with SMS and
+email delivery disabled; ordinary taps still create attendance and SMS intent
+rows. Do not publish announcements to real recipients for this check.
+
+Record the observed display, LED, buzzer, request behavior, and database changes
+for each case below. Test entries must target the student's campus and today's
+Asia/Manila date. Use one published attendance exception at a time.
+
+- [ ] No classes: show `TAP REJECTED` and `No classes today.` with red LED and
+  warning beep. Confirm the complete message is readable, without clipping.
+- [ ] Online/manual: show `TAP REJECTED` and
+  `Online class today. Attendance is per subject.` with red LED and warning beep.
+  Confirm wrapping and the final words are visible on the physical display.
+- [ ] Both rejection cases: HTTP 422 resolves the pending request; no automatic
+  retry continues. Holding the card does not submit another tap. No attendance,
+  SMS intent, or successful-request receipt is inserted or changed.
+- [ ] Normal day: after cancelling the exception, remove and retap the card.
+  Confirm one Time In, green LED, short beep, and one arrival SMS intent. Hold the
+  card to confirm no Time Out occurs. Remove and retap for one Time Out without
+  another SMS intent. A third distinct tap must reject the completed day.
+
+Source preflight: `handleTapResponse` treats valid 409/422 failures as terminal,
+clears the pending request, displays up to 180 message characters, and starts
+failure feedback. Both calendar messages are below that character limit.
+`page` renders the detail at text size 2 starting at `(8, 45)`. This does not prove
+physical wrapping, visibility, beep behavior, or successful journal clearing.
+
+Record transport, firmware revision, test target, test time, and each actual
+result before marking Task 17 complete. None of the observations above has been
+performed in this session.
+
+### General reader acceptance
+
 These steps write real attendance. Use a designated active test student/card
 with no existing attendance for the test day and a controlled guardian number.
 
