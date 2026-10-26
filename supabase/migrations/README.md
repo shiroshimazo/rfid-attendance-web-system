@@ -23,11 +23,18 @@ never-published draft deletion, and database lifecycle/history/overlap guards.
 Cancellation preserves past snapshots and delivery/read history. New entries must
 start as drafts, and published/cancelled entries cannot be hard-deleted or reset
 to draft. Use the calendar RPCs so state changes and mark reconciliation stay
-in one transaction. Cancellation emails remain a later task.
+in one transaction. Task 15 connects cancellation emails through the application wrapper.
 Task 09 adds `202610250007_calendar_audit_realtime.sql`: structural audit records
 for entries, marks, and deliveries, plus realtime publication of all four tables.
 Announcement text, reasons, locations, recipient emails, and rendered email bodies
 are excluded from audit values. Application action events remain part of later tasks.
+Task 15 adds `202610260001_calendar_email_dispatch.sql`: a verified-admin mutation
+wrapper captures entry/recipient snapshots, and `retry_allowed` protects uncertain
+email attempts. Service-role delivery writes are explicitly granted. Apply this
+migration before the updated actions; the expanded verification script checks the
+wrapper, retry column, and service grants. Rollback removes the wrapper with the
+rest of the calendar feature.
+
 These migrations are tested locally only; they do not authorize hosted execution.
 RFID integration and the application feature remain pending. The feature is not ready for rollout.
 
@@ -35,7 +42,9 @@ RFID integration and the application feature remain pending. The feature is not 
 
 1. Identify the preview database and confirm its target before execution.
 2. Apply the existing prerequisite migrations, then calendar migrations
-   `202610250001` through `202610250007` in filename order.
+   `202610250001` through `202610250007`, then
+   `202610260001_calendar_email_dispatch.sql`, in filename order. The Task 10
+   preview record covers only the original seven; the new migration remains unapplied.
 3. Run [verify_school_calendar.sql](../verify_school_calendar.sql) as the database
    owner. Every result must be PASS; any SQL error or FAIL blocks deployment.
    The script is read-only and checks schema/security metadata, publication,
@@ -55,7 +64,7 @@ RFID integration and the application feature remain pending. The feature is not 
 3. Run the rollback as the database owner. One transaction restores the shared
    functions/grants, removes roster hooks, then drops calendar objects without CASCADE.
    Existing RFID, subject attendance, SMS, and append-only system logs are retained.
-4. Verify normal taps and existing reports. Reinstallation uses all seven migrations
+4. Verify normal taps and existing reports. Reinstallation uses all eight migrations
    in order; deleted calendar history is recoverable only from the export.
 
 Local tests cover migration reapplication, rollback reapplication, unchanged

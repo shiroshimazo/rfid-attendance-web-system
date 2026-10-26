@@ -1,11 +1,11 @@
--- Read-only checks after all seven calendar migrations, run as the database owner.
+-- Read-only checks after all eight calendar migrations, run as the database owner.
 -- Behavioral authorization/rollback tests also run in tests/calendar-migration.test.mjs.
 -- Missing prerequisite tables are an installation error; do not deploy on errors or FAIL.
 with calendar_tables(name) as (values
   ('calendar_entries'), ('calendar_entry_reads'), ('attendance_day_marks'), ('calendar_email_deliveries')
 ), public_rpcs(signature) as (values
   ('public.calendar_entry_recipients(bigint)'), ('public.sync_attendance_day_marks(date,date)'),
-  ('public.save_calendar_entry(jsonb)'), ('public.publish_calendar_entry(bigint)'),
+  ('public.mutate_calendar_entry(text,bigint,jsonb,boolean)'), ('public.save_calendar_entry(jsonb)'), ('public.publish_calendar_entry(bigint)'),
   ('public.cancel_calendar_entry(bigint)'), ('public.delete_calendar_draft(bigint)')
 ), private_functions(signature) as (values
   ('public.reconcile_calendar_marks(date,date,bigint)'), ('public.reconcile_student_calendar_marks()'),
@@ -81,6 +81,14 @@ with calendar_tables(name) as (values
     where (m.student_id,m.calendar_entry_id,m.campus,m.status) is distinct from (e.student_id,e.entry_id,e.campus,e.status))
   union all
   select 'No admin email recipients', not exists(select 1 from public.calendar_email_deliveries where recipient_role='admin')
+  union all
+  select 'Email retry guard column', exists(select 1 from information_schema.columns
+    where table_schema='public' and table_name='calendar_email_deliveries'
+      and column_name='retry_allowed' and data_type='boolean' and is_nullable='NO')
+  union all
+  select 'Email service write grants',
+    has_table_privilege('service_role','public.calendar_email_deliveries','SELECT,INSERT,UPDATE')
+    and has_sequence_privilege('service_role','public.calendar_email_deliveries_id_seq','USAGE')
   union all
   select 'Realtime: ' || name, exists(select 1 from pg_publication_tables
     where pubname='supabase_realtime' and schemaname='public' and tablename=name)

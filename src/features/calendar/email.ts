@@ -45,7 +45,6 @@ export function renderCalendarEmail(
 ): RenderedEmail {
   if (!["teacher", "student"].includes(recipientRole)) throw new Error("Invalid calendar email recipient role.")
   const baseUrl = calendarEmailAppUrl()
-  if (!baseUrl) throw new Error("Configure NEXT_PUBLIC_APP_URL for calendar email links.")
   const dateRange = formatDateRange(entry.starts_on, entry.ends_on, entry.start_time, entry.end_time)
   const campusScope = formatCampusScope(entry.campuses)
   const tagsText = tagLabels(entry.tags)
@@ -150,13 +149,13 @@ ${entry.location ? `Location: ${entry.location}\n` : ""}${entry.reason ? `Reason
     specificText = "\nAttendance is confirmed by the teacher in Subject Attendance.\n"
   }
 
-  const ctaHtml = `
+  const ctaHtml = baseUrl ? `
       <div style="text-align: center; margin-bottom: 24px;">
         <a href="${escapeHtml(viewUrl)}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">View Calendar</a>
       </div>
-  `
+  ` : ""
 
-  const ctaText = `\nView Calendar: ${viewUrl}\n`
+  const ctaText = baseUrl ? `\nView Calendar: ${viewUrl}\n` : ""
 
   const footerHtml = `
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">

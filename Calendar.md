@@ -3,7 +3,7 @@
 **Project:** RFID Attendance Web System  
 **Execution checklist:** [Calendar-TODO.md](Calendar-TODO.md) — separate confirmation before each task
 **Prepared:** 2026-10-25  
-**Status:** Tasks 01–13 complete: scope/rules, validation, core database workflows, audit/realtime registration, verification SQL, rollback SQL, local recovery tests, preview database verification (48/48 PASS), calendar read queries (9 tests), calendar mutation actions (6 RPC wrappers, 12 tests), and read receipt actions (2 actions, 6 tests). Email templates and the Resend batch adapter are complete with mocked delivery tests. Dispatch/retry, UI, RFID integration, and deployment remain pending; see the execution checklist.
+**Status:** Tasks 01–15 complete: scope/rules, validation, core database workflows, audit/realtime registration, verification SQL, rollback SQL, local recovery tests, preview database verification (48/48 PASS), calendar read queries (9 tests), calendar mutation actions (6 RPC wrappers, 12 tests), and read receipt actions (2 actions, 6 tests). Email templates and the Resend batch adapter are complete with mocked delivery tests. Dispatch/retry is implemented with persisted payloads, after-response batches, and admin retries. The new email migration remains unapplied to hosted databases. UI, RFID integration, and deployment remain pending; see the execution checklist.
 **Scope change:** **R06 — School Calendar & Announcements** (supersedes the holiday-management deferral only for this feature; existing R05 cleanup remains separate)
 
 ---
@@ -658,7 +658,7 @@ on success. Missing entries, already-published entries, past attendance dates,
 and overlaps return `{ ok: false, code, message }`. Invalid ids and unauthorized
 calls raise database errors. Publication refreshes published_at, clears
 cancelled_at, and reconciles attendance-impacting entries in the same transaction;
-a reconciliation failure rolls back publication. Email dispatch is a later task.
+a reconciliation failure rolls back publication. Task 15 dispatches email after the response using the committed snapshot.
 
 Cancellation and draft deletion use the same positive-id and result contract.
 Cancellation accepts only published entries and preserves published_at while
@@ -667,7 +667,7 @@ accepts only never-published drafts. Database triggers also reject hard deletion
 of published/cancelled entries, transitions back to draft, timestamp changes
 without a transition, historical scope changes, and conflicting publication.
 Cancelled entries retain their receipt and delivery history. Cancellation email
-dispatch remains a later task.
+dispatch is connected by Task 15 through the application mutation wrapper.
 
 All public mutation RPCs are security definer, require an active, verified admin, and grant execute only to authenticated (revoke the default PUBLIC grant). Role checks must fail closed for a null role. Internal reconciliation helpers have no client execute grant.
 

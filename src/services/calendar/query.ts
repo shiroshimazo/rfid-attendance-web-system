@@ -57,6 +57,7 @@ export interface CalendarEmailDeliveryRow {
   resend_email_id: string | null
   error_message: string | null
   attempt_count: number
+  retry_allowed: boolean
   last_attempt_at: string | null
   sent_at: string | null
   created_at: string

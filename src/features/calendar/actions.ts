@@ -1,12 +1,12 @@
 "use server"
 
+import { queueCalendarNotification, queueCalendarEmailRetry, type CalendarNotification } from "@/features/calendar/notifications"
 import { auditActivity } from "@/services/audit/log"
 import { revalidatePath } from "next/cache"
 import { requireCurrentAccount, requireRole } from "@/features/auth/server"
 import { isCalendarUnread } from "@/features/calendar/query"
 import {
   calendarEntrySchema,
-  calendarPublishSchema,
   type CalendarEntryValues,
 } from "@/features/calendar/schema"
 import {
@@ -44,14 +44,18 @@ async function adminOnlyClient() {
  * The RPC enforces verified-admin, payload validation, overlap checks, and mark reconciliation.
  */
 export async function saveCalendarEntryAction(
-  input: CalendarEntryValues & { id?: number }
+  input: CalendarEntryValues & { id?: number; notifyRecipients?: boolean }
 ): Promise<ActionResult> {
   return auditActivity("save_calendar_entry", "calendar_entries", async () => {
     await requireRole("admin")
 
-    const publishNow = input.id === undefined
-    const schema = publishNow ? calendarPublishSchema() : calendarEntrySchema
-    const parsed = schema.safeParse(input)
+    if (!input || typeof input !== "object") return failure(validationFailureMessage)
+    const { id, notifyRecipients = false, ...editable } = input
+    if ((id !== undefined && (!Number.isSafeInteger(id) || id <= 0)) || typeof notifyRecipients !== "boolean") {
+      return failure("Invalid calendar entry or notification option.")
+    }
+    const isCreate = id === undefined
+    const parsed = calendarEntrySchema.safeParse(editable)
 
     if (!parsed.success) {
       return failure(validationFailureMessage, flattenIssues(parsed.error.issues))
@@ -60,14 +64,8 @@ export async function saveCalendarEntryAction(
     const values = parsed.data
     const supabase = await adminOnlyClient()
 
-    const payload = {
-      ...values,
-      id: input.id,
-      // id null on create; the RPC assigns created_by/updated_by from auth.uid()
-    }
-
-    const { data, error } = await supabase.rpc("save_calendar_entry", {
-      p_payload: payload,
+    const { data, error } = await supabase.rpc("mutate_calendar_entry", {
+      p_operation: "save", p_id: id ?? null, p_notify: notifyRecipients, p_payload: values,
     })
 
     if (error) {
@@ -79,14 +77,14 @@ export async function saveCalendarEntryAction(
       return failure(msg)
     }
 
-    const result = data as { ok: boolean; id: number } | null
+    const result = data as { ok: boolean; id: number; notification?: CalendarNotification } | null
     if (!result?.ok) {
       return failure("The entry was not saved.")
     }
 
     refreshCalendarViews()
 
-    return success(publishNow ? "Calendar entry created." : "Calendar entry updated.")
+    return success((isCreate ? "Calendar entry created." : "Calendar entry updated.") + await queueCalendarNotification(result.notification))
   })
 }
 
@@ -100,7 +98,8 @@ export async function publishCalendarEntryAction(entryId: number): Promise<Actio
 
     const supabase = await adminOnlyClient()
 
-    const { data, error } = await supabase.rpc("publish_calendar_entry", {
+    const { data, error } = await supabase.rpc("mutate_calendar_entry", {
+      p_operation: "publish",
       p_id: entryId,
     })
 
@@ -109,14 +108,14 @@ export async function publishCalendarEntryAction(entryId: number): Promise<Actio
       return failure(msg)
     }
 
-    const result = data as { ok: boolean } | null
+    const result = data as { ok: boolean; notification?: CalendarNotification } | null
     if (!result?.ok) {
       return failure("The entry could not be published.")
     }
 
     refreshCalendarViews()
 
-    return success("Calendar entry published.")
+    return success("Calendar entry published." + await queueCalendarNotification(result.notification))
   })
 }
 
@@ -129,7 +128,8 @@ export async function republishCalendarEntryAction(entryId: number): Promise<Act
 
     const supabase = await adminOnlyClient()
 
-    const { data, error } = await supabase.rpc("publish_calendar_entry", {
+    const { data, error } = await supabase.rpc("mutate_calendar_entry", {
+      p_operation: "publish",
       p_id: entryId,
     })
 
@@ -138,14 +138,14 @@ export async function republishCalendarEntryAction(entryId: number): Promise<Act
       return failure(msg)
     }
 
-    const result = data as { ok: boolean } | null
+    const result = data as { ok: boolean; notification?: CalendarNotification } | null
     if (!result?.ok) {
       return failure("The entry could not be republished.")
     }
 
     refreshCalendarViews()
 
-    return success("Calendar entry republished.")
+    return success("Calendar entry republished." + await queueCalendarNotification(result.notification))
   })
 }
 
@@ -159,7 +159,8 @@ export async function cancelCalendarEntryAction(entryId: number): Promise<Action
 
     const supabase = await adminOnlyClient()
 
-    const { data, error } = await supabase.rpc("cancel_calendar_entry", {
+    const { data, error } = await supabase.rpc("mutate_calendar_entry", {
+      p_operation: "cancel",
       p_id: entryId,
     })
 
@@ -168,14 +169,14 @@ export async function cancelCalendarEntryAction(entryId: number): Promise<Action
       return failure(msg)
     }
 
-    const result = data as { ok: boolean } | null
+    const result = data as { ok: boolean; notification?: CalendarNotification } | null
     if (!result?.ok) {
       return failure("The entry could not be cancelled.")
     }
 
     refreshCalendarViews()
 
-    return success("Calendar entry cancelled. Today and future attendance marks removed; history retained.")
+    return success("Calendar entry cancelled. Today and future attendance marks removed; history retained." + await queueCalendarNotification(result.notification))
   })
 }
 
@@ -348,5 +349,24 @@ export async function markAllCalendarEntriesReadAction(): Promise<ActionResult> 
     return success(
       `${unread.length} announcement${unread.length === 1 ? "" : "s"} marked as read.`
     )
+  })
+}
+
+/** Retry stored payloads only; uncertain acceptance requires operator review. */
+export async function retryCalendarEmailAction(target: { id: number } | { batchId: string }): Promise<ActionResult> {
+  return auditActivity("retry_calendar_email", "calendar_email_deliveries", async () => {
+    await requireRole("admin")
+    if (!target || typeof target !== "object" || ("id" in target
+      ? !Number.isSafeInteger(target.id) || target.id <= 0
+      : typeof target.batchId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target.batchId))) {
+      return failure("Invalid email delivery or batch.")
+    }
+    try {
+      return await queueCalendarEmailRetry(target)
+        ? success("Email retry queued.")
+        : failure("No retryable failed deliveries. Unknown acceptance or interrupted attempts require operator review.")
+    } catch {
+      return failure("Email retry could not be scheduled.")
+    }
   })
 }

@@ -70,7 +70,7 @@ test("configuration rejects missing settings, unsafe mailboxes and unsafe URLs",
     if (old === undefined) delete process.env[key]; else process.env[key] = old
   }
   delete process.env.NEXT_PUBLIC_APP_URL
-  assert.throws(() => renderCalendarEmail(entry, "published", "student"), /NEXT_PUBLIC_APP_URL/)
+  assert.ok(!renderCalendarEmail(entry, "published", "student").html.includes("href="))
 })
 
 test("batch sends one private message per recipient and maps ordered IDs", async () => {

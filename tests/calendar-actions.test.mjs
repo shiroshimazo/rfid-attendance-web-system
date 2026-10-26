@@ -8,6 +8,7 @@ describe("calendar actions", () => {
 
   beforeEach(() => {
     loader = createSourceLoader({
+      "@/features/calendar/notifications": { queueCalendarNotification: async () => "", queueCalendarEmailRetry: async () => true },
       "next/cache": { revalidatePath: () => {} },
       "@/services/audit/log": {
         auditActivity: async (event, entity, operation) => operation(),
@@ -30,6 +31,7 @@ describe("calendar actions", () => {
 
   test("saveCalendarEntryAction: rejects non-admin (throws redirect)", async () => {
     loader = createSourceLoader({
+      "@/features/calendar/notifications": { queueCalendarNotification: async () => "", queueCalendarEmailRetry: async () => true },
       "next/cache": { revalidatePath: () => {} },
       "@/services/audit/log": {
         auditActivity: async (event, entity, operation) => operation(),
@@ -106,6 +108,7 @@ describe("calendar actions", () => {
   test("saveCalendarEntryAction: accepts valid normal entry", async () => {
     let rpcCalled = false
     loader = createSourceLoader({
+      "@/features/calendar/notifications": { queueCalendarNotification: async () => "", queueCalendarEmailRetry: async () => true },
       "next/cache": { revalidatePath: () => {} },
       "@/services/audit/log": {
         auditActivity: async (event, entity, operation) => operation(),
@@ -117,7 +120,8 @@ describe("calendar actions", () => {
         createServerSupabaseClient: () => ({
           rpc: async (name, payload) => {
             rpcCalled = true
-            assert.equal(name, "save_calendar_entry")
+            assert.equal(name, "mutate_calendar_entry")
+            assert.equal(payload.p_operation, "save")
             assert.ok(payload.p_payload)
             return { data: { ok: true, id: 123 }, error: null }
           },
@@ -142,6 +146,7 @@ describe("calendar actions", () => {
 
   test("publishCalendarEntryAction: rejects non-admin (throws redirect)", async () => {
     loader = createSourceLoader({
+      "@/features/calendar/notifications": { queueCalendarNotification: async () => "", queueCalendarEmailRetry: async () => true },
       "next/cache": { revalidatePath: () => {} },
       "@/services/audit/log": {
         auditActivity: async (event, entity, operation) => operation(),
@@ -164,6 +169,7 @@ describe("calendar actions", () => {
   test("publishCalendarEntryAction: calls publish RPC", async () => {
     let rpcCalled = false
     loader = createSourceLoader({
+      "@/features/calendar/notifications": { queueCalendarNotification: async () => "", queueCalendarEmailRetry: async () => true },
       "next/cache": { revalidatePath: () => {} },
       "@/services/audit/log": {
         auditActivity: async (event, entity, operation) => operation(),
@@ -175,7 +181,7 @@ describe("calendar actions", () => {
         createServerSupabaseClient: () => ({
           rpc: async (name) => {
             rpcCalled = true
-            assert.equal(name, "publish_calendar_entry")
+            assert.equal(name, "mutate_calendar_entry")
             return { data: { ok: true }, error: null }
           },
         }),
@@ -191,6 +197,7 @@ describe("calendar actions", () => {
   test("republishCalendarEntryAction: calls same publish RPC", async () => {
     let rpcCalled = false
     loader = createSourceLoader({
+      "@/features/calendar/notifications": { queueCalendarNotification: async () => "", queueCalendarEmailRetry: async () => true },
       "next/cache": { revalidatePath: () => {} },
       "@/services/audit/log": {
         auditActivity: async (event, entity, operation) => operation(),
@@ -202,7 +209,7 @@ describe("calendar actions", () => {
         createServerSupabaseClient: () => ({
           rpc: async (name) => {
             rpcCalled = true
-            assert.equal(name, "publish_calendar_entry")
+            assert.equal(name, "mutate_calendar_entry")
             return { data: { ok: true }, error: null }
           },
         }),
@@ -218,6 +225,7 @@ describe("calendar actions", () => {
   test("cancelCalendarEntryAction: calls cancel RPC", async () => {
     let rpcCalled = false
     loader = createSourceLoader({
+      "@/features/calendar/notifications": { queueCalendarNotification: async () => "", queueCalendarEmailRetry: async () => true },
       "next/cache": { revalidatePath: () => {} },
       "@/services/audit/log": {
         auditActivity: async (event, entity, operation) => operation(),
@@ -229,7 +237,7 @@ describe("calendar actions", () => {
         createServerSupabaseClient: () => ({
           rpc: async (name) => {
             rpcCalled = true
-            assert.equal(name, "cancel_calendar_entry")
+            assert.equal(name, "mutate_calendar_entry")
             return { data: { ok: true }, error: null }
           },
         }),
@@ -245,6 +253,7 @@ describe("calendar actions", () => {
   test("deleteCalendarDraftAction: calls delete RPC", async () => {
     let rpcCalled = false
     loader = createSourceLoader({
+      "@/features/calendar/notifications": { queueCalendarNotification: async () => "", queueCalendarEmailRetry: async () => true },
       "next/cache": { revalidatePath: () => {} },
       "@/services/audit/log": {
         auditActivity: async (event, entity, operation) => operation(),
@@ -273,6 +282,7 @@ describe("calendar actions", () => {
     let rpcCalled = false
     let rpcParams = null
     loader = createSourceLoader({
+      "@/features/calendar/notifications": { queueCalendarNotification: async () => "", queueCalendarEmailRetry: async () => true },
       "next/cache": { revalidatePath: () => {} },
       "@/services/audit/log": {
         auditActivity: async (event, entity, operation) => operation(),
@@ -304,6 +314,7 @@ describe("calendar actions", () => {
   test("all actions audit with correct event names", async () => {
     const events = []
     loader = createSourceLoader({
+      "@/features/calendar/notifications": { queueCalendarNotification: async () => "", queueCalendarEmailRetry: async () => true },
       "next/cache": { revalidatePath: () => {} },
       "@/services/audit/log": {
         auditActivity: async (event, entity, operation) => {
@@ -354,6 +365,7 @@ describe("calendar receipt actions", () => {
   function receiptLoader({ account, entry, visible = [] }) {
     const upserts = []
     const loader = createSourceLoader({
+      "@/features/calendar/notifications": { queueCalendarNotification: async () => "", queueCalendarEmailRetry: async () => true },
       "next/cache": { revalidatePath: () => {} },
       "@/services/audit/log": {
         auditActivity: async (event, entity, operation) => operation(),
@@ -468,4 +480,41 @@ describe("calendar receipt actions", () => {
     assert.match(result.message, /No unread announcements/)
     assert.equal(upserts.length, 0)
   })
+})
+
+test("email actions forward checked edits, authorize retries, and preserve publication on scheduling failure", async () => {
+  const calls = [], queued = [], audit = []
+  let denied = false, rpcResult = { ok: true, id: 42, notification: { batch_id: "snapshot" } }
+  const actions = createSourceLoader({
+    "next/cache": { revalidatePath() {} },
+    "@/features/auth/server": { requireRole: async role => { assert.equal(role, "admin"); if (denied) throw new Error("Forbidden") } },
+    "@/services/audit/log": { auditActivity: async (event, entity, operation) => { audit.push([event, entity]); return operation() } },
+    "@/services/supabase/server": { createServerSupabaseClient: () => ({ rpc: async (name, payload) => { calls.push([name, payload]); return { data: rpcResult, error: null } } }) },
+    "@/features/calendar/notifications": {
+      queueCalendarNotification: async snapshot => { queued.push(snapshot); return " Calendar saved, but email scheduling failed." },
+      queueCalendarEmailRetry: async target => { queued.push(target); return true },
+    },
+  })("src/features/calendar/actions.ts")
+  const edit = { id: 42, notifyRecipients: true, title: "Updated", tags: ["event"], attendanceImpact: "normal", audience: "everyone", campuses: [], startsOn: "2026-10-26", endsOn: "2026-10-26" }
+  assert.equal((await actions.saveCalendarEntryAction(edit)).ok, true)
+  assert.equal(calls[0][1].p_notify, true)
+  assert.equal(calls[0][1].p_payload.notifyRecipients, undefined)
+  assert.equal(calls[0][1].p_id, 42)
+  assert.deepEqual(queued[0], rpcResult.notification)
+  for (const [operation, method] of [["publish", "publishCalendarEntryAction"], ["publish", "republishCalendarEntryAction"], ["cancel", "cancelCalendarEntryAction"]]) {
+    const result = await actions[method](42)
+    assert.equal(result.ok, true); assert.match(result.message, /scheduling failed/)
+    assert.equal(calls.at(-1)[1].p_operation, operation)
+  }
+  const previous = queued.length
+  rpcResult = { ok: false }
+  assert.equal((await actions.publishCalendarEntryAction(42)).ok, false)
+  assert.equal(queued.length, previous)
+  assert.equal((await actions.retryCalendarEmailAction({ id: 1 })).ok, true)
+  assert.deepEqual(audit.at(-1), ["retry_calendar_email", "calendar_email_deliveries"])
+  assert.equal((await actions.retryCalendarEmailAction({ batchId: "bad" })).ok, false)
+  assert.equal((await actions.retryCalendarEmailAction({ id: -1 })).ok, false)
+  assert.equal((await actions.saveCalendarEntryAction({ ...edit, notifyRecipients: "true" })).ok, false)
+  denied = true
+  await assert.rejects(() => actions.retryCalendarEmailAction({ id: 1 }), /Forbidden/)
 })

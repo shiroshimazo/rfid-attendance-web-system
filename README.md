@@ -326,7 +326,8 @@ Defined in [.env.example](.env.example):
 | `DIRECT_URL` | Server | Direct PostgreSQL connection string (migrations/tooling) |
 
 See [calendar email setup](src/features/calendar/README.md) for configuration,
-mocked tests, and delivery limitations. Dispatch and retry are not connected yet.
+mocked tests, and delivery limitations. Apply the calendar email dispatch migration
+before deploying the notification actions.
 
 > Never prefix server secrets with `NEXT_PUBLIC_`, paste them into chat or
 > screenshots, or embed them in firmware source.

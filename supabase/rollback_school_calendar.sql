@@ -152,6 +152,7 @@ drop table if exists public.calendar_email_deliveries;
 drop table if exists public.attendance_day_marks;
 drop table if exists public.calendar_entries;
 
+drop function if exists public.mutate_calendar_entry(text,bigint,jsonb,boolean);
 drop function if exists public.cancel_calendar_entry(bigint);
 drop function if exists public.delete_calendar_draft(bigint);
 drop function if exists public.publish_calendar_entry(bigint);

@@ -1072,6 +1072,7 @@ async function auditFixture() {
     .replace(/^begin;$/m, "").replace(/^commit;$/m, "")
   await db.exec(sql)
   await db.exec(sql)
+  await installEmailMigration()
   return { ...fixture, auditBefore }
 }
 
@@ -1145,11 +1146,94 @@ test("rollback restores shared functions and preserves existing data, audit hist
   assert.equal(tap.ok, true)
   assert.equal(tap.action, "time_in")
   await db.exec("rollback to savepoint restored_tap; release savepoint restored_tap")
-  for (const name of (await readdir(directory)).filter((name) => name.startsWith('20261025') && name.endsWith('.sql')).sort()) {
+  for (const name of (await readdir(directory)).filter((name) => (name.startsWith('20261025') || name === '202610260001_calendar_email_dispatch.sql') && name.endsWith('.sql')).sort()) {
     const sql = (await readFile(new URL(name, directory), "utf8")).replace(/^begin;$/m, "").replace(/^commit;$/m, "")
     await db.exec(sql)
   }
   const verification = await readFile(new URL("../supabase/verify_school_calendar.sql", import.meta.url), "utf8")
   assert.deepEqual((await db.query(verification)).rows.filter((row) => row.result !== "PASS"), [])
   assert.deepEqual(await existingData(), original)
+})
+
+async function installEmailMigration() {
+  const sql = (await readFile(new URL("202610260001_calendar_email_dispatch.sql", directory), "utf8"))
+    .replace(/^begin;$/m, "").replace(/^commit;$/m, "")
+  await db.exec(sql)
+  await db.exec(sql)
+}
+const mutateEntry = async (operation, id = null, payload = null, notify = false) => (await db.query(
+  "select public.mutate_calendar_entry($1,$2,$3::jsonb,$4) as result", [operation, id, JSON.stringify(payload), notify]
+)).rows[0].result
+
+test("notification snapshots follow successful publish/cancel/republish, exclude admins, and preserve campus scope", async () => {
+  const fixture = await auditFixture()
+  await asCalendarUser("admin")
+  const saved = await mutateEntry("save", null, entryPayload(fixture, { campuses: ["Main Campus"] }), true)
+  assert.equal(saved.ok, true); assert.equal(saved.notification, undefined)
+  const published = await mutateEntry("publish", saved.id)
+  assert.equal(published.notification.type, "published")
+  assert.equal(published.notification.entry.status, "published")
+  const recipients = (await db.query("select * from public.calendar_entry_recipients($1)", [saved.id])).rows
+  assert.deepEqual(published.notification.recipients, recipients)
+  assert.ok(recipients.length > 0)
+  assert.ok(recipients.every(row => row.role !== "admin"))
+  assert.equal(new Set(recipients.map(row => row.user_id)).size, recipients.length)
+  const duplicate = await mutateEntry("publish", saved.id)
+  assert.equal(duplicate.ok, false); assert.equal(duplicate.notification, undefined)
+  const cancelled = await mutateEntry("cancel", saved.id)
+  assert.equal(cancelled.notification.type, "cancelled")
+  assert.equal(cancelled.notification.entry.status, "cancelled")
+  assert.deepEqual(cancelled.notification.recipients, recipients)
+  const republished = await mutateEntry("publish", saved.id)
+  assert.notEqual(republished.notification.batch_id, published.notification.batch_id)
+})
+
+test("only checked important edits of published entries notify; ordering and pin changes do not", async () => {
+  const fixture = await auditFixture()
+  await asCalendarUser("admin")
+  const payload = entryPayload(fixture, { campuses: ["Main Campus", "MV Campus"], tags: ["event", "meeting"] })
+  const saved = await mutateEntry("save", null, payload, true)
+  await mutateEntry("publish", saved.id)
+  assert.equal((await mutateEntry("save", saved.id, payload, true)).notification, undefined)
+  assert.equal((await mutateEntry("save", saved.id, { ...payload, isPinned: true }, true)).notification, undefined)
+  assert.equal((await mutateEntry("save", saved.id, { ...payload, campuses: [...payload.campuses].reverse(), tags: [...payload.tags].reverse() }, true)).notification, undefined)
+  const changed = { ...payload, title: "Changed title" }
+  assert.equal((await mutateEntry("save", saved.id, changed, false)).notification, undefined)
+  const notified = await mutateEntry("save", saved.id, { ...changed, description: "New information" }, true)
+  assert.equal(notified.notification.type, "updated")
+  assert.equal(notified.notification.entry.description, "New information")
+  assert.equal(notified.notification.entry.title, "Changed title")
+})
+
+test("notification wrapper enforces verified admin and service-only delivery writes", async () => {
+  const fixture = await auditFixture()
+  for (const [name, verified] of [["student", true], ["teacher", true], ["admin", false], ["missing", true]]) {
+    await asCalendarUser(name, verified)
+    await rejects(() => mutateEntry("save", null, entryPayload(fixture)), "42501")
+  }
+  await asCalendarUser("admin")
+  await rejects(() => mutateEntry("invalid"), "22023")
+  await rejects(() => db.query("update public.calendar_email_deliveries set retry_allowed=true"), "42501")
+  await db.exec("reset role")
+  assert.equal((await db.query("select has_table_privilege('service_role','public.calendar_email_deliveries','INSERT,UPDATE,SELECT') allowed")).rows[0].allowed, true)
+  assert.equal((await db.query("select has_sequence_privilege('service_role','public.calendar_email_deliveries_id_seq','USAGE') allowed")).rows[0].allowed, true)
+})
+
+test("service delivery claims are atomic and preserve payloads across failed retries", async () => {
+  const fixture = await auditFixture()
+  await db.exec("reset role; set local role service_role")
+  const inserted = (await db.query(`insert into public.calendar_email_deliveries
+    (calendar_entry_id,batch_id,notification_type,recipient_user_id,recipient_email,recipient_role,subject,html_body,text_body)
+    values ($1,'90000000-0000-4000-8000-000000000001','published',$2,'student@example.test','student','Stored subject','<p>Stored</p>','Stored') returning *`,
+  [fixture.main.id, userId])).rows[0]
+  const claim = () => db.query(`update public.calendar_email_deliveries set status='Pending',retry_allowed=false,
+    attempt_count=1,last_attempt_at=now() where id=$1 and status='Pending' and attempt_count=0 and retry_allowed=true returning *`, [inserted.id])
+  assert.equal((await claim()).rows.length, 1)
+  assert.equal((await claim()).rows.length, 0)
+  await db.query("update public.calendar_email_deliveries set status='Failed',retry_allowed=true,error_message='Email provider returned HTTP 429.' where id=$1", [inserted.id])
+  const retry = (await db.query(`update public.calendar_email_deliveries set status='Pending',retry_allowed=false,attempt_count=2
+    where id=$1 and status='Failed' and attempt_count=1 and retry_allowed=true returning *`, [inserted.id])).rows[0]
+  assert.equal(retry.subject, inserted.subject)
+  assert.equal(retry.html_body, inserted.html_body)
+  assert.equal(retry.text_body, inserted.text_body)
 })
