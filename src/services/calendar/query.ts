@@ -114,6 +114,9 @@ export interface RecipientCountRow {
 }
 
 export interface AdminListParams {
+  search?: string
+  tag?: string
+  impact?: "normal" | "no_classes" | "online_manual" | "all"
   status?: "draft" | "published" | "cancelled" | "all"
   audience?: "everyone" | "teachers" | "students" | "all"
   campus?: string | "all"
@@ -133,7 +136,7 @@ export interface AdminListResult {
 /**
  * Admin list with filters, pagination, and deterministic ordering.
  * RLS already restricts to admin + published/cancelled for teacher/student.
- * This query is for admin; it bypasses RLS visibility via the authenticated role.
+ * The admin route authorizes the caller; authenticated reads still enforce RLS.
  */
 export async function fetchAdminCalendarEntries({
   status = "all",
@@ -143,6 +146,9 @@ export async function fetchAdminCalendarEntries({
   to,
   page = 1,
   pageSize = 20,
+  search,
+  tag,
+  impact = "all",
 }: AdminListParams): Promise<AdminListResult> {
   const supabase = await createServerSupabaseClient()
 
@@ -153,13 +159,17 @@ export async function fetchAdminCalendarEntries({
     .from("calendar_entries")
     .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .range(fromIndex, toIndex)
 
   if (status !== "all") query = query.eq("status", status)
   if (audience !== "all") query = query.eq("audience", audience)
-  if (campus !== "all") query = query.contains("campuses", [campus])
-  if (from) query = query.gte("starts_on", from)
-  if (to) query = query.lte("ends_on", to)
+  if (campus !== "all") query = query.or(`campuses.eq.{},campuses.cs.{${JSON.stringify(campus)}}`)
+  if (from) query = query.gte("ends_on", from)
+  if (to) query = query.lte("starts_on", to)
+  if (search) query = query.ilike("title", `%${search.replace(/[\\%_]/g, "\\$&")}%`)
+  if (tag && tag !== "all") query = query.contains("tags", [tag])
+  if (impact !== "all") query = query.eq("attendance_impact", impact)
 
   const { data, error, count } = await query
 
@@ -253,12 +263,8 @@ export async function fetchUpcomingCalendarEntries(
 export async function fetchCalendarCampuses(): Promise<string[]> {
   const supabase = await createServerSupabaseClient()
 
-  const { data, error } = await supabase
-    .from("calendar_entries")
-    .select("campuses")
-    .neq("status", "draft")
-
-  if (error) throw new Error(error.message)
+  const data = await fetchAllRows<{ campuses: string[] }>((from, to) => supabase
+    .from("calendar_entries").select("campuses").order("id").range(from, to))
 
   const set = new Set<string>()
   for (const row of data ?? []) {

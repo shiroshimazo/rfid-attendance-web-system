@@ -87,3 +87,35 @@ verification, and inbox delivery remain rollout checks.
 Run focused dispatch checks with
 `node --test tests/calendar-notifications.test.mjs tests/calendar-actions.test.mjs tests/calendar-migration.test.mjs`.
 All delivery tests are mocked; database tests use disposable PGlite.
+
+## Admin calendar browsing (Task 18)
+
+Open `/admin/schedules/calendar` as a verified active administrator. This task
+provides Calendar and All announcements tabs. Sidebar navigation is Task 21;
+creation/editing/lifecycle controls are Task 19, and the delivery log and sync
+controls are Task 20.
+
+The calendar includes drafts, published entries, cancelled entries, normal events,
+and every overlapping day of a multi-day entry. Desktop day cells show up to three
+status dots with an overflow count and accessible announcement labels. Mobile uses
+an agenda grouped by date. Selecting a date displays complete entry details.
+`month`, `date`, and `tab` query parameters preserve the selected view.
+
+KPIs cover all campuses: published entries active during the next 30 days
+(including today), distinct dates with at least one published no-class entry in
+the selected month, currently published entries published during that month in
+Asia/Manila, and all failed delivery rows. Campus overlaps do not multiply the
+no-class day count. The published count uses timestamp boundaries, not UTC dates.
+
+List filters are independent of the calendar month and KPIs: literal title search,
+status, tag, attendance impact, audience, campus, and inclusive overlap dates.
+Campus filters include all-campus entries. Reversed date bounds are normalized;
+invalid filters fall back to defaults. Lists paginate 20 rows with stable ordering
+and clamp out-of-range pages. Calendar, campus, and delivery-summary reads page
+past server response caps. Delivery counts describe stored status, not confirmed
+inbox delivery. Read failures display a retry panel instead of fabricated zeros.
+
+`tests/calendar-admin.test.mjs` covers query normalization, leap years, month
+clipping, filters, pagination/caps, authorization, KPIs, component rendering,
+escaping, empty states, and read errors. Production compilation is verified;
+interactive browser, mobile layout, and keyboard observations remain Task 29.
