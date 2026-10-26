@@ -3,7 +3,8 @@
 -- Existing RFID, subject attendance, SMS, and append-only audit history are retained.
 begin;
 
--- Baseline: 202609140001_rfid_tap_processing.sql. Recheck when Task 16 replaces the tap RPC.
+-- Restore the pre-calendar baseline from 202609140001_rfid_tap_processing.sql.
+-- This replaces 202610260002_calendar_rfid_tap.sql before calendar tables/types are dropped.
 create or replace function public.record_rfid_tap(
   p_request_id uuid, p_uid text, p_received_at timestamptz default clock_timestamp()
 ) returns jsonb language plpgsql security definer set search_path = '' as $$

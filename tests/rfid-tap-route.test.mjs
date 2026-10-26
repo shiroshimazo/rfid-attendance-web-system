@@ -92,3 +92,14 @@ test("only successful arrivals (including safe retries) invoke the SMS dispatche
     const x=setup({data}); await x.send(); assert.deepEqual(x.smsCalls,expected)
   }
 })
+
+test("calendar rejections return HTTP 422 and unchanged feedback without dispatching SMS", async () => {
+  for (const [code, message] of [["NO_CLASSES", "No classes today."], ["ONLINE_CLASS", "Online class today. Attendance is per subject."]]) {
+    const data = { ok: false, code, message, feedback: { led: "red", buzzer: "warning" } }
+    const { send, smsCalls } = setup({ data })
+    const response = await send()
+    assert.equal(response.status, 422)
+    assert.deepEqual(await response.json(), data)
+    assert.deepEqual(smsCalls, [])
+  }
+})

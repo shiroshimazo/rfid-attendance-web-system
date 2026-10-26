@@ -302,3 +302,97 @@ test('P10 business seed matches the pilot and reruns preserve existing rows and 
   assert.deepEqual(await rows('select * from public.attendance_records order by id'),history)
   assert.deepEqual(await rows('select * from public.sms_notifications order by id'),sms)
 })
+
+async function calendarEntry({ impact = "no_classes", campuses = [], status = "published", days = 0 } = {}) {
+  const date = (await rows("select ((now() at time zone 'Asia/Manila')::date + 1)::text as date"))[0].date
+  const tags = impact === "normal" ? ["event"] : impact === "online_manual" ? ["no_classes", "online_class"] : ["no_classes"]
+  const entry = (await rows(`insert into public.calendar_entries(title,tags,attendance_impact,audience,reason,campuses,starts_on,ends_on)
+    values('Calendar test',$1::text[]::public.calendar_tag[],$2::public.calendar_attendance_impact,'everyone','School notice',$3,$4::date,$4::date+$5::integer) returning id`,
+  [tags, impact, campuses, date, days]))[0]
+  if (status !== "draft") await rows("update public.calendar_entries set status='published' where id=$1", [entry.id])
+  if (status === "cancelled") await rows("update public.calendar_entries set status='cancelled' where id=$1", [entry.id])
+  return { ...entry, date }
+}
+async function tapEvidence() {
+  return {
+    attendance: await rows("select * from public.attendance_records order by id"),
+    sms: await rows("select * from public.sms_notifications order by id"),
+    receipts: await rows("select * from public.rfid_tap_requests order by request_id"),
+  }
+}
+
+for (const [impact, code, message] of [
+  ["no_classes", "NO_CLASSES", "No classes today."],
+  ["online_manual", "ONLINE_CLASS", "Online class today. Attendance is per subject."],
+]) test(`calendar ${impact} rejects taps without attendance, SMS or request writes`, async () => {
+  const entry = await calendarEntry({ impact })
+  assert.deepEqual(await rows("select * from public.attendance_day_marks"), [])
+  const before = await tapEvidence()
+  const result = await tap(`${entry.date}T08:00:00+08:00`)
+  assert.deepEqual(result, { ok: false, code, message, feedback: { led: "red", buzzer: "warning" } })
+  assert.deepEqual(await tapEvidence(), before)
+  const definition = (await rows("select pg_get_functiondef('public.record_rfid_tap(uuid,text,timestamptz)'::regprocedure) as sql"))[0].sql
+  assert.ok(definition.indexOf("pg_advisory_xact_lock_shared(hashtextextended('calendar-entry-save'") < definition.indexOf("select * into holder"))
+  assert.ok((await rows("select 1 from pg_locks where locktype='advisory' and mode='ShareLock' and granted")).length > 0)
+})
+
+test("calendar checks ignore drafts, cancellations, normal events and different campuses", async () => {
+  const entry = await calendarEntry({ status: "draft" })
+  await calendarEntry({ status: "cancelled" })
+  await calendarEntry({ impact: "normal" })
+  await calendarEntry({ campuses: ["MV Campus"] })
+  assert.equal((await tap(`${entry.date}T06:00:00+08:00`)).action, "time_in")
+  assert.equal((await tap(`${entry.date}T12:00:00+08:00`)).action, "time_out")
+  assert.equal((await rows("select * from public.sms_notifications")).length, 1)
+})
+
+test("calendar uses inclusive Manila dates and the student's current campus", async () => {
+  const entry = await calendarEntry({ campuses: ["MV Campus"], days: 1 })
+  assert.equal((await tap(`${entry.date}T06:00:00+08:00`)).ok, true)
+  await rows("update public.students set campus='MV Campus' where id=$1", [student])
+  const before = await tapEvidence()
+  await db.exec("set local time zone 'Pacific/Honolulu'")
+  const start = new Date(`${entry.date}T00:00:00+08:00`).getTime()
+  for (const offset of [0, 86400000, 2 * 86400000 - 1]) {
+    assert.equal((await tap(new Date(start + offset).toISOString())).code, "NO_CLASSES")
+  }
+  assert.deepEqual(await tapEvidence(), before)
+  assert.equal((await tap(new Date(start - 1000).toISOString())).ok, true)
+  assert.equal((await tap(new Date(start + 2 * 86400000).toISOString())).ok, true)
+})
+
+test("successful request replay and identity rejection precede calendar checks; cancellation permits departure", async () => {
+  const entry = await calendarEntry({ status: "draft" })
+  const requestId = randomUUID()
+  const first = await tap(`${entry.date}T06:00:00+08:00`, undefined, requestId)
+  await rows("update public.calendar_entries set status='published' where id=$1", [entry.id])
+  const before = await tapEvidence()
+  assert.deepEqual(await tap(`${entry.date}T12:00:00+08:00`, undefined, requestId), { ...first, replayed: true })
+  assert.equal((await tap(`${entry.date}T12:00:00+08:00`, "00000022", requestId)).code, "REQUEST_ID_CONFLICT")
+  assert.equal((await tap(`${entry.date}T12:00:00+08:00`, "00000022")).code, "INVALID_CARD")
+  await rows("update public.rfid_cards set card_status='Lost' where id=$1", [card])
+  assert.equal((await tap(`${entry.date}T12:00:00+08:00`)).code, "INVALID_CARD")
+  await rows("update public.rfid_cards set card_status='Active' where id=$1", [card])
+  const blockedRequest = randomUUID()
+  assert.equal((await tap(`${entry.date}T12:00:00+08:00`, undefined, blockedRequest)).code, "NO_CLASSES")
+  assert.deepEqual(await tapEvidence(), before)
+  await rows("update public.calendar_entries set status='cancelled' where id=$1", [entry.id])
+  assert.equal((await tap(`${entry.date}T12:00:00+08:00`, undefined, blockedRequest)).action, "time_out")
+  assert.equal((await rows("select * from public.sms_notifications")).length, 1)
+})
+
+test("calendar tap migration reapplies without losing evidence or changing service-only grants", async () => {
+  await tap()
+  const before = await tapEvidence()
+  const sql = (await readFile(new URL("../supabase/migrations/202610260002_calendar_rfid_tap.sql", import.meta.url), "utf8"))
+    .replace(/^begin;$/m, "").replace(/^commit;$/m, "")
+  await db.exec(sql); await db.exec(sql)
+  assert.deepEqual(await tapEvidence(), before)
+  const entry = await calendarEntry()
+  await db.exec("set local role service_role")
+  assert.equal((await tap(`${entry.date}T06:00:00+08:00`)).code, "NO_CLASSES")
+  for (const role of ["anon", "authenticated"]) {
+    await db.exec(`reset role; set local role ${role}`)
+    await rejected(() => tap())
+  }
+})

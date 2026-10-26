@@ -1103,6 +1103,7 @@ test("calendar audit records structural changes without announcement or email pa
 
 test("verification SQL passes populated schema and detects missing guards and stale marks", async () => {
   const fixture = await auditFixture()
+  await installCalendarTapMigration()
   await asCalendarUser("admin")
   await syncMarks(fixture.today, fixture.last)
   await db.exec("reset role")
@@ -1121,6 +1122,7 @@ test("verification SQL passes populated schema and detects missing guards and st
 
 test("rollback restores shared functions and preserves existing data, audit history, and unrelated realtime tables", async () => {
   const fixture = await auditFixture()
+  await installCalendarTapMigration()
   await asCalendarUser("admin")
   await syncMarks(fixture.today, fixture.last)
   await db.exec("reset role")
@@ -1146,13 +1148,15 @@ test("rollback restores shared functions and preserves existing data, audit hist
   assert.equal(tap.ok, true)
   assert.equal(tap.action, "time_in")
   await db.exec("rollback to savepoint restored_tap; release savepoint restored_tap")
-  for (const name of (await readdir(directory)).filter((name) => (name.startsWith('20261025') || name === '202610260001_calendar_email_dispatch.sql') && name.endsWith('.sql')).sort()) {
+  for (const name of (await readdir(directory)).filter((name) => (name.startsWith('20261025') || ['202610260001_calendar_email_dispatch.sql', '202610260002_calendar_rfid_tap.sql'].includes(name)) && name.endsWith('.sql')).sort()) {
     const sql = (await readFile(new URL(name, directory), "utf8")).replace(/^begin;$/m, "").replace(/^commit;$/m, "")
     await db.exec(sql)
   }
   const verification = await readFile(new URL("../supabase/verify_school_calendar.sql", import.meta.url), "utf8")
   assert.deepEqual((await db.query(verification)).rows.filter((row) => row.result !== "PASS"), [])
-  assert.deepEqual(await existingData(), original)
+  const restored = await existingData()
+  assert.match(restored.tap[0].definition, /NO_CLASSES/)
+  assert.deepEqual({ ...restored, tap: original.tap }, original)
 })
 
 async function installEmailMigration() {
@@ -1237,3 +1241,9 @@ test("service delivery claims are atomic and preserve payloads across failed ret
   assert.equal(retry.html_body, inserted.html_body)
   assert.equal(retry.text_body, inserted.text_body)
 })
+
+async function installCalendarTapMigration() {
+  const sql = (await readFile(new URL("202610260002_calendar_rfid_tap.sql", directory), "utf8"))
+    .replace(/^begin;$/m, "").replace(/^commit;$/m, "")
+  await db.exec(sql)
+}

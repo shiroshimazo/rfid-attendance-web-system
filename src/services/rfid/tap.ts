@@ -18,7 +18,7 @@ export async function recordValidatedTap(input: { requestId: string; uid: string
       return tapFailure(503, "SAVE_UNAVAILABLE", "Could not confirm attendance. Retry with the same request ID.")
     }
     if (data.ok && data.action === "time_in") await deliverArrivalSms(data.attendanceId)
-    return { status: data.ok ? 200 : data.code === "INVALID_CARD" ? 422 : 409, body: data }
+    return { status: data.ok ? 200 : ["INVALID_CARD", "NO_CLASSES", "ONLINE_CLASS"].includes(data.code) ? 422 : 409, body: data }
   } catch {
     return tapFailure(503, "SAVE_UNAVAILABLE", "Could not record attendance. Retry with the same request ID.")
   }

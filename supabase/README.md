@@ -16,13 +16,14 @@ The database implementation follows `rfid-docs/rfid-docs/Database Design/Databas
 ## Calendar extension (R06; locally implemented database)
 
 [Calendar.md](../Calendar.md) defines the partially implemented calendar feature.
-Eight calendar migrations now supply these tables:
+Nine calendar migrations now supply these tables:
 
 - `calendar_entries`: scoped announcements and lifecycle state.
 - `calendar_entry_reads`: protected own-user read receipts.
 - `attendance_day_marks`: NoClasses/OnlineManual snapshots, separate from RFID evidence.
 - `calendar_email_deliveries`: stored delivery payloads, attempt counts, and retry eligibility; server actions dispatch after the response.
 
+The latest migration integrates calendar checks into the service-only RFID writer.
 Calendar and student-roster changes reconcile today/future snapshots; past
 snapshots remain immutable. Existing attendance_status and Subject Attendance
 remain unchanged. Structural audit logs exclude announcement text and email

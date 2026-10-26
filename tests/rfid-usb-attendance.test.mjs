@@ -128,3 +128,19 @@ test("USB action shares normalized attendance writer and arrival SMS, without de
   assert.deepEqual(calls, [["record_rfid_tap", { p_request_id: requestId, p_uid: "00200107" }]])
   assert.deepEqual(sms, [42])
 })
+
+test("USB action forwards calendar rejection as terminal 422 without SMS", async () => {
+  for (const code of ["NO_CLASSES", "ONLINE_CLASS"]) {
+    const body = { ok: false, code, message: "Calendar rejection", feedback: { led: "red", buzzer: "warning" } }
+    const { recordUsbTapAction } = createSourceLoader({
+      "@/features/auth/server": { requireRole: async role => assert.equal(role, "admin") },
+      "@/services/audit/log": { auditRoute: async (_, __, operation) => operation() },
+      "@/services/sms/philsms": { deliverArrivalSms: async () => assert.fail("Rejected tap must not send SMS") },
+      "@/services/supabase/admin": {
+        isSupabaseAdminConfigured: () => true,
+        createAdminSupabaseClient: () => ({ rpc: async () => ({ data: body, error: null }) }),
+      },
+    })("src/features/rfid-tap/usb-action.ts")
+    assert.deepEqual(await recordUsbTapAction({ requestId, uid: tap.uid }), { status: 422, body })
+  }
+})

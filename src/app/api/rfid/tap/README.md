@@ -43,7 +43,7 @@ feedback; returning it does not prove the LCD, LED or buzzer has operated.
 
 Authenticated retries return the saved response with `replayed: true`, including
 across midnight. Reusing a completed request ID for another UID returns 409.
-Invalid/ineligible cards return 422, completed-day or review conflicts 409,
+Invalid/ineligible cards and calendar rejections return 422; completed-day or review conflicts return 409,
 malformed input 400/413/415, invalid device authorization 401, and configuration
 or database failure 503. Error JSON has `ok: false`, a code/message and red/warning
 feedback. Only transport errors and 503 should be retried with the same request ID.
@@ -56,6 +56,24 @@ retry receipt in `rfid_tap_requests`, and inserts one **Pending** arrival SMS in
 `sms_notifications`. The guardian number, student name and campus are captured
 at arrival. Time Out and retries create no extra SMS. A Pending row is not proof
 of delivery: **P06 now supplies the PhilSMS sender and Sent/Failed updates; configure it using PHILSMS-SETUP.md**.
+
+After replay and student/card/account eligibility checks, published calendar
+exceptions are checked against the student's current campus and the inclusive
+Manila date range. `online_manual` returns `ONLINE_CLASS` with "Online class today.
+Attendance is per subject."; `no_classes` returns `NO_CLASSES` with "No classes
+today." Both return red/warning feedback and create no attendance, SMS, or replay
+receipt. Fresh departure taps are also rejected; existing RFID evidence remains
+unchanged. Successful request replay still returns its original result, even if
+an exception has since been published. Drafts, cancelled entries, normal events,
+and other campuses do not block taps. USB admin taps use the same service and
+HTTP-status mapping.
+
+Apply `202610260002_calendar_rfid_tap.sql` after the earlier calendar migrations.
+The tap takes a shared calendar lock before student row locks, matching the roster
+and calendar mutation lock order. Full calendar rollback restores the original
+P04 function and grants before removing calendar tables. No firmware change is
+required by this task; physical display truncation and terminal handling still
+need the separate Task 17 check.
 
 The receipt table is private, RLS-enabled and has no portal access. The RPC is
 unavailable to anonymous or signed-in portal roles. It uses the database clock by

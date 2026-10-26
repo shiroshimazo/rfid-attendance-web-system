@@ -36,15 +36,21 @@ wrapper, retry column, and service grants. Rollback removes the wrapper with the
 rest of the calendar feature.
 
 These migrations are tested locally only; they do not authorize hosted execution.
-RFID integration and the application feature remain pending. The feature is not ready for rollout.
+Task 16 adds `202610260002_calendar_rfid_tap.sql`: calendar-aware service-only taps
+reject No classes/Online class before attendance or SMS writes, while retaining
+identity validation and successful replay. The shared calendar lock precedes
+student row locks. The verification script checks the replacement and grants;
+rollback restores the exact P04 function before dropping calendar objects.
+UI and hardware verification remain pending. The feature is not ready for rollout.
 
 ### Calendar preview verification (Task 10; separate confirmation required)
 
 1. Identify the preview database and confirm its target before execution.
 2. Apply the existing prerequisite migrations, then calendar migrations
    `202610250001` through `202610250007`, then
-   `202610260001_calendar_email_dispatch.sql`, in filename order. The Task 10
-   preview record covers only the original seven; the new migration remains unapplied.
+   `202610260001_calendar_email_dispatch.sql` and
+   `202610260002_calendar_rfid_tap.sql`, in filename order. The Task 10 preview
+   record covers only the original seven; both new migrations remain unapplied.
 3. Run [verify_school_calendar.sql](../verify_school_calendar.sql) as the database
    owner. Every result must be PASS; any SQL error or FAIL blocks deployment.
    The script is read-only and checks schema/security metadata, publication,
@@ -64,12 +70,13 @@ RFID integration and the application feature remain pending. The feature is not 
 3. Run the rollback as the database owner. One transaction restores the shared
    functions/grants, removes roster hooks, then drops calendar objects without CASCADE.
    Existing RFID, subject attendance, SMS, and append-only system logs are retained.
-4. Verify normal taps and existing reports. Reinstallation uses all eight migrations
+4. Verify normal taps and existing reports. Reinstallation uses all nine migrations
    in order; deleted calendar history is recoverable only from the export.
 
 Local tests cover migration reapplication, rollback reapplication, unchanged
 existing data/audit history, restored tap processing, and clean reinstallation.
-Task 16 must recheck the rollback baseline when calendar checks enter the tap RPC.
+Task 16 verifies the rollback baseline, restores original tap behavior and grants,
+and tests reinstallation with the calendar-aware writer.
 
 [Calendar.md](../../Calendar.md) defines the planned calendar schema and separate
 RFID-function integration migration. [Calendar-TODO.md](../../Calendar-TODO.md)

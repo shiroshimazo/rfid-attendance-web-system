@@ -1,4 +1,4 @@
--- Read-only checks after all eight calendar migrations, run as the database owner.
+-- Read-only checks after all nine calendar migrations, run as the database owner.
 -- Behavioral authorization/rollback tests also run in tests/calendar-migration.test.mjs.
 -- Missing prerequisite tables are an installation error; do not deploy on errors or FAIL.
 with calendar_tables(name) as (values
@@ -81,6 +81,13 @@ with calendar_tables(name) as (values
     where (m.student_id,m.calendar_entry_id,m.campus,m.status) is distinct from (e.student_id,e.entry_id,e.campus,e.status))
   union all
   select 'No admin email recipients', not exists(select 1 from public.calendar_email_deliveries where recipient_role='admin')
+  union all
+  select 'Calendar-aware RFID writer',
+    position('NO_CLASSES' in pg_get_functiondef('public.record_rfid_tap(uuid,text,timestamptz)'::regprocedure)) > 0
+    and position('ONLINE_CLASS' in pg_get_functiondef('public.record_rfid_tap(uuid,text,timestamptz)'::regprocedure)) > 0
+    and has_function_privilege('service_role','public.record_rfid_tap(uuid,text,timestamptz)','EXECUTE')
+    and not has_function_privilege('authenticated','public.record_rfid_tap(uuid,text,timestamptz)','EXECUTE')
+    and not has_function_privilege('anon','public.record_rfid_tap(uuid,text,timestamptz)','EXECUTE')
   union all
   select 'Email retry guard column', exists(select 1 from information_schema.columns
     where table_schema='public' and table_name='calendar_email_deliveries'
