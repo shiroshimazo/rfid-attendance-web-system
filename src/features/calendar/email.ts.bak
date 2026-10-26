@@ -1,0 +1,454 @@
+﻿import { randomUUID } from "node:crypto"
+import { createAdminSupabaseClient } from "@/services/supabase/admin"
+
+export type CalendarEmailType = "published" | "updated" | "cancelled"
+export type CalendarEmailStatus = "Pending" | "Sent" | "Failed"
+
+export interface CalendarEntryEmailContext {
+  id: number
+  title: string
+  description: string | null
+  reason: string | null
+  tags: string[]
+  attendance_impact: "normal" | "no_classes" | "online_manual"
+  audience: "everyone" | "teachers" | "students"
+  campuses: string[]
+  starts_on: string
+  ends_on: string
+  start_time: string | null
+  end_time: string | null
+  location: string | null
+  is_pinned: boolean
+  status: "draft" | "published" | "cancelled"
+  published_at: string | null
+  cancelled_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface RenderedEmail {
+  subject: string
+  html: string
+  text: string
+}
+
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&")
+    .replace(/</g, "<")
+    .replace(/>/g, ">")
+    .replace(/"/g, """)
+    .replace(/'/g, "&#039;")
+}
+
+function formatDateRange(startsOn: string, endsOn: string, startTime: string | null, endTime: string | null): string {
+  if (startsOn === endsOn) {
+    if (startTime && endTime) {
+      return `${startsOn} ${startTime}â€“${endTime}`
+    }
+    return startsOn
+  }
+  return `${startsOn} to ${endsOn}`
+}
+
+function formatCampusScope(campuses: string[]): string {
+  if (campuses.length === 0) return "All campuses"
+  return campuses.join(", ")
+}
+
+function tagLabels(tags: string[]): string {
+  return tags.map((tag) => `[${tag.replace("_", " ")}]`).join(" ")
+}
+
+const SCHOOL_NAME = "RFID Attendance System"
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+
+export function renderCalendarEmail(
+  entry: CalendarEntryEmailContext,
+  type: CalendarEmailType
+): RenderedEmail {
+  const dateRange = formatDateRange(entry.starts_on, entry.ends_on, entry.start_time, entry.end_time)
+  const campusScope = formatCampusScope(entry.campuses)
+  const tagsText = tagLabels(entry.tags)
+  const viewUrl = `${BASE_URL}/${entry.audience === "teachers" ? "teacher" : "student"}/calendar?date=${entry.starts_on}`
+
+  const subjectPrefix = (() => {
+    switch (type) {
+      case "cancelled":
+        return "Cancelled:"
+      case "updated":
+        return "Updated:"
+      default:
+        switch (entry.attendance_impact) {
+          case "no_classes":
+            return "[No classes]"
+          case "online_manual":
+            return "[Online class]"
+          default:
+            return "[Event]"
+        }
+    }
+  })()
+
+  const subject = type === "cancelled" || type === "updated"
+    ? `${subjectPrefix} ${escapeHtml(entry.title)}`
+    : `${subjectPrefix} ${escapeHtml(entry.title)} â€” ${dateRange}`
+
+  const headerHtml = `
+    <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+      <div style="background: #f8f9fa; border-radius: 8px; padding: 16px 24px; margin-bottom: 24px;">
+        <h1 style="margin: 0; font-size: 18px; color: #111;">${SCHOOL_NAME}</h1>
+      </div>
+  `
+
+  const headerText = `${SCHOOL_NAME}\n${"=".repeat(SCHOOL_NAME.length)}`
+
+  const commonBody = `
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 14px; color: #666; margin-bottom: 4px;">${tagsText}</div>
+        <h2 style="margin: 8px 0 16px; font-size: 22px; color: #111;">${escapeHtml(entry.title)}</h2>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;">
+        <dl style="margin: 0; font-size: 14px;">
+          <dt style="font-weight: 600; color: #374151;">Date</dt>
+          <dd style="margin: 4px 0 12px; color: #111;">${escapeHtml(dateRange)}</dd>
+
+          <dt style="font-weight: 600; color: #374151;">Campus</dt>
+          <dd style="margin: 4px 0 12px; color: #111;">${escapeHtml(campusScope)}</dd>
+
+          ${entry.location ? `
+            <dt style="font-weight: 600; color: #374151;">Location</dt>
+            <dd style="margin: 4px 0 12px; color: #111;">${escapeHtml(entry.location)}</dd>
+          ` : ""}
+
+          ${entry.reason ? `
+            <dt style="font-weight: 600; color: #374151;">Reason</dt>
+            <dd style="margin: 4px 0 12px; color: #111;">${escapeHtml(entry.reason)}</dd>
+          ` : ""}
+
+          ${entry.description ? `
+            <dt style="font-weight: 600; color: #374151;">Details</dt>
+            <dd style="margin: 4px 0 12px; color: #111;">${escapeHtml(entry.description)}</dd>
+          ` : ""}
+        </dl>
+      </div>
+  `
+
+  const commonBodyText = `
+${tagsText}
+
+${escapeHtml(entry.title)}
+
+Date: ${escapeHtml(dateRange)}
+Campus: ${escapeHtml(campusScope)}
+${entry.location ? `Location: ${escapeHtml(entry.location)}\n` : ""}${entry.reason ? `Reason: ${escapeHtml(entry.reason)}\n` : ""}${entry.description ? `Details: ${escapeHtml(entry.description)}\n` : ""}
+  `.trim()
+
+  let specificHtml = ""
+  let specificText = ""
+
+  if (type === "cancelled") {
+    specificHtml = `
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+        <p style="margin: 0; color: #991b1b; font-weight: 500;">This announcement has been cancelled.</p>
+      </div>
+    `
+    specificText = "\nThis announcement has been cancelled.\n"
+  } else if (entry.attendance_impact === "no_classes") {
+    specificHtml = `
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+        <p style="margin: 0; color: #991b1b; font-weight: 500;">RFID taps are not expected. Attendance is marked No classes.</p>
+      </div>
+    `
+    specificText = "\nRFID taps are not expected. Attendance is marked No classes.\n"
+  } else if (entry.attendance_impact === "online_manual") {
+    specificHtml = `
+      <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+        <p style="margin: 0; color: #1e40af; font-weight: 500;">Attendance is confirmed by the teacher in Subject Attendance.</p>
+      </div>
+    `
+    specificText = "\nAttendance is confirmed by the teacher in Subject Attendance.\n"
+  }
+
+  const ctaHtml = `
+      <div style="text-align: center; margin-bottom: 24px;">
+        <a href="${viewUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">View Calendar</a>
+      </div>
+  `
+
+  const ctaText = `\nView Calendar: ${viewUrl}\n`
+
+  const footerHtml = `
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+      <p style="margin: 0; font-size: 12px; color: #6b7280; text-align: center;">
+        This is an automated message from ${SCHOOL_NAME}. Please do not reply.
+      </p>
+    </div>
+  `
+
+  const footerText = `\n---\nThis is an automated message from ${SCHOOL_NAME}. Please do not reply.\n`
+
+  const html = headerHtml + commonBody + specificHtml + ctaHtml + footerHtml
+  const text = headerText + commonBodyText + specificText + ctaText + footerText
+
+  return { subject, html, text }
+}
+
+export interface ResendConfig {
+  apiKey: string
+  fromEmail: string
+  fromName?: string
+}
+
+function getResendConfig(): ResendConfig | null {
+  const apiKey = process.env.RESEND_API_KEY?.trim()
+  const fromEmail = process.env.RESEND_FROM_EMAIL?.trim()
+  const fromName = process.env.RESEND_FROM_NAME?.trim()
+
+  if (!apiKey || !fromEmail) return null
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fromEmail)) return null
+  return { apiKey, fromEmail, fromName }
+}
+
+export function isResendConfigured(): boolean {
+  return getResendConfig() !== null
+}
+
+type SendOutcome = { status: "accepted" | "rejected" | "unknown"; providerId?: string; errorMessage?: string }
+
+async function sendViaResend(
+  config: ResendConfig,
+  to: string,
+  subject: string,
+  html: string,
+  text: string
+): Promise<SendOutcome> {
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      signal: AbortSignal.timeout(10000),
+      headers: {
+        Authorization: `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: config.fromName ? `${config.fromName} <${config.fromEmail}>` : config.fromEmail,
+        to: [to],
+        subject,
+        html,
+        text,
+      }),
+    })
+
+    const payload = await response.json()
+
+    if (response.ok && payload?.id) {
+      return { status: "accepted", providerId: payload.id }
+    }
+
+    if (payload?.status === "error" && response.status < 500) {
+      return { status: "rejected", errorMessage: payload.message ?? "Resend API error" }
+    }
+
+    return { status: "unknown", errorMessage: `HTTP ${response.status}` }
+  } catch (error) {
+    return { status: "unknown", errorMessage: error instanceof Error ? error.message : "Network error" }
+  }
+}
+
+interface DeliveryRow {
+  id: number
+  calendar_entry_id: number
+  batch_id: string
+  notification_type: CalendarEmailType
+  recipient_user_id: string | null
+  recipient_email: string
+  recipient_role: "teacher" | "student"
+  subject: string
+  html_body: string
+  text_body: string
+  status: CalendarEmailStatus
+  attempt_count: number
+  last_attempt_at: string | null
+}
+
+const MAX_BATCH_SIZE = 100
+
+export async function dispatchCalendarEmailBatch(
+  entries: CalendarEntryEmailContext[],
+  type: CalendarEmailType
+): Promise<{ batchId: string; queued: number; sent: number; failed: number }> {
+  const config = getResendConfig()
+  if (!config) {
+    throw new Error("Resend is not configured. Set RESEND_API_KEY and RESEND_FROM_EMAIL.")
+  }
+
+  const supabase = createAdminSupabaseClient()
+  const batchId = randomUUID()
+
+  for (const entry of entries) {
+    const { data: recipients, error: recipientError } = await supabase.rpc("calendar_entry_recipients", {
+      p_entry_id: entry.id,
+    })
+
+    if (recipientError) throw new Error(recipientError.message)
+
+    if (!recipients || recipients.length === 0) continue
+
+    const rendered = renderCalendarEmail(entry, type)
+
+    const rows = recipients.map((recipient: { user_id: string; email: string; role: "teacher" | "student" }) => ({
+      calendar_entry_id: entry.id,
+      batch_id: batchId,
+      notification_type: type,
+      recipient_user_id: recipient.user_id,
+      recipient_email: recipient.email,
+      recipient_role: recipient.role,
+      subject: rendered.subject,
+      html_body: rendered.html,
+      text_body: rendered.text,
+      status: "Pending" as CalendarEmailStatus,
+      attempt_count: 0,
+    }))
+
+    const { error: insertError } = await supabase
+      .from("calendar_email_deliveries")
+      .insert(rows)
+
+    if (insertError) throw new Error(insertError.message)
+  }
+
+  let sent = 0
+  let failed = 0
+
+  const pending = await supabase
+    .from("calendar_email_deliveries")
+    .select("*")
+    .eq("batch_id", batchId)
+    .eq("status", "Pending")
+
+  if (pending.error) throw new Error(pending.error.message)
+  if (!pending.data || pending.data.length === 0) {
+    return { batchId, queued: 0, sent: 0, failed: 0 }
+  }
+
+  for (let i = 0; i < pending.data.length; i += MAX_BATCH_SIZE) {
+    const chunk = pending.data.slice(i, i + MAX_BATCH_SIZE)
+    await Promise.all(
+      chunk.map(async (row: DeliveryRow) => {
+        const outcome = await sendViaResend(config, row.recipient_email, row.subject, row.html_body, row.text_body)
+        const { error: updateError } = await supabase
+          .from("calendar_email_deliveries")
+          .update({
+            status: outcome.status === "accepted" ? "Sent" : "Failed",
+            attempt_count: row.attempt_count + 1,
+            last_attempt_at: new Date().toISOString(),
+            resend_email_id: outcome.providerId ?? null,
+            error_message: outcome.errorMessage ?? null,
+            sent_at: outcome.status === "accepted" ? new Date().toISOString() : null,
+          })
+          .eq("id", row.id)
+
+        if (updateError) console.error("Failed to update delivery row:", updateError.message)
+        if (outcome.status === "accepted") sent++
+        else failed++
+      })
+    )
+  }
+
+  return { batchId, queued: pending.data.length, sent, failed }
+}
+
+export async function retryCalendarEmailDelivery(deliveryId: number): Promise<{ ok: boolean; message: string }> {
+  const config = getResendConfig()
+  if (!config) {
+    return { ok: false, message: "Resend is not configured." }
+  }
+
+  const supabase = createAdminSupabaseClient()
+
+  const { data: row, error: readError } = await supabase
+    .from("calendar_email_deliveries")
+    .select("*")
+    .eq("id", deliveryId)
+    .maybeSingle<DeliveryRow>()
+
+  if (readError) return { ok: false, message: readError.message }
+  if (!row) return { ok: false, message: "Delivery record not found." }
+  if (row.status !== "Failed") return { ok: false, message: "Only failed deliveries can be retried." }
+
+  const outcome = await sendViaResend(config, row.recipient_email, row.subject, row.html_body, row.text_body)
+
+  const { error: updateError } = await supabase
+    .from("calendar_email_deliveries")
+    .update({
+      status: outcome.status === "accepted" ? "Sent" : "Failed",
+      attempt_count: row.attempt_count + 1,
+      last_attempt_at: new Date().toISOString(),
+      resend_email_id: outcome.providerId ?? null,
+      error_message: outcome.errorMessage ?? null,
+      sent_at: outcome.status === "accepted" ? new Date().toISOString() : null,
+    })
+    .eq("id", row.id)
+
+  if (updateError) return { ok: false, message: updateError.message }
+
+  await supabase.rpc("audit_activity", {
+    p_event: "retry_calendar_email",
+    p_entity: "calendar_email_deliveries",
+  }).catch(() => {})
+
+  return {
+    ok: true,
+    message: outcome.status === "accepted" ? "Delivery retried and sent." : `Retry failed: ${outcome.errorMessage}`,
+  }
+}
+
+export async function retryCalendarEmailBatch(batchId: string): Promise<{ ok: boolean; message: string }> {
+  const config = getResendConfig()
+  if (!config) {
+    return { ok: false, message: "Resend is not configured." }
+  }
+
+  const supabase = createAdminSupabaseClient()
+
+  const { data: rows, error: readError } = await supabase
+    .from("calendar_email_deliveries")
+    .select("*")
+    .eq("batch_id", batchId)
+    .eq("status", "Failed")
+
+  if (readError) return { ok: false, message: readError.message }
+  if (!rows || rows.length === 0) return { ok: false, message: "No failed deliveries in this batch." }
+
+  let sent = 0
+  let failed = 0
+
+  for (const row of rows) {
+    const outcome = await sendViaResend(config, row.recipient_email, row.subject, row.html_body, row.text_body)
+
+    await supabase
+      .from("calendar_email_deliveries")
+      .update({
+        status: outcome.status === "accepted" ? "Sent" : "Failed",
+        attempt_count: row.attempt_count + 1,
+        last_attempt_at: new Date().toISOString(),
+        resend_email_id: outcome.providerId ?? null,
+        error_message: outcome.errorMessage ?? null,
+        sent_at: outcome.status === "accepted" ? new Date().toISOString() : null,
+      })
+      .eq("id", row.id)
+
+    if (outcome.status === "accepted") sent++
+    else failed++
+  }
+
+  await supabase.rpc("audit_activity", {
+    p_event: "retry_calendar_email_batch",
+    p_entity: "calendar_email_deliveries",
+  }).catch(() => {})
+
+  return { ok: true, message: `Batch retry complete: ${sent} sent, ${failed} failed.` }
+}
+

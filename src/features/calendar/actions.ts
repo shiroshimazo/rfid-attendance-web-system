@@ -2,7 +2,8 @@
 
 import { auditActivity } from "@/services/audit/log"
 import { revalidatePath } from "next/cache"
-import { requireRole } from "@/features/auth/server"
+import { requireCurrentAccount, requireRole } from "@/features/auth/server"
+import { isCalendarUnread } from "@/features/calendar/query"
 import {
   calendarEntrySchema,
   calendarPublishSchema,
@@ -17,6 +18,7 @@ import {
   type ActionResult,
 } from "@/features/shared/actions"
 import { createServerSupabaseClient } from "@/services/supabase/server"
+import { fetchVisibleCalendarEntries } from "@/services/calendar/query"
 
 const CALENDAR_ADMIN_PATH = "/admin/schedules/calendar"
 
@@ -239,6 +241,112 @@ export async function syncAttendanceMarksAction(
 
     return success(
       `Attendance marks synchronized: ${result.inserted} created, ${result.deleted} removed.`
+    )
+  })
+}
+
+const RECEIPT_REVALIDATE_PATHS = ["/teacher", "/student"] as const
+
+function refreshReceiptViews() {
+  for (const path of RECEIPT_REVALIDATE_PATHS) {
+    revalidatePath(path, "layout")
+  }
+}
+
+/**
+ * Teachers/students only. Admins never receive announcements or receipts.
+ * Returns null instead of redirecting so the action can report a useful error.
+ */
+async function currentCalendarRecipient() {
+  const account = await requireCurrentAccount()
+  return account.role === "teacher" || account.role === "student" ? account : null
+}
+
+function receiptFailure(error: { message: string; code?: string }) {
+  if (error.code === "42501") {
+    return failure("That announcement is not available to your account.")
+  }
+  return failure(describeDatabaseError(error))
+}
+
+/**
+ * Mark one visible published announcement as read for the signed-in
+ * teacher/student. RLS rejects cross-user receipts; the visibility check
+ * rejects drafts, cancelled entries, other campuses, and other audiences.
+ */
+export async function markCalendarEntryReadAction(entryId: number): Promise<ActionResult> {
+  return auditActivity("mark_calendar_entry_read", "calendar_entry_reads", async () => {
+    const account = await currentCalendarRecipient()
+    if (!account) return failure("Calendar announcements are for teacher and student accounts.")
+
+    if (!Number.isSafeInteger(entryId) || entryId <= 0) {
+      return failure("That announcement was not valid.")
+    }
+
+    const supabase = await createServerSupabaseClient()
+
+    const { data: entry, error: readError } = await supabase
+      .from("calendar_entries")
+      .select("id")
+      .eq("id", entryId)
+      .eq("status", "published")
+      .maybeSingle<{ id: number }>()
+
+    if (readError) return receiptFailure(readError)
+    if (!entry) return failure("That announcement is not available to your account.")
+
+    const { error } = await supabase
+      .from("calendar_entry_reads")
+      .upsert(
+        { entry_id: entryId, user_id: account.id },
+        { onConflict: "entry_id,user_id" }
+      )
+
+    if (error) return receiptFailure(error)
+
+    refreshReceiptViews()
+    return success("Announcement marked as read.")
+  })
+}
+
+/**
+ * Mark every currently visible unread announcement as read.
+ * Uses the same window as the bell but without the 20-item display cap.
+ */
+export async function markAllCalendarEntriesReadAction(): Promise<ActionResult> {
+  return auditActivity("mark_all_calendar_entries_read", "calendar_entry_reads", async () => {
+    const account = await currentCalendarRecipient()
+    if (!account) return failure("Calendar announcements are for teacher and student accounts.")
+
+    const supabase = await createServerSupabaseClient()
+    const visible = await fetchVisibleCalendarEntries(account.id).catch((error: unknown) =>
+      error instanceof Error ? error : new Error("Announcements could not be read.")
+    )
+
+    if (visible instanceof Error) return failure(visible.message)
+
+    const unread = visible.filter((entry) =>
+      isCalendarUnread(entry.updated_at, entry.read_at)
+    )
+
+    if (unread.length === 0) return success("No unread announcements.")
+
+    const rows = unread.map((entry) => ({
+      entry_id: entry.id,
+      user_id: account.id,
+    }))
+
+    for (let index = 0; index < rows.length; index += 500) {
+      const { error } = await supabase
+        .from("calendar_entry_reads")
+        .upsert(rows.slice(index, index + 500), { onConflict: "entry_id,user_id" })
+
+      if (error) return receiptFailure(error)
+    }
+
+    refreshReceiptViews()
+    return success(
+      `${unread.length} announcement${unread.length === 1 ? "" : "s"} marked as read.`
     )
   })
 }

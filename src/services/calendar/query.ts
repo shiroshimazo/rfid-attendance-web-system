@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/services/supabase/pagination"
 import { createServerSupabaseClient } from "@/services/supabase/server"
 import { schoolDateKey } from "@/lib/school-time"
 
@@ -290,21 +291,90 @@ export async function fetchCalendarEntryRecipientCount(
 
 /**
  * Bell data: published entries visible to the current user, with read receipt.
- * Returns entries where no read row exists or read_at < updated_at.
+ * Window: ends_on >= today OR published_at >= now - 7 days. Cap 20.
+ * Unread is derived with isCalendarUnread; cancelled/draft are excluded.
  */
-export async function fetchCalendarBellData(): Promise<CalendarBellRow[]> {
+export async function fetchCalendarBellEntries(
+  authUserId: string
+): Promise<CalendarBellRow[]> {
   const supabase = await createServerSupabaseClient()
+  const today = schoolDateKey(new Date())
+  const cutoff = new Date(Date.now() - 7 * 86400000).toISOString()
 
-  const { data, error } = await supabase.rpc("calendar_bell_entries")
+  const { data: entries, error } = await supabase
+    .from("calendar_entries")
+    .select(
+      "id, title, description, tags, attendance_impact, audience, campuses, starts_on, ends_on, published_at, updated_at"
+    )
+    .eq("status", "published")
+    .or(`ends_on.gte.${today},published_at.gte.${cutoff}`)
+    .order("is_pinned", { ascending: false })
+    .order("published_at", { ascending: false })
+    .limit(20)
 
-  if (error) {
-    // Defensive: if migration missing, return empty to avoid breaking portal
-    if (error.code === "42883" || error.message.includes("function")) {
-      return []
-    }
-    throw new Error(error.message)
-  }
-  return data ?? []
+  if (error) throw new Error(error.message)
+  if (!entries || entries.length === 0) return []
+
+  const { data: reads, error: readError } = await supabase
+    .from("calendar_entry_reads")
+    .select("entry_id, read_at")
+    .eq("user_id", authUserId)
+    .in("entry_id", entries.map((entry) => entry.id))
+
+  if (readError) throw new Error(readError.message)
+
+  const readByEntry = new Map(
+    (reads ?? []).map((read) => [read.entry_id, read.read_at])
+  )
+
+  return entries.map((entry) => ({
+    ...entry,
+    read_at: readByEntry.get(entry.id) ?? null,
+  })) as CalendarBellRow[]
+}
+
+/**
+ * All currently visible entries in the bell window, for mark-all-read.
+ * No 20-item cap: every matching unread entry should be cleared.
+ */
+export async function fetchVisibleCalendarEntries(
+  authUserId: string
+): Promise<CalendarBellRow[]> {
+  const supabase = await createServerSupabaseClient()
+  const today = schoolDateKey(new Date())
+  const cutoff = new Date(Date.now() - 7 * 86400000).toISOString()
+
+  const entries = await fetchAllRows<Omit<CalendarBellRow, "read_at">>((from, to) =>
+    supabase
+      .from("calendar_entries")
+      .select(
+        "id, title, description, tags, attendance_impact, audience, campuses, starts_on, ends_on, published_at, updated_at"
+      )
+      .eq("status", "published")
+      .or(`ends_on.gte.${today},published_at.gte.${cutoff}`)
+      .order("id", { ascending: true })
+      .range(from, to)
+      .returns<Omit<CalendarBellRow, "read_at">[]>()
+  )
+
+  if (entries.length === 0) return []
+
+  const reads = await fetchAllRows<{ entry_id: number; read_at: string }>((from, to) =>
+    supabase
+      .from("calendar_entry_reads")
+      .select("entry_id, read_at")
+      .eq("user_id", authUserId)
+      .order("entry_id", { ascending: true })
+      .range(from, to)
+      .returns<{ entry_id: number; read_at: string }[]>()
+  )
+
+  const readByEntry = new Map(reads.map((read) => [read.entry_id, read.read_at]))
+
+  return entries.map((entry) => ({
+    ...entry,
+    read_at: readByEntry.get(entry.id) ?? null,
+  }))
 }
 
 /**
@@ -313,8 +383,7 @@ export async function fetchCalendarBellData(): Promise<CalendarBellRow[]> {
  */
 export async function fetchDashboardPosts(): Promise<DashboardPostRow[]> {
   const supabase = await createServerSupabaseClient()
-  const today = schoolDateKey(new Date())
-  const weekAgo = schoolDateKey(new Date(Date.now() - 7 * 86400000))
+  const cutoff = new Date(Date.now() - 7 * 86400000).toISOString()
 
   const { data, error } = await supabase
     .from("calendar_entries")
@@ -322,8 +391,7 @@ export async function fetchDashboardPosts(): Promise<DashboardPostRow[]> {
       "id, title, description, tags, attendance_impact, audience, campuses, starts_on, ends_on, published_at, is_pinned"
     )
     .eq("status", "published")
-    .gte("published_at", weekAgo)
-    .lte("published_at", today)
+    .gt("published_at", cutoff)
     .order("is_pinned", { ascending: false })
     .order("published_at", { ascending: false })
     .limit(3)

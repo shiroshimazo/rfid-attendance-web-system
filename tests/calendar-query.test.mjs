@@ -4,35 +4,33 @@ import { createSourceLoader } from "./helpers/load-typescript.mjs"
 
 const loader = createSourceLoader()
 const query = loader("src/features/calendar/query.ts")
-const { isWithinDashboardWindow, validateDeepLinkDate, validateDeepLinkMonth } = query
+const { isWithinDashboardWindow, isCalendarUnread, validateDeepLinkDate, validateDeepLinkMonth } = query
 const schoolTime = loader("src/lib/school-time.ts")
 const { schoolDateKey } = schoolTime
 
-function manilaDate(base, offsetDays) {
-  return schoolDateKey(new Date(base.getTime() + offsetDays * 86400000))
-}
+test("isWithinDashboardWindow: 7 days is the exclusive cutoff", () => {
+  const now = new Date("2026-10-26T12:00:00Z")
+  const exactCutoff = new Date(now.getTime() - 7 * 86400000).toISOString()
+  const justInside = new Date(now.getTime() - 7 * 86400000 + 1).toISOString()
+  const future = new Date(now.getTime() + 1).toISOString()
 
-test("isWithinDashboardWindow: exact 7-day inclusive boundary", () => {
-  const today = new Date("2026-10-26T12:00:00Z")
-  const todayKey = manilaDate(today, 0)
-  const weekAgoKey = manilaDate(today, -7)
-  const eightDaysAgoKey = manilaDate(today, -8)
-
-  assert.equal(isWithinDashboardWindow(todayKey), true)
-  assert.equal(isWithinDashboardWindow(weekAgoKey), true)
-  assert.equal(isWithinDashboardWindow(eightDaysAgoKey), false)
+  assert.equal(isWithinDashboardWindow(exactCutoff, now), false)
+  assert.equal(isWithinDashboardWindow(justInside, now), true)
+  assert.equal(isWithinDashboardWindow(future, now), false)
 })
 
-test("isWithinDashboardWindow: future published_at is outside window", () => {
-  const today = new Date("2026-10-26T12:00:00Z")
-  const tomorrowKey = manilaDate(today, 1)
-  assert.equal(isWithinDashboardWindow(tomorrowKey), false)
+test("isWithinDashboardWindow: recent post stays visible", () => {
+  const now = new Date("2026-10-26T12:00:00Z")
+  const sixDaysAgo = new Date(now.getTime() - 6 * 86400000).toISOString()
+  assert.equal(isWithinDashboardWindow(sixDaysAgo, now), true)
 })
 
-test("isWithinDashboardWindow: Manila midnight crossing", () => {
-  const afterMidnight = new Date("2026-10-25T16:00:00Z")
-  const weekAgoKey = manilaDate(afterMidnight, -7)
-  assert.equal(isWithinDashboardWindow(weekAgoKey), true)
+test("isCalendarUnread: no receipt, edited receipt, and current receipt", () => {
+  const updated = "2026-10-26T10:00:00Z"
+  assert.equal(isCalendarUnread(updated, null), true)
+  assert.equal(isCalendarUnread(updated, "2026-10-26T09:59:59Z"), true)
+  assert.equal(isCalendarUnread(updated, "2026-10-26T10:00:00Z"), false)
+  assert.equal(isCalendarUnread(updated, "2026-10-26T10:00:01Z"), false)
 })
 
 test("validateDeepLinkDate: accepts valid YYYY-MM-DD", () => {

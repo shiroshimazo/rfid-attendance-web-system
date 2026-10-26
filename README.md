@@ -318,8 +318,15 @@ Defined in [.env.example](.env.example):
 | `PHILSMS_API_TOKEN` | Server | PhilSMS API token |
 | `PHILSMS_SENDER_ID` | Server | Authorized PhilSMS sender ID |
 | `PHILSMS_API_URL` | Server | PhilSMS endpoint (restricted to the documented hosts) |
+| `RESEND_API_KEY` | **Server only** | Resend API key for calendar notifications |
+| `CALENDAR_EMAIL_FROM` | Server | Verified sender address, optionally with a display name |
+| `CALENDAR_EMAIL_REPLY_TO` | Server | Optional reply address |
+| `NEXT_PUBLIC_APP_URL` | Public | HTTPS origin for calendar email links; no path or query |
 | `DATABASE_URL` | Server | Pooled PostgreSQL connection string (migrations/tooling) |
 | `DIRECT_URL` | Server | Direct PostgreSQL connection string (migrations/tooling) |
+
+See [calendar email setup](src/features/calendar/README.md) for configuration,
+mocked tests, and delivery limitations. Dispatch and retry are not connected yet.
 
 > Never prefix server secrets with `NEXT_PUBLIC_`, paste them into chat or
 > screenshots, or embed them in firmware source.

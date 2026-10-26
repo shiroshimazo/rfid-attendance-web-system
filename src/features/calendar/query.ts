@@ -80,10 +80,19 @@ export async function getCalendarEntryRecipientCount(
 }
 
 /**
- * Bell unread entries for the current user.
+ * Bell entries for the current user: visible published entries in the
+ * ends_on/7-day window, capped at 20, each with the caller's read receipt.
  */
-export async function getCalendarBellData(): Promise<CalendarBellRow[]> {
-  return calendarService.fetchCalendarBellData()
+export async function getCalendarBellData(authUserId: string): Promise<CalendarBellRow[]> {
+  return calendarService.fetchCalendarBellEntries(authUserId)
+}
+
+/**
+ * Every visible entry in the bell window without the 20-item cap.
+ * Used by mark-all-read so entries beyond the bell cap are still cleared.
+ */
+export async function getVisibleCalendarEntries(authUserId: string): Promise<CalendarBellRow[]> {
+  return calendarService.fetchVisibleCalendarEntries(authUserId)
 }
 
 /**
@@ -113,13 +122,31 @@ export async function getCalendarEntryDeliveryLog(
 }
 
 /**
- * Seven-day boundary helper for dashboard posts.
- * Returns true if the entry's published_at is within 7 days of today (inclusive).
+ * Unread rule: no receipt, or the receipt predates the latest edit.
+ * Cancelled/draft entries never appear in the bell, so callers only pass
+ * visible published entries here.
  */
-export function isWithinDashboardWindow(publishedAt: string): boolean {
-  const today = schoolDateKey(new Date())
-  const weekAgo = schoolDateKey(new Date(Date.now() - 7 * 86400000))
-  return publishedAt >= weekAgo && publishedAt <= today
+export function isCalendarUnread(
+  updatedAt: string,
+  readAt: string | null
+): boolean {
+  if (!readAt) return true
+  const read = Date.parse(readAt)
+  const updated = Date.parse(updatedAt)
+  return Number.isFinite(read) && Number.isFinite(updated) && read < updated
+}
+
+/**
+ * Seven-day dashboard window, using published_at exactly.
+ * The post disappears once published_at is 7 days old or older.
+ */
+export function isWithinDashboardWindow(
+  publishedAt: string,
+  now: Date = new Date()
+): boolean {
+  const published = Date.parse(publishedAt)
+  if (!Number.isFinite(published)) return false
+  return published > now.getTime() - 7 * 86400000 && published <= now.getTime()
 }
 
 /**
