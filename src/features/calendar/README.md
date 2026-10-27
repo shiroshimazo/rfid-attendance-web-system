@@ -518,3 +518,34 @@ Hosted role sessions/realtime, real provider delivery, simultaneous PostgreSQL
 connections, hosted email/RFID migrations, deployment, and deferred hardware
 verification remain operational checks. Task 30 requires the exact target and
 release actions to be confirmed; real pilot recipients need explicit approval.
+
+## Manual rollout preparation (Task 30; operator deployment pending)
+
+On 2026-10-27 the operator chose to upload manually. The
+[manual rollout handoff](../../../CALENDAR-ROLLOUT.md) provides a target/version
+record, nine migration checksums, missing-migration ordering, read-only calendar
+verification, role-access verification, environment setup, pilot approval and
+acceptance, and recovery. No deployment target is linked locally, and the local
+Resend key, sender, and app URL are unset. Hosted values were not inspected.
+
+The Task 28 account-suite failures are resolved without changing production
+authorization. The fixture now supplies the existing service role, verified
+session claims, and documented defaults from later additive migrations. It checks
+the original P01 policy tables independently of newer tables, expects disabled
+accounts to be hidden by the later email gate, and proves that a P01-only rollback
+does not remove that gate. The owner-run account verification script now creates
+rollback-only session rows when email verification is installed and remains
+compatible with the earlier schema. Tests verify both stages and session-row
+preservation. The existing `fix-email.js` helper uses a standard ESM import; it
+was linted but was not run against source files.
+
+Current local results supersede the earlier Task 28/29 gate failures: all 594
+tests pass with no skips; project TypeScript and production build pass. Global
+ESLint passes with zero errors and one existing unused-children warning in
+`combobox.tsx`. No unrelated component behavior was changed to remove that warning.
+
+Task 30 remains unchecked. Manual upload alone does not prove migration success,
+hosted role/realtime behavior, provider delivery, or pilot acceptance. No hosted
+SQL, deployment, publication, real send, or physical-reader test was performed.
+The operator must record the actual target/version and verification results;
+real pilot recipients still require separate explicit approval.

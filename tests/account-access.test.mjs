@@ -15,10 +15,12 @@ const businessTables = tables.filter(table => table !== "users")
 let migration
 let baseline
 let originalData
+let legacyVerification
 
 async function asUser(name) {
   await db.exec("reset role")
   await db.query("select set_config('request.jwt.claim.sub', $1, false)", [ids[name] ?? name])
+  await db.query("select set_config('request.jwt.claims', $1, false)", [JSON.stringify({ role: "authenticated", session_id: ids[name] ?? null })])
   await db.exec("set local role authenticated")
 }
 
@@ -51,6 +53,7 @@ before(async () => {
   await db.exec(`
     create role authenticated;
     create role anon;
+    create role service_role bypassrls;
     create schema auth;
     create table auth.users (id uuid primary key, email text, raw_app_meta_data jsonb default '{}');
     create function auth.uid() returns uuid language sql stable as $$
@@ -108,13 +111,21 @@ before(async () => {
     delivery_enabled: false, delivery_attempt: null, delivery_started_at: null,
     delivery_result: null, provider_message_id: null,
   }))
+  for (const table of ["students", "teachers", "class_schedules"]) {
+    originalData[table] = originalData[table].map(row => ({ ...row, archived_at: null, archive_reason: null }))
+  }
+  originalData.courses = originalData.courses.map(row => ({ ...row, status: "active" }))
   migration = await readFile(new URL(migrationName, directory), "utf8")
   await db.exec(migration)
+  const legacyData = await snapshot()
+  const legacyResults = await db.exec(await readFile(new URL("../verify_active_account_access.sql", directory), "utf8"))
+  legacyVerification = { results: legacyResults, before: legacyData, after: await snapshot() }
   // Later migrations must follow the legacy fixture/baseline setup, preserving
   // this suite's explicit proof of access to pre-existing historical records.
   for (const file of (await readdir(directory)).filter(file => file.endsWith(".sql") && file > migrationName).sort()) {
     await db.exec(await readFile(new URL(file, directory), "utf8"))
   }
+  await db.exec("insert into public.email_verified_sessions(session_id,user_id) select id,id from auth.users")
 })
 
 beforeEach(async () => db.exec("begin"))
@@ -126,6 +137,12 @@ test("pre-P01 policies reproduce disabled admin, teacher, and student access", (
   assert.equal(baseline.teacher.students, 1)
   assert.equal(baseline.student.students, 1)
   for (const value of Object.values(baseline)) assert(value.courses > 0)
+})
+
+test("verification supports the pre-email schema and rolls back its probes", () => {
+  const report = legacyVerification.results.find(result => result.rows?.length === 9)
+  assert(report?.rows.every(row => row.result === "PASS"))
+  assert.deepEqual(legacyVerification.after, legacyVerification.before)
 })
 
 test("migration preserves every row, account status, and linked historical record", async () => {
@@ -177,7 +194,7 @@ for (const role of ["admin", "teacher", "student"]) {
       await setStatus(role, status)
       await asUser(role)
       for (const table of businessTables) assert.equal(await count(table), 0, table)
-      assert.deepEqual((await db.query("select id, status from public.users")).rows, [{ id: ids[role], status }])
+      assert.deepEqual((await db.query("select id, status from public.users")).rows, [])
       assert.deepEqual((await db.query(`select public.current_user_role() as role,
         public.current_student_id() as student, public.teacher_can_access_student(1) as assigned`)).rows,
       [{ role: null, student: null, assigned: false }])
@@ -231,7 +248,7 @@ test("anonymous role cannot invoke authorization helpers", async () => {
 test("reapplication is idempotent and preserves rows", async () => {
   await db.exec(migration.replace(/^begin;$/m, "").replace(/^commit;$/m, ""))
   assert.deepEqual(await snapshot(), originalData)
-  const policies = await db.query("select count(*)::int as n from pg_policies where policyname = 'active_account_required' and permissive = 'RESTRICTIVE'")
+  const policies = await db.query("select count(*)::int as n from pg_policies where schemaname='public' and tablename=any($1::text[]) and policyname = 'active_account_required' and permissive = 'RESTRICTIVE'", [businessTables])
   assert.equal(policies.rows[0].n, 9)
 })
 
@@ -243,18 +260,22 @@ test("rollback restores prior authorization definitions without modifying data",
   for (const role of ["admin", "teacher", "student"]) {
     await setStatus(role, "inactive")
     await asUser(role)
-    assert.equal(await count("students"), baseline[role].students)
-    assert.equal(await count("courses"), baseline[role].courses)
+    assert.equal((await db.query("select public.current_user_role() as role")).rows[0].role, role)
+    // The later email gate still blocks inactive identities after a P01-only rollback.
+    assert.equal(await count("students"), 0)
+    assert.equal(await count("courses"), 0)
   }
 })
 
 test("hosted verification script reports nine passes and rolls back every persistent change", async () => {
   const script = await readFile(new URL("../verify_active_account_access.sql", directory), "utf8")
+  const sessions = (await db.query("select * from public.email_verified_sessions order by session_id")).rows
   // The suite already owns a transaction; execute the same script body inside it.
   const results = await db.exec(script.replace(/^begin;$/m, "").replace(/^rollback;$/m, ""))
   const report = results.find(result => result.rows?.length === 9)
   assert(report, "Expected all three roles and all three statuses")
   assert(report.rows.every(row => row.result === "PASS"))
+  assert.deepEqual((await db.query("select * from public.email_verified_sessions order by session_id")).rows, sessions)
   assert.deepEqual(await snapshot(), originalData)
 })
 

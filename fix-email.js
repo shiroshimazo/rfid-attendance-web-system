@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'node:fs';
 let content = fs.readFileSync('src/features/calendar/email.ts', 'utf8');
 content = content.replace(/&/g, '&')
   .replace(/</g, '<')

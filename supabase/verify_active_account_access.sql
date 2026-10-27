@@ -1,6 +1,8 @@
 -- P01 verification only. Run this WHOLE file in Supabase SQL Editor as postgres.
 -- Requires one active Admin, Teacher, and Student (with active role profiles).
 -- No email/password/token is needed. No Auth accounts are created or modified.
+-- When email verification is installed, temporary verified-session rows are also
+-- rolled back with the probes. This does not verify a real Auth session.
 -- Account-status changes and write probes run in a subtransaction deliberately
 -- rolled back before results are returned. The final ROLLBACK removes temp data.
 -- This tests database RLS with simulated Auth claims, not the HTTP/JWT transport.
@@ -18,10 +20,12 @@ declare
   selected_account record;
   account_ids uuid[];
   account_id uuid;
+  verification_session_id uuid;
   role_name text;
   tested_status text;
   business_table text;
   visible_count bigint;
+  expected_disabled_rows bigint := case when to_regclass('public.email_verified_sessions') is null then 1 else 0 end;
   affected_count bigint;
   active_counts jsonb;
   restored_count bigint;
@@ -58,9 +62,14 @@ begin
       select id, role from public.users where id = any(account_ids) order by role
     loop
       active_counts := '{}'::jsonb;
+      verification_session_id := gen_random_uuid();
+      if to_regclass('public.email_verified_sessions') is not null then
+        execute 'insert into public.email_verified_sessions(session_id,user_id) values ($1,$2)'
+          using verification_session_id, selected_account.id;
+      end if;
       perform set_config('request.jwt.claim.sub', selected_account.id::text, true);
       perform set_config('request.jwt.claims', jsonb_build_object(
-        'sub', selected_account.id, 'role', 'authenticated',
+        'sub', selected_account.id, 'role', 'authenticated', 'session_id', verification_session_id,
         'app_metadata', jsonb_build_object('role', selected_account.role)
       )::text, true);
 
@@ -101,8 +110,8 @@ begin
 
         select count(*) into visible_count from public.users;
         if tested_status <> 'active' then
-          if visible_count <> 1 then
-            raise exception 'Disabled account should read only its own status row.';
+          if visible_count <> expected_disabled_rows then
+            raise exception 'Disabled account has unexpected account-row access.';
           end if;
           update public.users set status = 'active', role = 'admin' where id = selected_account.id;
           get diagnostics affected_count = row_count;

@@ -508,6 +508,11 @@ role, requiring active profiles for Teacher and Student. It assumes authenticate
 identities, tests active/inactive/archived permissions and access restoration,
 and should return nine rows marked `PASS`. No email, password, or token is needed.
 If a required account is missing, it stops with a clear error.
+When the email-verification migration is installed, the script creates a temporary
+verified-session row per simulated identity inside the rollback block. Disabled
+accounts must then see zero account rows; the older schema permits only the
+own-status row. Both schema stages are tested. No real Auth session is verified,
+and the temporary session rows must not survive execution.
 
 The script deliberately rolls back all status changes and write probes inside a
 subtransaction before returning results; its final `ROLLBACK` removes the temporary

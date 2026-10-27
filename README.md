@@ -468,6 +468,7 @@ Highlights:
 | [src/features/calendar/README.md](src/features/calendar/README.md) | Calendar workflows, notifications, email setup, attendance rules, and operational limits |
 | [src/services/calendar/README.md](src/services/calendar/README.md) | Calendar RLS reads, attendance inputs, and server-only delivery persistence |
 | [Calendar-TODO.md](Calendar-TODO.md) | Calendar task approvals, verification evidence, and remaining release gates |
+| [CALENDAR-ROLLOUT.md](CALENDAR-ROLLOUT.md) | Manual upload handoff, pinned migrations, verification, pilot approval, and recovery |
 | [firmware/README.md](firmware/README.md) | ESP32 build, wiring, transports, acceptance checklist |
 | [src/app/api/rfid/tap/README.md](src/app/api/rfid/tap/README.md) | Tap endpoint contract, school rules, install/test steps |
 | [PHILSMS-SETUP.md](PHILSMS-SETUP.md) | SMS provider configuration and live acceptance |
