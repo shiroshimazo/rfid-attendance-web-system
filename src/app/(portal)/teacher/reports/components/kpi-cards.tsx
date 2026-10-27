@@ -79,7 +79,7 @@ export function KpiCards({
       />
       <KpiCard
         label="Recorded Attendance Rate"
-        value={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
+        value={kpis.attendanceRate === null ? "—" : <SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={TrendingUp}
         detail="Present and Late over attended plus recorded absent sessions."
       />

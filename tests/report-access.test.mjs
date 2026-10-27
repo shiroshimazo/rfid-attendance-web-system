@@ -7,6 +7,7 @@ const student = { id: 1, student_id: "S-1", full_name: "Assigned", program_id: 1
 function harness(account = { id: "teacher-user", role: "teacher", status: "active" }, fail = false) {
   const calls = []
   const tables = {
+    calendar_attendance_days: [], attendance_day_marks: [],
     subject_attendance: [],
     teachers: [{ id: 4, user_id: "teacher-user" }],
     teacher_assignments: [{ id: 1, teacher_id: 4, program_id: 1, year_level: "2nd Year", section: "21001", campus: "Main", status: "active" }],
@@ -16,7 +17,10 @@ function harness(account = { id: "teacher-user", role: "teacher", status: "activ
     rfid_cards: [1, 2, 3].map(id => ({ id, student_id: id, card_status: "Active", rfid_number: `0000000${id}` })),
     sms_notifications: [1, 2, 3].map(id => ({ id, student_id: id, attendance_id: id, created_at: "2026-09-09T00:00:00Z", sms_status: "Pending", message: "PRIVATE", parent_contact_number: "09123456789", "attendance_records.attendance_date": date })),
   }
-  const supabase = { from(table) {
+  const supabase = { rpc: async (name, input) => {
+    calls.push({ table: `rpc:${name}`, single: true, input })
+    return { data: { inserted: 0, deleted: 0 }, error: fail ? { message: "injected sync failure" } : null }
+  }, from(table) {
     const call = { table, filters: [], order: [], from: 0, to: Infinity }
     calls.push(call)
     const query = {
@@ -25,6 +29,7 @@ function harness(account = { id: "teacher-user", role: "teacher", status: "activ
       in(key, values) { call.filters.push(row => values.includes(row[key])); return this },
       gte(key, value) { call.filters.push(row => row[key] >= value); return this },
       lte(key, value) { call.filters.push(row => row[key] <= value); return this },
+      lt(key, value) { call.filters.push(row => row[key] < value); return this },
       order(key) { call.order.push(key); return this },
       range(from, to) { call.from = from; call.to = to; return this },
       returns() { return this },
@@ -72,7 +77,9 @@ test("admin snapshot retains archived history and date-filters SMS by linked att
   assert.equal(data.attendanceLogs.length, 3)
   assert.equal(data.smsLogs.length, 3)
   assert.equal(data.kpis.totalStudents, 2)
-  assert(calls.every(call => call.order.includes("id")))
+  assert(calls.filter(call => !call.single).every(call => call.table === "attendance_day_marks"
+    ? call.order.includes("attendance_date") && call.order.includes("student_id")
+    : call.order.includes("id")))
 })
 
 for (const [label, account, status] of [
@@ -105,6 +112,15 @@ test("teacher PDF download ignores a forged admin role parameter", async () => {
   assert.match(response.headers.get("content-disposition"), /rfid-teacher-report/)
   assert.equal(Buffer.from(await response.arrayBuffer()).subarray(0, 5).toString(), "%PDF-")
   assert(!calls.some(call => call.table === "sms_notifications"))
+  assert(!calls.some(call => call.table.startsWith("rpc:")))
+})
+
+test("authorized admin PDF synchronizes the validated range before reading report data", async () => {
+  const { load, calls } = harness({ id: "admin", role: "admin", status: "active" })
+  const response = await load("src/app/api/reports/pdf/route.ts").GET(new Request(`http://localhost/api/reports/pdf?from=${date}&to=${date}`))
+  assert.equal(response.status, 200)
+  assert.equal(calls[0].table, "rpc:sync_attendance_day_marks")
+  assert.deepEqual(calls[0].input, { p_from: date, p_to: date })
 })
 
 test("failed reads produce an error response, never a partial PDF", async () => {

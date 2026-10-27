@@ -306,8 +306,8 @@ describe("calendar actions", () => {
     const result = await actions.syncAttendanceMarksAction("2026-10-20", "2026-10-30")
     assert.equal(result.ok, true)
     assert.equal(rpcCalled, true)
-    assert.equal(rpcParams.p_from_date, "2026-10-20")
-    assert.equal(rpcParams.p_to_date, "2026-10-30")
+    assert.equal(rpcParams.p_from, "2026-10-20")
+    assert.equal(rpcParams.p_to, "2026-10-30")
     assert.match(result.message, /3 created, 1 removed/)
   })
 

@@ -235,8 +235,8 @@ export async function syncAttendanceMarksAction(
     const supabase = await adminOnlyClient()
 
     const { data, error } = await supabase.rpc("sync_attendance_day_marks", {
-      p_from_date: parsed.data.startsOn,
-      p_to_date: parsed.data.endsOn,
+      p_from: parsed.data.startsOn,
+      p_to: parsed.data.endsOn,
     })
 
     if (error) {

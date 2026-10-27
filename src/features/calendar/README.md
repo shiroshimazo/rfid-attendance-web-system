@@ -371,3 +371,25 @@ report, dashboard, and attendance regressions pass. The isolated browser harness
 checks actual filters, read-only tables, student details, and mobile/desktop
 layouts with mocked data. Reports/PDF remain Task 27. Hosted validation, real
 sends, and physical reader testing are not performed here.
+
+
+## Reports and PDF consumers (Task 27)
+
+Admin and teacher reports now use the shared state resolver. Date/campus/state
+exception summaries count affected student-days, including archived admin
+snapshots without RFID rows. Historical source entries do not need to remain
+visible or published. Current campus membership never backfills a past exception.
+
+Only authorized admin report/export entry points run audited mark reconciliation,
+before fetching report inputs. SQL preserves dates before today in Manila.
+Teachers perform no mark sync. Sync/read failures stop report generation. Both
+the report helper and existing calendar sync action use the actual RPC argument
+names p_from and p_to. The report helper avoids render-time path revalidation.
+
+Report/PDF rates exclude NoClasses and OnlineManual student-days, with null rates
+for zero eligible recorded decisions. Tap times, scans, card identities, recorded
+campuses, and admin SMS history remain retained evidence. PDFs include calendar
+exceptions and preserve the independent Subject Attendance confirmations. No
+calendar exception is counted as a manual confirmation. Local tests exercise
+actual PDF layout/text, authorization, scope, and mocked responsive rendering;
+no hosted synchronization or real sends occur during these checks.

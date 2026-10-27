@@ -1,3 +1,4 @@
+import { CalendarExceptions } from "@/features/reports/calendar-exceptions"
 import { StudentSubjectHistory } from "@/features/subject-attendance/student-history"
 import { Suspense } from "react"
 import type { Metadata } from "next"
@@ -48,12 +49,13 @@ async function ReportsContent({ range }: { range: ReportsRange }) {
   return (
     <div className="flex flex-col gap-4 md:gap-6">
       <p className="text-sm text-muted-foreground tabular-nums">
-        Generated {data.generatedAtLabel}. Rates use recorded attendance only.
-        Program, year and section reflect current profiles; campus comes from the attendance record.
+        Generated {data.generatedAtLabel}. Rates exclude no-class and online/manual student-days.
+        Program, year and section reflect current profiles. Tap campus comes from the recorded evidence; past exception campuses use stored snapshots.
       </p>
 
       <h2 className="text-lg font-semibold">Daily RFID evidence (separate from subject attendance)</h2>
       <KpiCards kpis={data.kpis} sessionDays={data.sessionDays} />
+      <CalendarExceptions rows={data.calendarExceptions} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 md:gap-6">
         <div className="lg:col-span-2">

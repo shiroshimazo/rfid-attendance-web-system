@@ -34,6 +34,11 @@ import { FiltersBar as DailyFilters } from '@/app/(portal)/admin/attendance/comp
 import { KpiCards as DailyKpis } from '@/app/(portal)/admin/attendance/components/kpi-cards';
 import { AttendanceHistoryTable } from '@/app/(portal)/student/my-attendance/components/attendance-history-table';
 import { KpiCards as HistoryKpis } from '@/app/(portal)/student/my-attendance/components/kpi-cards';
+import { CalendarExceptions } from '@/features/reports/calendar-exceptions';
+import { SectionAttendanceTable } from '@/app/(portal)/teacher/reports/components/section-attendance-table';
+import { KpiCards as TeacherReportKpis } from '@/app/(portal)/teacher/reports/components/kpi-cards';
+const reportElement=document.createElement('section');reportElement.id='calendar-report';reportElement.className='@container/main space-y-4 p-4';document.body.appendChild(reportElement);const reportRoot=createRoot(reportElement);
+window.__renderReport=()=>reportRoot.render(<><TeacherReportKpis kpis={{totalAssigned:2,totalPresent:0,totalAbsent:0,attendanceRate:null,rfidScans:2,noClasses:1,onlineManual:1}} sessionDays={2}/><CalendarExceptions rows={[{date:'2026-11-04',campus:'Old Campus',status:'NoClasses',students:1},{date:'2026-11-05',campus:'MV Campus',status:'OnlineManual',students:1}]}/><SectionAttendanceTable rows={[{key:'old',program:'IT',yearLevel:'1st Year',section:'A',campus:'Old Campus',total:1,present:0,late:0,absent:0,rate:null}]} rangeLabel="Nov 4 to Nov 5, 2026"/></>);
 const dailyElement=document.createElement('section');dailyElement.id='calendar-daily';dailyElement.className='@container/main space-y-5 p-4';document.body.appendChild(dailyElement);const dailyRoot=createRoot(dailyElement);
 window.__renderDaily=(status='all')=>{const rows=['NoClasses','Present','OnlineManual','NoRecord'].map((status,index)=>({id:index+1,name:'Student '+(index+1),studentId:'S-'+(index+1),programCode:'IT',programName:'Computing',section:'A',yearLevel:'1st Year',campus:index===0?'Main Campus':index===2?'Bulacan Campus':'MV Campus',status,timeIn:index<2?'07:00:00':null,timeOut:index===0?'15:00:00':null,rfidStatus:'Active'}));const visible=status==='all'?rows:rows.filter(row=>row.status===status);const history=[{id:'calendar:1:2026-11-05',hasTap:false,date:'2026-11-05',status:'NoClasses',campus:'Main Campus',timeIn:null,timeOut:null,rfidNumber:null,rfidStatus:'Unassigned',smsStatus:null,smsSentAt:null},{id:10,hasTap:true,date:'2026-11-04',status:'OnlineManual',recordedStatus:'Present',campus:'Old Campus',tapCampus:'Tap Campus',timeIn:'07:00:00',timeOut:'15:00:00',rfidNumber:'UID',rfidStatus:'Active',smsStatus:'Sent',smsSentAt:'2026-11-04T00:00:00Z'}];dailyRoot.render(<><section id="admin-daily" className="space-y-4"><h2>Admin daily attendance</h2><DailyKpis kpis={{totalStudents:4,present:1,late:0,absent:0,noRecord:1,noClasses:1,onlineManual:1,expectedStudents:2}} readableDate="Nov 5, 2026"/><DailyFilters query={{date:'2026-11-05',status,programId:null,yearLevel:null,section:null,search:[]}} options={{programs:[],yearLevels:[],sections:[]}}/><AdminDailyTable rows={visible} readableDate="Nov 5, 2026" hasStudents={true}/></section><section id="teacher-daily"><h2>Teacher daily attendance</h2><TeacherDailyTable rows={visible} readableDate="Nov 5, 2026" hasStudents={true}/></section><section id="student-daily" className="space-y-4"><h2>Student daily history</h2><HistoryKpis kpis={{totalPresent:0,totalLate:0,totalAbsent:0,attendanceRate:null,noClasses:1,onlineManual:1}}/><AttendanceHistoryTable rows={history}/></section></>);};
 const dashboardElement=document.createElement('section');dashboardElement.id='calendar-dashboard';dashboardElement.className='@container/main space-y-5 p-4';document.body.appendChild(dashboardElement);const dashboardRoot=createRoot(dashboardElement);
@@ -342,8 +347,20 @@ try {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.clock.runFor(1000)
   await daily.screenshot({ path: join(output, "calendar-daily-desktop.png"), animations: "disabled" })
+  await page.evaluate(() => window.__renderReport())
+  await page.clock.runFor(1000)
+  const report = page.locator('#calendar-report')
+  await report.getByText("Calendar exceptions", { exact: true }).waitFor()
+  assert.match(await report.innerText(), /Old Campus/); assert.match(await report.innerText(), /Online \/ manual/)
+  assert.match(await report.innerText(), /—/); assert.doesNotMatch(await report.innerText(), /NaN|null%|undefined/)
+  await report.screenshot({ path: join(output, "calendar-report-desktop.png"), animations: "disabled" })
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.clock.runFor(1000)
+  const reportBounds = await report.boundingBox()
+  assert.ok(reportBounds.x >= 0 && reportBounds.x + reportBounds.width <= 376)
+  await report.screenshot({ path: join(output, "calendar-report-mobile.png"), animations: "disabled" })
   assert.deepEqual(errors, [])
-  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, mobile dialog bounds, sync/retry controls, reader layouts, deep links, keyboard day selection, notification bell/read actions, session toast suppression, dashboard post layouts, exact expiry, republish visibility, and mixed/all-exception dashboard rates with real charts, daily filters, read-only tables, and calendar history details.\n")
+  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, mobile dialog bounds, sync/retry controls, reader layouts, deep links, keyboard day selection, notification bell/read actions, session toast suppression, dashboard post layouts, exact expiry, republish visibility, and mixed/all-exception dashboard rates with real charts, daily filters, read-only tables, calendar history details, report exception tables, and nullable report rates.\n")
   console.log(`PASS calendar dialog browser checks. Screenshots: ${output}`)
 } catch (error) {
   await page?.screenshot({ path: join(output, "failure.png"), fullPage: true })

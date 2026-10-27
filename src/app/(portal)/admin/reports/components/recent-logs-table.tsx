@@ -32,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { AttendanceLog } from "@/features/reports/panel"
+import { attendanceStatusLabel } from "@/features/attendance/schema"
 import { formatClockTime, formatNumber } from "@/lib/format"
 
 type SortColumn =
@@ -203,7 +204,7 @@ export function RecentLogsTable({ logs, total }: { logs: AttendanceLog[]; total:
                       {log.section}<br />{log.campus}
                     </TableCell>
                     <TableCell className="px-3">
-                      <AttendanceStatusBadge status={log.status} />
+                      <AttendanceStatusBadge status={log.status} />{log.status !== log.recordedStatus && <p className="mt-1 text-xs text-muted-foreground">Recorded RFID: {attendanceStatusLabel(log.recordedStatus)}</p>}{log.calendarCampus && <p className="text-xs text-muted-foreground">Calendar: {log.calendarCampus}</p>}
                     </TableCell>
                     <TableCell className="hidden px-3 sm:table-cell">
                       <p className="mb-1 font-mono text-xs">{log.rfidNumber}</p>

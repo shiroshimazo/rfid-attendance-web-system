@@ -48,7 +48,7 @@ export function GroupBreakdownChart({
   const source = grouping === "program" ? byProgram : byYearLevel
 
   const groups = React.useMemo(
-    () => [...source].sort((a, b) => b.rate - a.rate).slice(0, MAX_GROUPS),
+    () => [...source].sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1)).slice(0, MAX_GROUPS),
     [source]
   )
 

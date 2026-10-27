@@ -3,6 +3,7 @@ import { DataTable } from "@/components/pdf/data-table"
 import { formatReportTimestamp, type ReportsData } from "@/features/reports/panel"
 import type { TeacherReportsData } from "@/features/reports/teacher-panel"
 import { subjectTotals, subjectAttendancePolicy } from "@/features/subject-attendance/model"
+import { attendanceStatusLabel } from "@/features/attendance/schema"
 
 export type ReportPdfInput =
   | { role: "admin"; data: ReportsData }
@@ -57,17 +58,27 @@ export function ReportPdfDocument({ role, data }: ReportPdfInput) {
           { metric: "Students with records in this range", value: new Set(data.attendanceLogs.map(row => row.studentId)).size },
           { metric: "Present (includes Late)", value: attended },
           { metric: "Recorded Absent", value: data.kpis.totalAbsent },
-          { metric: "Recorded attendance rate", value: recorded ? `${(attended / recorded * 100).toFixed(1)}%` : "No current attendance records" },
+          { metric: "Recorded attendance rate", value: recorded ? `${(attended / recorded * 100).toFixed(1)}%` : "No eligible recorded decisions" },
+          { metric: "No-class student-days excluded", value: data.kpis.noClasses },
+          { metric: "Online/manual student-days excluded", value: data.kpis.onlineManual },
           { metric: "Captured time-in / time-out scans", value: data.kpis.rfidScans },
           { metric: "Attendance records exported (includes historical values)", value: data.attendanceLogs.length },
           ...(role === "admin" ? [{ metric: "SMS records exported", value: data.smsLogs.length }] : []),
         ]} />
         <Text style={{ marginTop: 12, lineHeight: 1.4 }}>
-          Rates use Present + Late divided by Present + Late + recorded Absent. Missing records are not absences. Historical status values remain in the detail and are excluded from current totals. Scans count stored time-in and time-out fields, not every physical tap.
+          Rates use eligible Present + Late divided by eligible Present + Late + recorded Absent. No-class and online/manual student-days are excluded. Missing records are not absences. Historical status values remain in the detail and are excluded from current totals. Scans retain stored time-in and time-out evidence, including exception days.
         </Text>
         <Text style={{ marginTop: 8, lineHeight: 1.4 }}>
           Campus comes from each attendance record. Program, year, section, names and account status reflect current profiles; historical placement and card-status snapshots are not stored. Section student counts may overlap after a campus transfer. All times are Philippine time (PHT).
         </Text>
+      </Page>
+      <Page size={{ width: 842, height: 595 }} margin={36} style={pageStyle}>
+        {footer}<Title>Calendar exceptions</Title>
+        <Text style={{ marginBottom: 12, lineHeight: 1.4 }}>No-class and online/manual student-days are excluded from the daily RFID denominator. Historical dates and campuses come from immutable snapshots. Online/manual exceptions do not confirm attendance; the Subject Attendance section retains teacher confirmations separately.</Text>
+        {data.calendarExceptions.length ? <DataTable columns={[
+          { key: "date", header: "Date" }, { key: "campus", header: "Campus" },
+          { key: "status", header: "Calendar state" }, { key: "students", header: "Affected students" },
+        ]} data={data.calendarExceptions.map(row => ({ ...row, status: attendanceStatusLabel(row.status) }))} /> : <Text>No calendar exceptions in this report scope.</Text>}
       </Page>
       <Page size={{ width: 842, height: 595 }} margin={36} style={pageStyle}>
         {footer}<Title>Attendance by campus and section</Title>
@@ -76,7 +87,7 @@ export function ReportPdfDocument({ role, data }: ReportPdfInput) {
           { key: "section", header: "Section" }, { key: "campus", header: "Campus" },
           { key: "total", header: "Students" }, { key: "present", header: "Present incl. Late" },
           { key: "late", header: "Late" }, { key: "absent", header: "Absent" }, { key: "rate", header: "Recorded rate" },
-        ]} data={data.bySection.map(row => ({ ...row, rate: row.present + row.absent ? `${row.rate.toFixed(1)}%` : "No records" }))} /> : <Text>No sections in this scope.</Text>}
+        ]} data={data.bySection.map(row => ({ ...row, rate: row.rate === null ? "No eligible decisions" : `${row.rate.toFixed(1)}%` }))} /> : <Text>No sections in this scope.</Text>}
       </Page>
       <Page size={{ width: 842, height: 595 }} margin={36} style={pageStyle}>
         {footer}<Title>{`Attendance and RFID records (${data.attendanceLogs.length})`}</Title>
@@ -92,7 +103,7 @@ export function ReportPdfDocument({ role, data }: ReportPdfInput) {
           student: `${row.studentName}\n${row.studentId}\n${row.studentStatus}`,
           placement: `${row.program} / ${row.yearLevel}\n${row.section}\n${row.campus}`,
           times: `${row.timeIn || "—"}\n${row.timeOut || "—"}`,
-          status: row.status === "LegacyRecord" ? "Historical record" : row.status,
+          status: `${attendanceStatusLabel(row.status)}${row.status !== row.recordedStatus ? `\nRecorded RFID: ${attendanceStatusLabel(row.recordedStatus)}` : ""}${row.calendarCampus ? `\nCalendar campus: ${row.calendarCampus}` : ""}`,
           card: `${row.rfidNumber}\nCard #${row.rfidCardId}\n${row.rfidStatus === "Unassigned" ? "Status unavailable" : `${row.rfidStatus} (now)`}`,
         }))} /> : <Text>No attendance records in the selected range.</Text>}
       </Page>

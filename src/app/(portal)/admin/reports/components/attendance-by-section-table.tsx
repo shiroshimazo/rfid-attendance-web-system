@@ -68,7 +68,7 @@ function compareRows(
     case "absent":
       return (a.absent - b.absent) * factor
     case "rate":
-      return (a.rate - b.rate) * factor
+      return ((a.rate ?? -1) - (b.rate ?? -1)) * factor
     default:
       return collator.compare(a.program, b.program) * factor
   }
@@ -220,7 +220,7 @@ export function AttendanceBySectionTable({
                       {formatNumber(row.absent)}
                     </TableCell>
                     <TableCell className="px-3 tabular-nums">
-                      {formatPercent(row.rate)}
+                      {row.rate === null ? "—" : formatPercent(row.rate)}
                     </TableCell>
                   </TableRow>
                 ))}

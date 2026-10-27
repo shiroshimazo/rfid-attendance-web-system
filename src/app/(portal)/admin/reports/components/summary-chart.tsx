@@ -55,7 +55,7 @@ export function SummaryChart({
           >
             <LineChart
               accessibilityLayer
-              data={summary}
+              data={summary.map(point => ({ ...point, present: point.rate === null ? null : point.present, absent: point.rate === null ? null : point.absent }))}
               margin={{ left: 4, right: 12 }}
             >
               <CartesianGrid vertical={false} strokeDasharray="3 3" />

@@ -1,6 +1,11 @@
 import { fetchSubjectAttendance } from "@/services/attendance/subject-attendance"
 import type { SubjectAttendanceRow } from "@/features/subject-attendance/model"
-import { format, isValid, parseISO, subDays } from "date-fns"
+import { format, parseISO, subDays } from "date-fns"
+import { calendarDateSchema } from "@/features/calendar/schema"
+import { type CalendarAttendanceInputs } from "@/features/calendar/attendance-state"
+import { fetchCalendarAttendanceState } from "@/services/calendar/attendance-state"
+import { buildReportCalendar, type ReportCalendarException } from "@/features/reports/calendar-model"
+import { syncReportCalendar } from "@/features/reports/calendar"
 
 import { schoolDateKey } from "@/lib/school-time"
 import { requireRole } from "@/features/auth/server"
@@ -8,7 +13,7 @@ import type { StudentRfidStatus } from "@/features/attendance/dashboard"
 import {
   isAttendanceStatus,
   recordStatus,
-  type AttendanceRecordStatus,
+  type AttendanceRecordStatus, type AttendanceDisplayStatus,
 } from "@/features/attendance/status"
 import {
   fetchReportsSnapshot,
@@ -29,6 +34,7 @@ export interface ReportsBuildOptions {
   fromDate: string
   toDate: string
   generatedAt: Date
+  calendar?: CalendarAttendanceInputs
 }
 
 export interface ReportsKpis {
@@ -37,6 +43,9 @@ export interface ReportsKpis {
   totalPresent: number
   totalAbsent: number
   rfidScans: number
+  noClasses: number
+  onlineManual: number
+  attendanceRate: number | null
 }
 
 export interface SummaryPoint {
@@ -44,6 +53,7 @@ export interface SummaryPoint {
   label: string
   present: number
   absent: number
+  rate: number | null
 }
 
 export interface GroupBreakdown {
@@ -51,7 +61,7 @@ export interface GroupBreakdown {
   present: number
   absent: number
   total: number
-  rate: number
+  rate: number | null
 }
 
 export interface StatusSlice {
@@ -70,7 +80,7 @@ export interface SectionBreakdown {
   present: number
   late: number
   absent: number
-  rate: number
+  rate: number | null
 }
 
 export interface AttendanceLog {
@@ -85,7 +95,9 @@ export interface AttendanceLog {
   yearLevel: string
   section: string
   campus: string
-  status: AttendanceRecordStatus
+  status: Exclude<AttendanceDisplayStatus, "NoRecord">
+  recordedStatus: AttendanceRecordStatus
+  calendarCampus: string | null
   rfidStatus: StudentRfidStatus
   rfidNumber: string
   rfidCardId: number
@@ -93,6 +105,7 @@ export interface AttendanceLog {
 }
 
 export interface ReportsData {
+  calendarExceptions: ReportCalendarException[]
   subjectAttendance: SubjectAttendanceRow[]
   range: ReportsRange
   rangeLabel: string
@@ -115,7 +128,6 @@ export type ReportsSearchParams = Record<
   string | string[] | undefined
 >
 
-const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const DEFAULT_RANGE_DAYS = 7
 const RECENT_LOG_LIMIT = 50
 
@@ -132,9 +144,8 @@ function firstValue(value: string | string[] | undefined) {
 function readDateKey(value: string) {
   const candidate = value.trim()
 
-  return DATE_KEY_PATTERN.test(candidate) && isValid(parseISO(candidate))
-    ? candidate
-    : null
+  const parsed = calendarDateSchema.safeParse(candidate)
+  return parsed.success ? parsed.data : null
 }
 
 export function parseReportsRange(
@@ -165,7 +176,7 @@ function isAttended(status: string) {
 }
 
 function rateOf(present: number, expected: number) {
-  return expected > 0 ? (present / expected) * 100 : 0
+  return expected > 0 ? (present / expected) * 100 : null
 }
 
 interface Tally {
@@ -218,12 +229,13 @@ function buildGroups(
 
 export function buildReportsData(
   snapshot: ReportsSnapshot,
-  { fromDate, toDate, generatedAt }: ReportsBuildOptions
+  { fromDate, toDate, generatedAt, calendar }: ReportsBuildOptions
 ): ReportsData {
   const { attendance, programs, rfidCards } = snapshot
   const inRange = attendance.filter(record =>
     record.attendance_date >= fromDate && record.attendance_date <= toDate)
-  const representedIds = new Set(inRange.map(record => record.student_id))
+  const calendarData = buildReportCalendar(snapshot.students, inRange, fromDate, toDate, calendar ?? { today: schoolDateKey(generatedAt), effectiveDays: [], marks: [] })
+  const representedIds = new Set([...inRange.map(record => record.student_id), ...calendarData.days.map(day => day.studentId)])
   const students = snapshot.students.filter(student =>
     (student.status ?? "active") === "active" || representedIds.has(student.id))
   const studentsById = new Map(students.map(student => [student.id, student]))
@@ -236,9 +248,10 @@ export function buildReportsData(
   const currentRecords = scoped.filter((record) =>
     isAttendanceStatus(record.attendance_status)
   )
+  const eligibleRecords = currentRecords.filter(record => calendarData.resolve(record.student_id, studentsById.get(record.student_id)!.campus, record.attendance_date).status === "Normal")
 
   const sessionDates = [
-    ...new Set(currentRecords.map((record) => record.attendance_date)),
+    ...new Set([...currentRecords.map((record) => record.attendance_date), ...calendarData.days.map(day => day.date)]),
   ].sort()
   const sessionDays = sessionDates.length
   const totalStudents = students.filter(student => (student.status ?? "active") === "active").length
@@ -250,7 +263,7 @@ export function buildReportsData(
   let lateCount = 0
   let absentCount = 0
 
-  for (const record of currentRecords) {
+  for (const record of eligibleRecords) {
     const attended = isAttended(record.attendance_status)
     const absent = record.attendance_status === "Absent"
 
@@ -290,6 +303,7 @@ export function buildReportsData(
       label: format(parseISO(date), "MMM d"),
       present: tally.present,
       absent: tally.absent,
+      rate: rateOf(tally.present, tally.present + tally.absent),
     }
   })
 
@@ -322,10 +336,12 @@ export function buildReportsData(
   }
   for (const record of scoped) {
     const bucket = sectionBucket(studentsById.get(record.student_id)!, record.campus)
+    if (calendarData.resolve(record.student_id, studentsById.get(record.student_id)!.campus, record.attendance_date).status !== "Normal") continue
     if (isAttended(record.attendance_status)) bucket.present += 1
     if (record.attendance_status === "Late") bucket.late += 1
     if (record.attendance_status === "Absent") bucket.absent += 1
   }
+  for (const day of calendarData.days) sectionBucket(studentsById.get(day.studentId)!, day.campus)
   const bySection: SectionBreakdown[] = [...sectionGroups.entries()]
     .map(([key, { ids, ...bucket }]) => ({
       key, ...bucket, total: ids.size,
@@ -345,6 +361,7 @@ export function buildReportsData(
       const student = studentsById.get(record.student_id)
 
       const card = cardsById.get(record.rfid_card_id)
+      const state = calendarData.resolve(record.student_id, student!.campus, record.attendance_date)
       return {
         id: record.id,
         time: `${record.attendance_date}T${record.time_in}`,
@@ -360,7 +377,9 @@ export function buildReportsData(
         studentStatus: student?.status ?? "active",
         rfidCardId: record.rfid_card_id,
         rfidNumber: card?.rfid_number ?? "Unavailable",
-        status: recordStatus(record.attendance_status),
+        status: state.status === "Normal" ? recordStatus(record.attendance_status) : state.status,
+        recordedStatus: recordStatus(record.attendance_status),
+        calendarCampus: state.status === "Normal" ? null : state.campus,
         rfidStatus:
           card?.card_status ?? "Unassigned",
       }
@@ -373,6 +392,7 @@ export function buildReportsData(
   )
 
   return {
+    calendarExceptions: calendarData.exceptions,
     subjectAttendance: [],
     range: { from: fromDate, to: toDate },
     rangeLabel: formatRangeLabel(fromDate, toDate),
@@ -383,6 +403,9 @@ export function buildReportsData(
       representedStudents: new Set(scoped.map(record => record.student_id)).size,
       totalPresent,
       totalAbsent,
+      noClasses: calendarData.days.filter(day => day.status === "NoClasses").length,
+      onlineManual: calendarData.days.filter(day => day.status === "OnlineManual").length,
+      attendanceRate: rateOf(totalPresent, totalPresent + totalAbsent),
       rfidScans: currentRecords.reduce((total, record) => total + (record.time_in ? 1 : 0) + (record.time_out ? 1 : 0), 0),
     },
     summary,
@@ -419,9 +442,11 @@ export async function getAdminReportsData({
   to,
 }: ReportsRange): Promise<ReportsData> {
   await requireRole("admin")
-  const snapshot = await fetchReportsSnapshot({ fromDate: from, toDate: to })
+  await syncReportCalendar(from, to)
+  const now = new Date()
+  const [snapshot, calendar] = await Promise.all([fetchReportsSnapshot({ fromDate: from, toDate: to }), fetchCalendarAttendanceState(from, to, now)])
 
-  const report = buildReportsData(snapshot, { fromDate: from, toDate: to, generatedAt: new Date() })
+  const report = buildReportsData(snapshot, { fromDate: from, toDate: to, generatedAt: now, calendar })
   return { ...report, subjectAttendance: await fetchSubjectAttendance({ from, to }) }
 }
 

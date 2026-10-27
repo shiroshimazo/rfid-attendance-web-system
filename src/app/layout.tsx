@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import "lenis/dist/lenis.css";
 
@@ -23,6 +24,15 @@ export default function RootLayout({
       className={`${inter.variable} antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        {process.env.NODE_ENV === "development" && (
+          <Script
+            src="//unpkg.com/react-grab/dist/index.global.js"
+            crossOrigin="anonymous"
+            strategy="beforeInteractive"
+          />
+        )}
+      </head>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"

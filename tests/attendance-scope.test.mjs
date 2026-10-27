@@ -69,10 +69,10 @@ for (const role of ["admin", "teacher"]) {
     assert.equal(legacyOnly.kpis.totalPresent, 0)
     assert.equal(legacyOnly.kpis.totalAbsent, 0)
     assert.equal(legacyOnly.sessionDays, 0)
-    assert.equal(legacyOnly.bySection[0].rate, 0)
+    assert.equal(legacyOnly.bySection[0].rate, null)
     const noRecords = build({ ...snapshot, attendance: [] }, options)
     assert.equal(noRecords.kpis.totalAbsent, 0)
-    assert.equal(noRecords.bySection[0].rate, 0)
+    assert.equal(noRecords.bySection[0].rate, null)
   })
 }
 
