@@ -139,7 +139,7 @@ export function DateRangePicker({
 
       <PopoverContent
         align="start"
-        className="w-auto overflow-hidden rounded-xl p-0"
+        className="max-h-[var(--radix-popover-content-available-height)] w-auto overflow-x-hidden overflow-y-auto rounded-xl p-0"
       >
         <div className="flex">
 

@@ -1,5 +1,21 @@
 import type { CalendarEntryRow } from "@/services/calendar/query"
-import { suggestCalendarImpact, type CalendarEntryValues, type CalendarTag } from "@/features/calendar/schema"
+import { calendarEntrySchema, suggestCalendarImpact, type CalendarEntryValues, type CalendarTag } from "@/features/calendar/schema"
+
+export const calendarCreationSteps: { title: string; fields: (keyof CalendarEntryValues)[] }[] = [
+  { title: "Announcement", fields: ["title", "tags", "attendanceImpact", "reason", "description"] },
+  { title: "Audience", fields: ["audience", "campuses"] },
+  { title: "Schedule", fields: ["startsOn", "endsOn", "startTime", "endTime", "location"] },
+  { title: "Review", fields: ["isPinned"] },
+]
+
+export function validateCalendarForm(values: CalendarEntryValues, allCampuses: boolean) {
+  const parsed = calendarEntrySchema.safeParse(values)
+  const errors: Record<string, string> = parsed.success ? {} : Object.fromEntries(
+    parsed.error.issues.map(issue => [String(issue.path[0]), issue.message])
+  )
+  if (!allCampuses && !values.campuses.length) errors.campuses = "Choose at least one campus or select All campuses."
+  return { parsed, errors }
+}
 
 export function calendarFormValues(date: string, entry?: CalendarEntryRow): CalendarEntryValues {
   return {

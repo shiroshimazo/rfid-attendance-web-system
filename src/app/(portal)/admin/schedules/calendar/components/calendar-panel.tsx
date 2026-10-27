@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/ui/date-picker"
+import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TablePagination } from "@/components/data-table"
@@ -76,7 +77,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
   ] as const
   return <div aria-busy={pending} className="flex min-w-0 flex-col gap-4 md:gap-6">
     <section aria-label="Calendar summary across all campuses" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {summary.map(([label, value, description]) => <Card key={label} className="gap-3"><CardHeader><CardDescription>{label}</CardDescription><CardTitle className="text-3xl tabular-nums">{value.toLocaleString("en-PH")}</CardTitle></CardHeader><CardFooter className="text-xs text-muted-foreground">{description}</CardFooter></Card>)}
+      {summary.map(([label, value, description]) => <Card key={label} className="gap-3"><CardHeader><CardDescription>{label}</CardDescription><CardTitle className="text-3xl tabular-nums"><SlidingNumber value={value} /></CardTitle></CardHeader><CardFooter className="text-xs text-muted-foreground">{description}</CardFooter></Card>)}
     </section>
     <div className="flex flex-wrap items-end justify-between gap-3">
       <EntryFormDialog date={query.date} today={query.today} campuses={panel.campuses} />
@@ -97,7 +98,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
               <p className="text-xs text-muted-foreground">Dots: green = normal, red = no classes, blue = online/manual, outlined = draft, grey = cancelled.</p>
             </CardContent>
           </Card>
-          <Card className="min-w-0"><CardHeader><CardTitle>{dateLabel(query.date)}</CardTitle><CardDescription>{(days[query.date] ?? []).length} announcements · All campuses</CardDescription></CardHeader><CardContent className="space-y-3">
+          <Card className="min-w-0"><CardHeader><CardTitle>{dateLabel(query.date)}</CardTitle><CardDescription><SlidingNumber value={(days[query.date] ?? []).length} /> announcements · All campuses</CardDescription></CardHeader><CardContent className="space-y-3">
             {(days[query.date] ?? []).length ? days[query.date].map(entry => <EntryDetails key={entry.id} entry={entry} today={query.today} campuses={panel.campuses} />) : <EmptyState icon={CalendarDays} title="No announcements on this date" description="Select another day to see its details." />}
           </CardContent></Card>
         </div>
@@ -112,7 +113,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
             <div className="flex gap-2 sm:col-span-2 xl:col-span-4"><Button type="submit" disabled={pending}>Apply filters</Button><Button type="button" variant="outline" disabled={pending} onClick={() => navigate({ search: null, status: null, tag: null, impact: null, campus: null, audience: null, from: null, to: null, page: null })}>Clear filters</Button></div>
           </form>
         </CardContent></Card>
-        <Card className="min-w-0"><CardHeader><CardTitle>All announcements</CardTitle><CardDescription>{panel.list.total.toLocaleString("en-PH")} matching announcements</CardDescription></CardHeader><CardContent>
+        <Card className="min-w-0"><CardHeader><CardTitle>All announcements</CardTitle><CardDescription><SlidingNumber value={panel.list.total} /> matching announcements</CardDescription></CardHeader><CardContent>
           {!panel.list.entries.length ? <EmptyState icon={CalendarOff} title="No matching announcements" description="Clear filters or choose a wider date range." /> : <Table><TableHeader><TableRow>{["Title", "Tags", "Impact", "Audience", "Campuses", "Dates", "Status", "Published", "Email status", "Actions"].map(label => <TableHead key={label}>{label}</TableHead>)}</TableRow></TableHeader><TableBody>
             {panel.list.entries.map(entry => <TableRow key={entry.id}>
               <TableCell><Button variant="link" className="h-auto max-w-64 justify-start whitespace-normal px-0 text-left" onClick={() => selectDate(entry.starts_on)}>{entry.title}</Button>{entry.is_pinned && <Badge variant="outline" className="ml-2">Pinned</Badge>}</TableCell>
@@ -120,7 +121,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
               <TableCell>{calendarLabels[entry.attendance_impact]}</TableCell><TableCell>{calendarLabels[entry.audience]}</TableCell><TableCell className="max-w-48 whitespace-normal">{scope(entry)}</TableCell>
               <TableCell className="tabular-nums">{dateLabel(entry.starts_on)}{entry.ends_on !== entry.starts_on && <><br />to {dateLabel(entry.ends_on)}</>}</TableCell><TableCell><Badge variant={entry.status === "published" ? "default" : "outline"}>{calendarLabels[entry.status]}</Badge></TableCell>
               <TableCell>{entry.published_at ? new Date(entry.published_at).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric" }) : "Not published"}</TableCell>
-              <TableCell>{panel.deliveries[entry.id] ? <div className="space-y-1">{Object.entries(panel.deliveries[entry.id]).filter(([, count]) => count > 0).map(([status, count]) => <div key={status} className="text-xs tabular-nums">{status}: {count}</div>)}</div> : "No deliveries"}</TableCell>
+              <TableCell>{panel.deliveries[entry.id] ? <div className="space-y-1">{Object.entries(panel.deliveries[entry.id]).filter(([, count]) => count > 0).map(([status, count]) => <div key={status} className="text-xs tabular-nums">{status}: <SlidingNumber value={count} /></div>)}</div> : "No deliveries"}</TableCell>
               <TableCell><EntryActions entry={entry} today={query.today} campuses={panel.campuses} /></TableCell>
             </TableRow>)}
           </TableBody></Table>}

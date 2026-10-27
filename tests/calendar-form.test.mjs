@@ -1,7 +1,19 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import { createSourceLoader } from "./helpers/load-typescript.mjs"
-const { calendarFormValues, calendarTagChange, calendarScopeLocked, calendarLifecycleOptions } = createSourceLoader()("src/features/calendar/form.ts")
+const { calendarFormValues, calendarTagChange, calendarScopeLocked, calendarLifecycleOptions, validateCalendarForm } = createSourceLoader()("src/features/calendar/form.ts")
+
+test("wizard validation retains normalized payloads, explicit campus intent, and cross-field errors", () => {
+  const values = { ...calendarFormValues("2026-11-05"), title: "  School notice  " }
+  const valid = validateCalendarForm(values, true)
+  assert.deepEqual(valid.errors, {}); assert.equal(valid.parsed.data.title, "School notice")
+  assert.match(validateCalendarForm(values, false).errors.campuses, /Choose at least one campus/)
+  const online = validateCalendarForm(calendarTagChange(values, ["online_class"]), true)
+  assert.match(online.errors.reason, /reason is required/)
+  const schedule = validateCalendarForm({ ...values, startsOn: "2026-11-06", endsOn: "2026-11-05", startTime: "09:00", endTime: null }, true)
+  assert.match(schedule.errors.endsOn, /End date|single day/)
+  assert.match(schedule.errors.endTime, /both times/)
+})
 
 test("new forms default to selected date, all campuses and draft-compatible values", () => {
   const values = calendarFormValues("2026-11-05")

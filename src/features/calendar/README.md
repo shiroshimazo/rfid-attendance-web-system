@@ -148,6 +148,14 @@ attendance scope is locked; cancel and create a new entry to replace its remaini
 schedule. Published edits send updates only when Notify recipients is checked
 and important fields change.
 
+New announcement creation uses four steps: Announcement, Audience, Schedule, and
+Review. Each step validates its own fields; Back preserves the draft. Optional
+supporting details stay collapsed, and attendance impact follows tags rather than
+presenting redundant choices. The final review shows normalized values and is the
+only step that saves. Enter advances earlier steps without writing. Save errors
+return to the relevant step; navigation stays visible while the body scrolls on
+mobile. Existing edit controls retain their full-form workflow and historical locks.
+
 Publication and republication require a successful recipient-count preview.
 Counts are informational; the mutation resolves recipients again. Confirmation
 dialogs describe notification and attendance effects. Failed mutations stay open
