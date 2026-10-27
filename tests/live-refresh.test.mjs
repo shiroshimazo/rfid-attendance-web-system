@@ -26,6 +26,7 @@ test('continuous events, reconnect, focus, offline recovery, midnight and cleanu
     })
     load('src/components/live-refresh.tsx').LiveRefresh({})
     assert.equal(typeof dependencies[2],'string')
+    for(const name of ['calendar_entries','attendance_day_marks']) assert(events.some(e=>e.filter.table===name))
     for(const name of ['attendance_records','sms_notifications','subject_attendance','teachers','teacher_assignments','class_schedules']) assert(events.some(e=>e.filter.table===name))
     subscribe('SUBSCRIBED');flush();assert.equal(refreshes,1)
     events[0].callback();const timer=[...timers.keys()][0]

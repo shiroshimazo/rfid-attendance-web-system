@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import { LiveRefresh } from "@/components/live-refresh"
 import type { Metadata } from "next"
 import { requireRole } from "@/features/auth/server"
 import { DataErrorCard } from "@/components/data-error-card"
@@ -31,6 +32,7 @@ export default async function AdminCalendarPage({ searchParams }: { searchParams
   const params = await searchParams
   const query = parseAdminCalendarQuery(params)
   return <div className="@container/main flex min-w-0 flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
+    <LiveRefresh channel="admin-calendar" tables={["calendar_entries", "attendance_day_marks"]} />
     <header className="space-y-1">
       <h1 className="text-2xl font-semibold tracking-tight text-balance">Calendar &amp; Announcements</h1>
       <p className="text-sm text-muted-foreground">School events, no-class days, and online-class announcements.</p>

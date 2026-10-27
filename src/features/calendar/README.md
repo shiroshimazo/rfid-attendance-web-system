@@ -204,3 +204,41 @@ The isolated browser harness checks reader mobile layout, date/month/upcoming
 links, and desktop keyboard selection. Database RLS visibility is covered by the
 existing calendar migration test. Full hosted role sessions and notification
 integration remain later tasks; no hosted writes or real sends are performed.
+
+## Header notifications and session toast (Task 22)
+
+The portal header shows the notification bell for active teacher/student
+accounts. Notification reads stream inside their own Suspense boundary; failed
+reads hide the bell without failing portal content. A layout-level LiveRefresh
+subscription remains mounted independently, so subsequent changes or recovery
+can refresh the data. Admins have neither the bell nor the session toast.
+
+The bell displays up to 20 published entries in the approved ends-on/seven-day
+window. Campus/audience restrictions remain enforced by authenticated RLS. Its
+unread count covers displayed entries; no receipt or a receipt older than the
+entry's latest update means unread. Selecting an item awaits the existing read
+action before navigating to that role's date link. Failed reads stay in the bell
+with a retryable message. Mark all read uses the existing uncapped action,
+including unread entries beyond the display limit.
+
+The latest unread bell item produces an existing gooeyToast with a calendar
+action. No-class/online states lead the message; tags, impact, dates, and campuses
+appear in the description. sessionStorage uses `calendar-login-toast:<user-id>`
+to suppress further toasts for that user in the browser tab session. An empty or
+fully read bell does not consume the session marker. Blocked storage skips the
+optional toast; the bell remains available. The toast's calendar action does not
+mark an announcement read; bell selection is the read surface.
+
+Default LiveRefresh tables now include calendar entries and attendance marks.
+Reader layouts use a distinct user channel for entries, own receipts, and marks.
+The admin calendar subscribes to entries/marks; delivery rows retain their own
+existing subscription. Existing debounce, dialog preservation, reconnect,
+visibility, offline, and Manila-midnight recovery behavior is reused.
+
+`tests/calendar-bell.test.mjs` verifies scope, receipt mapping, latest unread,
+session storage, role exclusion, defensive reads, and layout independence.
+`tests/live-refresh.test.mjs` covers subscriptions and recovery. The isolated
+browser harness mocks actions/toasts and checks bell errors, read navigation,
+mark-all, mobile bounds, session reload suppression, user changes, and empty
+state. Hosted realtime and actual multi-tab sessions remain rollout checks;
+these checks make no hosted writes and send no email.

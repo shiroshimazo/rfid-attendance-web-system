@@ -8,6 +8,8 @@ import { isSupabaseConfigured } from "@/services/supabase/config"
 import { createBrowserSupabaseClient } from "@/services/supabase/client"
 
 const DEFAULT_TABLES = [
+  "calendar_entries",
+  "attendance_day_marks",
   "attendance_records",
   "subject_attendance",
   "subject_schedules",

@@ -1,4 +1,6 @@
-import type { CSSProperties, ReactNode } from "react"
+import { Suspense, type CSSProperties, type ReactNode } from "react"
+import { CalendarNotifications } from "@/components/calendar/notifications"
+import { LiveRefresh } from "@/components/live-refresh"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
@@ -27,7 +29,8 @@ export default async function PortalLayout({ children }: { children: ReactNode }
         user={{ name: account.name, email: account.email, avatar: "" }}
       />
       <SidebarInset className="min-w-0">
-        <SiteHeader />
+        {account.role !== "admin" && <LiveRefresh channel={`calendar-notifications-${account.id}`} tables={["calendar_entries", "calendar_entry_reads", "attendance_day_marks"]} />}
+        <SiteHeader notifications={account.role !== "admin" ? <Suspense fallback={null}><CalendarNotifications account={account} /></Suspense> : null} />
         <main className="flex flex-1 flex-col">{children}</main>
       </SidebarInset>
     </SidebarProvider>

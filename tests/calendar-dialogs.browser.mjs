@@ -19,6 +19,10 @@ import { EntryFormDialog } from '@/app/(portal)/admin/schedules/calendar/compone
 import { EntryActions } from '@/app/(portal)/admin/schedules/calendar/components/entry-actions';
 import { DeliveryControl } from '@/app/(portal)/admin/schedules/calendar/components/delivery-controls';
 import { ReaderCalendar } from '@/components/calendar/reader-calendar';
+import { NotificationBell } from '@/components/calendar/notification-bell';
+const bellElement=document.createElement('div');bellElement.className='flex justify-end p-4';document.body.appendChild(bellElement);const bellRoot=createRoot(bellElement);
+const bellEntries=[{id:91,title:'Campus break',description:null,tags:['no_classes'],attendance_impact:'no_classes',audience:'everyone',campuses:['Main Campus'],starts_on:'2026-11-05',ends_on:'2026-11-05',published_at:'2026-11-01T00:00:00Z',updated_at:'2026-11-01T00:00:00Z',read_at:null},{id:92,title:'Online lessons notice',description:null,tags:['online_class'],attendance_impact:'online_manual',audience:'everyone',campuses:[],starts_on:'2026-11-06',ends_on:'2026-11-06',published_at:'2026-11-02T00:00:00Z',updated_at:'2026-11-02T00:00:00Z',read_at:null}];
+window.__renderBell=(options={})=>bellRoot.render(<NotificationBell key={options.userId||'bell-user'} role={options.role||'student'} userId={options.userId||'bell-user'} entries={options.empty?[]:bellEntries.map(entry=>({...entry,read_at:options.read?'2026-11-03T00:00:00Z':null}))} />);window.__renderBell();
 const readerRoot=document.createElement('section');readerRoot.id='reader-calendar';readerRoot.className='p-4';document.body.appendChild(readerRoot);
 const readerEntry={id:71,title:'School assembly',tags:['event'],status:'published',attendance_impact:'normal',campuses:[],starts_on:'2026-11-05',ends_on:'2026-11-05',description:'School assembly details',start_time:null,end_time:null};
 createRoot(readerRoot).render(<ReaderCalendar panel={{month:'2026-11',date:'2026-11-05',today:'2026-11-05',entries:[readerEntry,{...readerEntry,id:72,title:'Cancelled break',status:'cancelled',campuses:['Main Campus']},{...readerEntry,id:73,title:'Online lessons',attendance_impact:'online_manual',tags:['online_class']}],upcoming:[{...readerEntry,id:74,title:'December assembly',starts_on:'2026-12-01',ends_on:'2026-12-01'}]}} />);
@@ -36,11 +40,13 @@ export const cancelCalendarEntryAction=p=>run('cancel',p);
 export const deleteCalendarDraftAction=p=>run('delete',p);
 export const retryCalendarEmailAction=p=>run('retry',p);
 export const syncAttendanceMarksAction=(from,to)=>run('sync',{from,to});
+export const markCalendarEntryReadAction=id=>run('read',id);
+export const markAllCalendarEntriesReadAction=()=>run('readAll',null);
 export const previewCalendarRecipientsAction=async()=>{await new Promise(r=>setTimeout(r,80));return window.__previewFailure?{ok:false,message:'Preview unavailable'}:{ok:true,recipients:{total:3,teacher_count:1,student_count:2}};};
 `
 const result = await build({ absWorkingDir: root, stdin: { contents: fixture, resolveDir: root, loader: "tsx" }, bundle: true, write: false, format: "iife", jsx: "automatic", define: { "process.env.NODE_ENV": '"development"' }, plugins: [{ name: "isolated-browser-mocks", setup(build) {
   build.onResolve({ filter: /^(@\/features\/calendar\/actions|next\/navigation|@\/components\/ui\/goey-toaster)$/ }, args => ({ path: args.path, namespace: "mock" }))
-  build.onLoad({ filter: /.*/, namespace: "mock" }, args => ({ contents: args.path.includes("actions") ? actions : args.path.includes("navigation") ? 'export const useRouter=()=>({refresh(){},replace(url){window.__navigation=url;}});export const usePathname=()=>"/student/calendar";export const useSearchParams=()=>new URLSearchParams();' : 'export const gooeyToast={success(){},error(){}};', loader: "js" }))
+  build.onLoad({ filter: /.*/, namespace: "mock" }, args => ({ contents: args.path.includes("actions") ? actions : args.path.includes("navigation") ? 'export const useRouter=()=>({refresh(){window.__refreshes=(window.__refreshes||0)+1;},replace(url){window.__navigation=url;},push(url){window.__navigation=url;}});export const usePathname=()=>"/student/calendar";export const useSearchParams=()=>new URLSearchParams();' : 'export const gooeyToast={success(){},error(){},info(title,options){(window.__toasts??=[]).push({title,description:options.description});window.__toastAction=options.action.onClick;}};', loader: "js" }))
 } }] })
 const css = await postcss([tailwind()]).process(await readFile("src/app/globals.css", "utf8"), { from: resolve("src/app/globals.css") })
 const server = createServer((req, res) => {
@@ -189,8 +195,49 @@ try {
   await page.keyboard.press("Enter")
   assert.equal(await page.evaluate(() => window.__navigation), "/student/calendar?month=2026-11&date=2026-11-06")
   await reader.screenshot({ path: join(output, "reader-desktop.png") })
+  assert.equal(await page.evaluate(() => window.__toasts.length), 1)
+  assert.equal(await page.evaluate(() => window.__toasts[0].title), "Online class: Online lessons notice")
+  await page.evaluate(() => window.__toastAction())
+  assert.equal(await page.evaluate(() => window.__navigation), "/student/calendar?date=2026-11-06")
+  await page.setViewportSize({ width: 375, height: 812 })
+  const bell = page.getByRole("button", { name: "Announcements, 2 unread", exact: true })
+  await bell.focus(); await page.keyboard.press("Enter")
+  const notifications = page.getByRole("dialog", { name: "Announcements", exact: true })
+  await notifications.waitFor()
+  const bellBounds = await notifications.boundingBox()
+  assert.ok(bellBounds.x >= 0 && bellBounds.x + bellBounds.width <= 376 && bellBounds.y >= 0 && bellBounds.y + bellBounds.height <= 813)
+  await page.evaluate(() => { window.__failure=true; window.__navigation=null })
+  await notifications.getByRole("button", { name: /Campus break/ }).click()
+  await notifications.getByRole("alert").waitFor()
+  assert.equal(await page.evaluate(() => window.__navigation), null)
+  await page.evaluate(() => window.__failure=false)
+  await notifications.getByRole("button", { name: /Campus break/ }).click()
+  await notifications.waitFor({ state: "hidden" })
+  assert.deepEqual((await page.evaluate(() => window.__calls)).at(-1), { name: "read", payload: 91 })
+  assert.equal(await page.evaluate(() => window.__navigation), "/student/calendar?date=2026-11-05")
+  await bell.click()
+  await notifications.getByRole("button", { name: "Mark all read", exact: true }).click()
+  await notifications.getByRole("status").waitFor()
+  assert.equal((await page.evaluate(() => window.__calls)).at(-1).name, "readAll")
+  await page.evaluate(() => window.__renderBell({read:true}))
+  await page.getByRole("button", { name: "Announcements, 0 unread", exact: true }).waitFor()
+  await page.screenshot({ path: join(output, "notification-bell-mobile.png") })
+  await page.keyboard.press("Escape")
+  await notifications.waitFor({ state: "hidden" })
+  await page.reload()
+  await page.getByRole("button", { name: "Announcements, 2 unread", exact: true }).waitFor()
+  assert.equal(await page.evaluate(() => (window.__toasts??[]).length), 0)
+  await page.evaluate(() => window.__renderBell({userId:'teacher-bell',role:'teacher'}))
+  await page.waitForFunction(() => (window.__toasts??[]).length===1)
+  await page.evaluate(() => window.__toastAction())
+  assert.equal(await page.evaluate(() => window.__navigation), "/teacher/calendar?date=2026-11-06")
+  await page.evaluate(() => window.__renderBell({userId:'empty-bell',empty:true}))
+  await page.getByRole("button", { name: "Announcements, 0 unread", exact: true }).click()
+  await page.getByText("No announcements.", { exact: true }).waitFor()
+  assert.equal(await page.evaluate(() => (window.__toasts??[]).length), 1)
+  assert.equal(await page.evaluate(() => sessionStorage.getItem('calendar-login-toast:empty-bell')), null)
   assert.deepEqual(errors, [])
-  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, mobile dialog bounds, sync/retry controls, reader layouts, deep links, and keyboard day selection.\n")
+  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, mobile dialog bounds, sync/retry controls, reader layouts, deep links, keyboard day selection, notification bell/read actions, and session toast suppression.\n")
   console.log(`PASS calendar dialog browser checks. Screenshots: ${output}`)
 } catch (error) {
   await page?.screenshot({ path: join(output, "failure.png"), fullPage: true })

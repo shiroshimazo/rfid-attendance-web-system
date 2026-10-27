@@ -1,4 +1,5 @@
 import { schoolDateKey } from "@/lib/school-time"
+export { isCalendarUnread } from "@/features/calendar/notification-view"
 import type {
   CalendarEntryRow,
   CalendarMonthDayRow,
@@ -119,21 +120,6 @@ export async function getCalendarEntryDeliveryLog(
   entryId: number
 ): Promise<CalendarEmailDeliveryRow[]> {
   return calendarService.fetchCalendarEntryDeliveryLog(entryId)
-}
-
-/**
- * Unread rule: no receipt, or the receipt predates the latest edit.
- * Cancelled/draft entries never appear in the bell, so callers only pass
- * visible published entries here.
- */
-export function isCalendarUnread(
-  updatedAt: string,
-  readAt: string | null
-): boolean {
-  if (!readAt) return true
-  const read = Date.parse(readAt)
-  const updated = Date.parse(updatedAt)
-  return Number.isFinite(read) && Number.isFinite(updated) && read < updated
 }
 
 /**
