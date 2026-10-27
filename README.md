@@ -491,8 +491,9 @@ scope checklist; module READMEs and the UI/UX plan must follow it.
   email dispatch/retry, and no-class/online RFID and reporting exceptions.
   Daily Attendance stays read-only; Subject Attendance remains editable.
   Historical snapshots remain separate from retained RFID/SMS evidence.
-  [Calendar-TODO.md](Calendar-TODO.md) tracks remaining browser, hosted rollout,
-  and deferred physical-reader verification. Local success does not claim deployment.
+  [Calendar-TODO.md](Calendar-TODO.md) records local browser/accessibility checks,
+  remaining release blockers, hosted rollout, and deferred physical-reader
+  verification. Local success does not claim deployment.
 - **Deferred:** standalone Programs/Courses CRUD, assignment matrix, automatic
   nightly absence job, teacher schedule page, per-period attendance, holiday/exam
   overrides beyond the R06 calendar plan, and extra onboarding programs.

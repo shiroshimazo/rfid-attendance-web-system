@@ -17,6 +17,9 @@ const fixture = `
 import React from 'react'; import { createRoot } from 'react-dom/client';
 import { EntryFormDialog } from '@/app/(portal)/admin/schedules/calendar/components/entry-form-dialog';
 import { EntryActions } from '@/app/(portal)/admin/schedules/calendar/components/entry-actions';
+import { CalendarPanel } from '@/app/(portal)/admin/schedules/calendar/components/calendar-panel';
+import { DeliveryTable } from '@/app/(portal)/admin/schedules/calendar/components/delivery-table';
+import { parseAdminCalendarQuery } from '@/features/calendar/admin-view';
 import { DeliveryControl } from '@/app/(portal)/admin/schedules/calendar/components/delivery-controls';
 import { ReaderCalendar } from '@/components/calendar/reader-calendar';
 import { NotificationBell } from '@/components/calendar/notification-bell';
@@ -53,6 +56,9 @@ const readerEntry={id:71,title:'School assembly',tags:['event'],status:'publishe
 createRoot(readerRoot).render(<ReaderCalendar panel={{month:'2026-11',date:'2026-11-05',today:'2026-11-05',entries:[readerEntry,{...readerEntry,id:72,title:'Cancelled break',status:'cancelled',campuses:['Main Campus']},{...readerEntry,id:73,title:'Online lessons',attendance_impact:'online_manual',tags:['online_class']}],upcoming:[{...readerEntry,id:74,title:'December assembly',starts_on:'2026-12-01',ends_on:'2026-12-01'}]}} />);
 const controls=document.createElement('div');document.body.appendChild(controls);createRoot(controls).render(<div className="p-4"><DeliveryControl today="2026-11-05" /><DeliveryControl today="2026-11-05" target={{id:9}} /><DeliveryControl today="2026-11-05" target={{batchId:'00000000-0000-0000-0000-000000000001'}} /></div>);
 const base={id:1,title:'School event',description:null,reason:null,location:null,tags:['event'],attendance_impact:'normal',audience:'everyone',campuses:[],starts_on:'2026-11-05',ends_on:'2026-11-05',start_time:null,end_time:null,is_pinned:false,published_at:null,status:'draft'};
+const adminElement=document.createElement('section');adminElement.id='admin-calendar';adminElement.className='p-4';document.body.appendChild(adminElement);const adminRoot=createRoot(adminElement);
+window.__renderAdmin=(tab='calendar')=>adminRoot.render(<CalendarPanel key={tab} panel={{query:parseAdminCalendarQuery({month:'2026-11',date:'2026-11-05',tab},new Date('2026-11-05T12:00:00Z')),entries:[base],list:{entries:[base],total:1},campuses:['Main Campus'],deliveries:{},kpis:{upcoming:0,noClasses:0,published:0,failed:0}}}/>);
+window.__renderDeliveries=()=>{window.__search='tab=deliveries';const deliveries=[['Failed',true],['Failed',false],['Pending',false],['Sent',false]].map(([status,retry_allowed],index)=>({id:index+1,calendar_entry_id:1,batch_id:'00000000-0000-0000-0000-000000000001',notification_type:'published',recipient_email:'recipient'+index+'@school.example',recipient_role:'teacher',status,retry_allowed,attempt_count:1,error_message:status==='Failed'?'Provider request needs review.':null,last_attempt_at:null,sent_at:null,calendar_entries:{title:'School event'}}));adminRoot.render(<DeliveryTable panel={{deliveries,total:4,filters:{},page:1,pageCount:1}} today="2026-11-05"/>);};
 createRoot(document.getElementById('root')).render(<main className="space-y-5 p-4"><EntryFormDialog date="2026-11-05" today="2026-10-26" campuses={['Main Campus']} />{[base,{...base,id:2,title:'Published event',status:'published',published_at:'2026-10-26T00:00:00Z'},{...base,id:3,title:'Cancelled event',status:'cancelled',published_at:'2026-10-26T00:00:00Z'},{...base,id:4,title:'Past break',status:'published',published_at:'2026-10-24T00:00:00Z',starts_on:'2026-10-25',attendance_impact:'no_classes',tags:['no_classes'],reason:'Storm'}].map(entry=><section key={entry.id}><h2>{entry.title}</h2><EntryActions entry={entry} today="2026-10-26" campuses={['Main Campus']} /></section>)}</main>);
 `
 const actions = `
@@ -70,14 +76,14 @@ export const markAllCalendarEntriesReadAction=()=>run('readAll',null);
 export const previewCalendarRecipientsAction=async()=>{await new Promise(r=>setTimeout(r,80));return window.__previewFailure?{ok:false,message:'Preview unavailable'}:{ok:true,recipients:{total:3,teacher_count:1,student_count:2}};};
 `
 const result = await build({ outfile: join(output, "app.js"), absWorkingDir: root, stdin: { contents: fixture, resolveDir: root, loader: "tsx" }, bundle: true, write: false, format: "iife", jsx: "automatic", define: { "process.env.NODE_ENV": '"development"' }, plugins: [{ name: "isolated-browser-mocks", setup(build) {
-  build.onResolve({ filter: /^(@\/features\/calendar\/actions|next\/(navigation|link)|@\/components\/ui\/goey-toaster)$/ }, args => ({ path: args.path, namespace: "mock" }))
-  build.onLoad({ filter: /.*/, namespace: "mock" }, args => ({ contents: args.path.includes("actions") ? actions : args.path.includes("navigation") ? 'export const useRouter=()=>({refresh(){window.__refreshes=(window.__refreshes||0)+1;},replace(url){window.__navigation=url;},push(url){window.__navigation=url;}});export const usePathname=()=>"/student/calendar";export const useSearchParams=()=>new URLSearchParams();' : args.path === "next/link" ? 'import React from "react";export default function Link(props){return React.createElement("a",props);}' : 'export const gooeyToast={success(){},error(){},info(title,options){(window.__toasts??=[]).push({title,description:options.description});window.__toastAction=options.action.onClick;}};', loader: "js", resolveDir: root }))
+  build.onResolve({ filter: /^(@\/features\/calendar\/actions|next\/(navigation|link)|@\/components\/ui\/goey-toaster|@\/components\/live-refresh)$/ }, args => ({ path: args.path, namespace: "mock" }))
+  build.onLoad({ filter: /.*/, namespace: "mock" }, args => ({ contents: args.path.includes("actions") ? actions : args.path.includes("navigation") ? 'export const useRouter=()=>({refresh(){window.__refreshes=(window.__refreshes||0)+1;},replace(url){window.__navigation=url;},push(url){window.__navigation=url;}});export const usePathname=()=>window.__pathname||"/student/calendar";export const useSearchParams=()=>new URLSearchParams(window.__search||"");' : args.path === "next/link" ? 'import React from "react";export default function Link(props){return React.createElement("a",props);}' : args.path.endsWith("live-refresh") ? 'export const LiveRefresh=()=>null;' : 'export const gooeyToast={success(){},error(){},info(title,options){(window.__toasts??=[]).push({title,description:options.description});window.__toastAction=options.action.onClick;}};', loader: "js", resolveDir: root }))
 } }] })
 const css = await postcss([tailwind()]).process(await readFile("src/app/globals.css", "utf8"), { from: resolve("src/app/globals.css") })
 const server = createServer((req, res) => {
   if (req.url === "/app.js") { res.setHeader("Content-Type", "text/javascript"); res.end(result.outputFiles.find(file => file.path.endsWith("app.js")).text) }
   else if (req.url === "/app.css") { res.setHeader("Content-Type", "text/css"); res.end(css.css + result.outputFiles.filter(file => file.path.endsWith(".css")).map(file => file.text).join("\n")) }
-  else { res.setHeader("Content-Type", "text/html"); res.end('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/app.css"></head><body><div id="root"></div><script src="/app.js"></script></body></html>') }
+  else { res.setHeader("Content-Type", "text/html"); res.end('<!doctype html><html lang="en"><head><title>Calendar browser checks</title><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/app.css"></head><body><div id="root"></div><script src="/app.js"></script></body></html>') }
 })
 await new Promise(resolve => server.listen(0, "127.0.0.1", resolve))
 let browser
@@ -88,7 +94,7 @@ try {
   await page.clock.install({ time: new Date("2026-11-05T12:00:00Z") })
   const errors = []; page.on("pageerror", error => errors.push(error.message))
   await page.goto(`http://127.0.0.1:${server.address().port}`)
-  const open = page.getByRole("button", { name: "New announcement", exact: true })
+  const open = page.locator("#root").getByRole("button", { name: "New announcement", exact: true })
   await open.focus(); await page.keyboard.press("Enter")
   const dialog = page.locator('[data-slot="dialog-content"]')
   await dialog.waitFor()
@@ -153,7 +159,7 @@ try {
 
   await page.setViewportSize({ width: 375, height: 812 })
   await open.click(); await dialog.waitFor()
-  for (let index = 0; index < 12; index++) {
+  for (let index = 0; index < 48; index++) {
     await page.keyboard.press("Tab")
     assert.equal(await dialog.evaluate(element => element.contains(document.activeElement)), true)
   }
@@ -359,8 +365,90 @@ try {
   const reportBounds = await report.boundingBox()
   assert.ok(reportBounds.x >= 0 && reportBounds.x + reportBounds.width <= 376)
   await report.screenshot({ path: join(output, "calendar-report-mobile.png"), animations: "disabled" })
+
+  await page.clock.resume()
+  await page.addStyleTag({ content: "*, *::before, *::after { animation: none !important; transition: none !important; }" })
+  await page.addScriptTag({ path: requireTools.resolve("axe-core/axe.min.js") })
+  const accessibility = []
+  async function audit(name, selector) {
+    const result = await page.evaluate(async selector => {
+      const result = await window.axe.run({ include: [selector] }, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"] } })
+      const details = ({ id, impact, nodes }) => ({ id, impact, nodes: nodes.map(({ target, failureSummary, any, all, none }) => ({ target, failureSummary, checks: [...any, ...all, ...none].map(({ message }) => message) })) })
+      return { violations: result.violations.map(details), incomplete: result.incomplete.map(details) }
+    }, selector)
+    accessibility.push({ name, ...result })
+    await writeFile(join(output, "accessibility.json"), JSON.stringify(accessibility, null, 2))
+  }
+  for (const dark of [false, true]) {
+    await page.evaluate(dark => { document.documentElement.classList.toggle("dark", dark); document.documentElement.style.colorScheme=dark?"dark":"light"; window.__renderPosts(); window.__renderBell({ userId: "accessibility", role: "teacher" }); window.__pathname="/admin/schedules/calendar"; window.__search=""; window.__renderAdmin() }, dark)
+    const theme = dark ? "dark" : "light"
+    await page.setViewportSize({ width: 1280, height: 900 })
+    const admin = page.locator("#admin-calendar")
+    await admin.getByRole("tab", { name: "Calendar", exact: true }).waitFor()
+    assert.equal(await admin.getByRole("group", { name: "Actions for School event", exact: true }).count(), 1)
+    await audit(`${theme} admin calendar`, "#admin-calendar")
+    await admin.getByRole("tab", { name: "All announcements", exact: true }).focus()
+    await page.keyboard.press("Enter")
+    assert.equal(await page.evaluate(() => window.__navigation), "/admin/schedules/calendar?tab=list")
+    await page.evaluate(() => window.__renderAdmin("list"))
+    await admin.getByLabel("Search titles").fill("School")
+    await admin.getByLabel("Statuses", { exact: true }).click()
+    await page.getByRole("option", { name: "Draft", exact: true }).click()
+    await admin.getByRole("button", { name: "Apply filters", exact: true }).click()
+    const adminParams = new URL(await page.evaluate(() => window.__navigation), "https://school.example").searchParams
+    assert.equal(adminParams.get("status"), "draft"); assert.equal(adminParams.get("search"), "School")
+    await audit(`${theme} admin list`, "#admin-calendar")
+    await admin.getByRole("tab", { name: "Email deliveries", exact: true }).click()
+    assert.equal(await page.evaluate(() => window.__navigation), "/admin/schedules/calendar?tab=deliveries")
+    await page.evaluate(() => window.__renderDeliveries())
+    await admin.getByRole("heading", { name: "Email deliveries", exact: true }).waitFor()
+    assert.equal(await admin.getByRole("button", { name: "Retry email", exact: true }).count(), 1)
+    assert.equal(await admin.getByText(/Acceptance is uncertain/).count(), 2)
+    await admin.getByRole("combobox", { name: "Status", exact: true }).click()
+    await page.getByRole("option", { name: "Failed", exact: true }).click()
+    await admin.getByRole("button", { name: "Filter", exact: true }).click()
+    const deliveryParams = new URL(await page.evaluate(() => window.__navigation), "https://school.example").searchParams
+    assert.equal(deliveryParams.get("tab"), "deliveries"); assert.equal(deliveryParams.get("status"), "Failed")
+    await audit(`${theme} email deliveries`, "#admin-calendar")
+    await admin.screenshot({ path: join(output, `deliveries-${theme}-desktop.png`), animations: "disabled" })
+    await page.setViewportSize({ width: 320, height: 812 })
+    await audit(`${theme} mobile email deliveries`, "#admin-calendar")
+    await admin.screenshot({ path: join(output, `deliveries-${theme}-mobile.png`), animations: "disabled" })
+    await page.evaluate(() => { window.__search=""; window.__renderAdmin("list") })
+    await audit(`${theme} mobile list`, "#admin-calendar")
+    await audit(`${theme} mobile reader`, "#reader-calendar")
+    await reader.screenshot({ path: join(output, `reader-${theme}-320px.png`), animations: "disabled" })
+    await audit(`${theme} posts`, "#dashboard-posts")
+    await audit(`${theme} attendance history`, "#student-daily")
+    await audit(`${theme} report`, "#calendar-report")
+    const exceptionTable = report.getByRole("table", { name: "Calendar attendance exceptions", exact: true })
+    await exceptionTable.focus(); await page.keyboard.press("ArrowRight")
+    await page.waitForFunction(() => document.querySelector('table[aria-label="Calendar attendance exceptions"]').parentElement.scrollLeft > 0)
+    await open.click(); await dialog.waitFor()
+    await audit(`${theme} entry form`, '[data-slot="dialog-content"]')
+    await dialog.getByRole("button", { name: "Save draft", exact: true }).click()
+    await dialog.getByRole("alert").first().waitFor()
+    await audit(`${theme} validation errors`, '[data-slot="dialog-content"]')
+    await page.keyboard.press("Escape"); await dialog.waitFor({ state: "hidden" })
+    assert.equal(await open.evaluate(element => element === document.activeElement), true)
+    const accessibleBell = page.getByRole("button", { name: "Announcements, 2 unread", exact: true })
+    await accessibleBell.focus(); await page.keyboard.press("Enter")
+    await notifications.waitFor()
+    await audit(`${theme} bell`, '[data-slot="popover-content"]')
+    await page.keyboard.press("Escape"); await notifications.waitFor({ state: "hidden" })
+    assert.equal(await accessibleBell.evaluate(element => element === document.activeElement), true)
+    await page.evaluate(() => window.__renderAdmin())
+    for (const width of [320, 375, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 })
+      await audit(`${theme} reader ${width}px`, "#reader-calendar")
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+      assert.ok(overflow <= 1, `${theme} ${width}px: page overflow ${overflow}px`)
+    }
+  }
+  await writeFile(join(output, "accessibility.json"), JSON.stringify(accessibility, null, 2))
+  assert.deepEqual(accessibility.filter(result => result.violations.length), [])
   assert.deepEqual(errors, [])
-  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, mobile dialog bounds, sync/retry controls, reader layouts, deep links, keyboard day selection, notification bell/read actions, session toast suppression, dashboard post layouts, exact expiry, republish visibility, and mixed/all-exception dashboard rates with real charts, daily filters, read-only tables, calendar history details, report exception tables, and nullable report rates.\n")
+  await writeFile(join(output, "result.txt"), `PASS: mocked calendar lifecycle, forms, recipient preview, sync/retry and delivery history, role links, keyboard focus/escape/day selection/table scrolling, mobile layouts, session toast/read actions, exact post expiry/republish, attendance/history/report evidence and null rates. ${accessibility.length} light/dark axe-core ${requireTools("axe-core/package.json").version} scans: zero WCAG A/AA violations. Incomplete checks retained in accessibility.json for review; this is not accessibility certification or hosted acceptance.\n`)
   console.log(`PASS calendar dialog browser checks. Screenshots: ${output}`)
 } catch (error) {
   await page?.screenshot({ path: join(output, "failure.png"), fullPage: true })

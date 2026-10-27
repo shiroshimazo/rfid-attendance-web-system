@@ -9,7 +9,7 @@ Daily Attendance is read-only; Subject Attendance remains independently editable
 Apply all nine [calendar migrations](../../../supabase/migrations/README.md)
 before deploying the matching app. The original seven were verified on preview;
 the email/RFID extensions are local-only. [Calendar-TODO.md](../../../Calendar-TODO.md)
-tracks approvals and remaining browser/rollout checks. Physical-reader testing is
+tracks approvals, local browser results, and remaining rollout checks. Physical-reader testing is
 deferred by request. Local tests never prove hosted realtime or actual delivery.
 
 The feature layer owns validation, role guards, audit, RPC mutations, and UI
@@ -457,3 +457,64 @@ checks. No hosted migrations, synchronization, deployment, email/SMS sends, or
 physical-reader checks were performed. Task 17 remains deferred by request;
 hosted realtime, true multi-session locks, sender delivery, and the two newer
 migrations still require the separately approved rollout checks.
+
+## Browser and accessibility verification (Task 29)
+
+Verified locally on 2026-10-27 with Chromium and the isolated real-component
+harness, `tests/calendar-dialogs.browser.mjs`. Server actions, navigation, toasts,
+and realtime are mocked; this is not a hosted session or a real recipient send.
+
+Coverage includes draft/edit/publish/cancel/republish/delete workflows, validation
+and historical scope, recipient-preview failure/recovery, sync/retry controls,
+admin calendar/list/delivery tabs and filters, definite versus uncertain delivery
+retry visibility, teacher/student links, read receipts and failure recovery,
+once-per-user session toasts, pinned posts, exact expiry, and republish visibility.
+Attendance/history/report checks preserve raw evidence and null rates. Reader
+views expose no mutation controls; separate real-SQL tests verify draft, audience,
+campus, own-receipt, delivery, inactive-account, and unverified-session boundaries.
+
+Keyboard checks cover Enter activation, calendar arrow navigation, 48 consecutive
+Tab presses within the entry dialog, Escape/focus restoration, and horizontal
+exception-table scrolling. Two defects were corrected: action containers now use
+a named `group` role, and the exception table is named, focusable, and visibly
+outlined for keyboard scrolling. Existing table structure and business rules stay
+unchanged.
+
+The harness performs 32 axe-core 4.14.0 component scans across light/dark themes,
+using WCAG 2 A/AA, 2.1 AA, and 2.2 AA tags. Zero automated violations remain.
+Scans run after functional timing checks with transitions disabled; intermediate
+animation opacity is not treated as final text contrast. Reader layouts are checked
+at 320, 375, 768, and 1280 pixels without page overflow. Screenshots include mobile
+forms, date pickers, bells, readers, delivery logs, dashboards, history, and reports;
+light/dark mobile reader and delivery views were reviewed.
+
+`accessibility.json` retains incomplete checks. These concern unmounted popup
+references, a third-party empty ARIA attribute, short text, or overlapping/clipped
+content whose contrast the scanner cannot resolve. Popup activation, naming,
+focus restoration, and the visible layouts were checked separately. Screen-reader
+testing and full portal landmark/navigation behavior remain manual checks; zero
+automated violations is not accessibility certification.
+
+Validation: 113 role/database/email/notification/live-refresh checks and 21
+admin/form/delivery/report checks pass (130 distinct tests; four delivery checks
+occur in both commands). Focused ESLint, project TypeScript, production build,
+and whitespace checks pass. The Task 28 full-suite account-fixture failures and
+global lint error/warning remain unresolved release blockers; they were not
+reclassified as passing or changed by this task.
+
+Optional tooling stays outside the app dependency tree. Install `playwright`,
+`esbuild`, and `axe-core` together in the directory selected by
+`CALENDAR_BROWSER_TOOLS` (default: `%TEMP%/rfid-browser-tools`). For an existing
+Chromium install, run in PowerShell:
+
+```powershell
+$env:CALENDAR_CHROMIUM = "$env:LOCALAPPDATA/ms-playwright/chromium-1243/chrome-win64/chrome.exe"
+node tests/calendar-dialogs.browser.mjs
+```
+
+The command prints a temporary artifact directory containing screenshots,
+`accessibility.json`, and `result.txt`. No browser tools were added to package.json.
+Hosted role sessions/realtime, real provider delivery, simultaneous PostgreSQL
+connections, hosted email/RFID migrations, deployment, and deferred hardware
+verification remain operational checks. Task 30 requires the exact target and
+release actions to be confirmed; real pilot recipients need explicit approval.

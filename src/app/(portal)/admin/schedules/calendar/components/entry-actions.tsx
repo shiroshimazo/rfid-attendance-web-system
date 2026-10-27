@@ -20,7 +20,7 @@ const operations = {
 }
 
 export function EntryActions({ entry, today, campuses }: { entry: CalendarEntryRow; today: string; campuses: string[] }) {
-  return <div className="flex flex-wrap gap-2" aria-label={`Actions for ${entry.title}`}>
+  return <div role="group" className="flex flex-wrap gap-2" aria-label={`Actions for ${entry.title}`}>
     <EntryFormDialog entry={entry} date={entry.starts_on} today={today} campuses={campuses} />
     <RecipientPreview entryId={entry.id} />
     {calendarLifecycleOptions(entry).map(operation => <LifecycleDialog key={operation} operation={operation} entry={entry} today={today} />)}
