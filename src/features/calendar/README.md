@@ -519,7 +519,7 @@ connections, hosted email/RFID migrations, deployment, and deferred hardware
 verification remain operational checks. Task 30 requires the exact target and
 release actions to be confirmed; real pilot recipients need explicit approval.
 
-## Manual rollout preparation (Task 30; operator deployment pending)
+## Manual rollout (Task 30; operator-confirmed completion)
 
 On 2026-10-27 the operator chose to upload manually. The
 [manual rollout handoff](../../../CALENDAR-ROLLOUT.md) provides a target/version
@@ -544,8 +544,9 @@ tests pass with no skips; project TypeScript and production build pass. Global
 ESLint passes with zero errors and one existing unused-children warning in
 `combobox.tsx`. No unrelated component behavior was changed to remove that warning.
 
-Task 30 remains unchecked. Manual upload alone does not prove migration success,
-hosted role/realtime behavior, provider delivery, or pilot acceptance. No hosted
-SQL, deployment, publication, real send, or physical-reader test was performed.
-The operator must record the actual target/version and verification results;
-real pilot recipients still require separate explicit approval.
+After choosing manual upload, the operator reported "all are passed". Task 30 is
+complete based on that confirmation. The target/version, migration output, and
+pilot/provider evidence were not supplied; hosted results were not independently
+verified by the assistant. The assistant performed no hosted SQL, deployment,
+publication, real send, or physical-reader test. Task 17 remains deferred. Future
+pilot sends still require explicit approval for the concrete recipients/content.

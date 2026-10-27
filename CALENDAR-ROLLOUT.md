@@ -1,29 +1,35 @@
 # Calendar manual rollout handoff
 
-The operator will upload/deploy manually, as requested on 2026-10-27. This document
-does not record a hosted release. Calendar Task 30 stays unchecked until the
-operator records the target, migration results, deployed version, and acceptance
-evidence. Task 17 physical-reader testing remains deferred by request.
+The operator chose manual upload/deployment on 2026-10-27 and subsequently reported
+that all checks passed: "all are passed". Calendar Task 30 is complete based on
+that operator confirmation. The assistant did not independently inspect the hosted
+release. Task 17 physical-reader testing remains deferred by request.
 
 Local release checks on 2026-10-27: all 594 tests pass, TypeScript and production
 build pass, and global ESLint passes with zero errors and one existing unused
 `children` warning in `src/components/ui/combobox.tsx`. The earlier account-access
 fixture failures and `fix-email.js` import lint error are resolved. Account checks
 cover both the pre-email schema and current verified-session policies, including
-rollback of temporary verification rows. Hosted checks below remain unperformed.
+rollback of temporary verification rows. Hosted results are operator-reported;
+no hosted execution or real recipient send was performed by the assistant.
 
 ## Release record
 
-Fill these in for the actual release; local `.env` settings do not select a target.
+The operator confirmed the overall result. The detailed release identifiers and
+outputs below were not supplied in this conversation; local `.env` settings do
+not establish the release target.
 
-- Supabase project and branch/environment: pending operator selection.
-- Vercel project and preview/production environment: pending operator selection.
-- App HTTPS origin, matching `NEXT_PUBLIC_APP_URL`: pending.
-- Source revision, release time, and operator: pending.
-- Previous app deployment/version and database backup/export location: pending.
-- Migration inventory and verification output: pending.
-- Pilot title, dates, campus/audience, recipient preview/count, and approved real
-  recipient list: pending separate explicit approval.
+- Supabase project and branch/environment: not provided.
+- Vercel project and preview/production environment: not provided.
+- App HTTPS origin, matching `NEXT_PUBLIC_APP_URL`: not provided.
+- Source revision, exact release time, and operator identity: not provided.
+- Previous deployment/version and backup/export location: not provided.
+- Migration inventory and verification output: not provided.
+- Pilot content, recipient approval/count, provider IDs, and delivery evidence:
+  not provided; only the overall pass confirmation was reported.
+
+The following procedure remains the reference for later releases. The operator's
+confirmation does not authorize future recipient sends by the assistant.
 
 ## 1. Prepare the target
 

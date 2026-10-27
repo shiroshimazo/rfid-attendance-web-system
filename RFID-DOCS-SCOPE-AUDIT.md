@@ -186,11 +186,11 @@ These have no consumers in the searched application/test source:
 
 Do not mass-delete shadcn components or libraries because a business document does not list them. Verify imports before removing dependencies. This cleanup is lower priority than the required RFID path.
 
-### R06 - School Calendar & Announcements - LOCALLY IMPLEMENTED; RELEASE GATES PENDING
+### R06 - School Calendar & Announcements - IMPLEMENTED; ROLLOUT OPERATOR-CONFIRMED; HARDWARE DEFERRED
 
 - [x] Task 01: document the user-requested scope expansion and resolve plan inconsistencies.
 - [x] Tasks 02-16 and 18-27: database/security/lifecycle/recovery, queries/actions, email, RFID exception checks, calendars, notifications, dashboards, Daily Attendance/history, and reports/PDF implemented locally. Only the original seven migrations were preview-verified (48/48); email/RFID migrations remain local-only. Task 17 hardware checks are deferred.
-- Task 28 records documentation and regression results in the [calendar module guide](src/features/calendar/README.md#regression-verification-task-28). Task 29 local browser/accessibility checks are complete; two keyboard/semantics fixes, 32 automated scans, and 130 focused regressions pass. Task 30 manual rollout handoff is ready; earlier test/lint errors are resolved (594/594 tests pass, one nonblocking lint warning). The operator will upload manually. Hosted rollout and pilot acceptance remain unverified; Task 30 stays unchecked.
+- Task 28 records documentation and regression results in the [calendar module guide](src/features/calendar/README.md#regression-verification-task-28). Task 29 local browser/accessibility checks are complete; two keyboard/semantics fixes, 32 automated scans, and 130 focused regressions pass. Task 30 manual rollout handoff is ready; earlier test/lint errors are resolved (594/594 tests pass, one nonblocking lint warning). After choosing manual upload, the operator reported all rollout checks passed. Task 30 is complete based on that confirmation; exact target/version and hosted evidence were not supplied or independently verified. Task 17 remains deferred.
 - [ ] Implement and verify the individually approved tasks in [Calendar-TODO.md](Calendar-TODO.md), following [Calendar.md](Calendar.md).
 
 Admin-managed entries target campuses and teacher/student audiences. Published no-class and online/manual days affect RFID acceptance, daily rates, dashboards, and reports. Normal events do not change attendance. Only one published attendance-impacting entry may cover a campus/date; all-campus entries conflict with campus-specific entries, while normal events may overlap.

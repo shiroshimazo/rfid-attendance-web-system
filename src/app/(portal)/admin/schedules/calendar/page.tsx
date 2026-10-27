@@ -37,6 +37,6 @@ export default async function AdminCalendarPage({ searchParams }: { searchParams
       <h1 className="text-2xl font-semibold tracking-tight text-balance">Calendar &amp; Announcements</h1>
       <p className="text-sm text-muted-foreground">School events, no-class days, and online-class announcements.</p>
     </header>
-    <Suspense key={JSON.stringify(params)} fallback={<CalendarLoading />}>{params.tab === "deliveries" ? <Deliveries params={params} today={query.today} /> : <Content query={query} />}</Suspense>
+    <Suspense fallback={<CalendarLoading />}>{params.tab === "deliveries" ? <Deliveries params={params} today={query.today} /> : <Content query={query} />}</Suspense>
   </div>
 }

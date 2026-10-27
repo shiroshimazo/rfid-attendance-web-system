@@ -487,14 +487,15 @@ scope checklist; module READMEs and the UI/UX plan must follow it.
   attendance confirmation, SMS, Realtime, and PDF reports.
 - **Excluded:** the Excused attendance workflow (historical values are preserved
   but not writable or charted).
-- **Implemented locally (R06):** [School Calendar & Announcements](Calendar.md)
+- **Implemented; rollout operator-confirmed (R06):** [School Calendar & Announcements](Calendar.md)
   includes campus/audience announcements, lifecycle controls, notifications,
   email dispatch/retry, and no-class/online RFID and reporting exceptions.
   Daily Attendance stays read-only; Subject Attendance remains editable.
   Historical snapshots remain separate from retained RFID/SMS evidence.
-  [Calendar-TODO.md](Calendar-TODO.md) records local browser/accessibility checks,
-  remaining release blockers, hosted rollout, and deferred physical-reader
-  verification. Local success does not claim deployment.
+  [Calendar-TODO.md](Calendar-TODO.md) records local checks, the operator's manual
+  rollout pass confirmation, and deferred physical-reader verification. Hosted
+  results were not independently verified by the assistant; release identifiers
+  and provider evidence were not supplied.
 - **Deferred:** standalone Programs/Courses CRUD, assignment matrix, automatic
   nightly absence job, teacher schedule page, per-period attendance, holiday/exam
   overrides beyond the R06 calendar plan, and extra onboarding programs.
