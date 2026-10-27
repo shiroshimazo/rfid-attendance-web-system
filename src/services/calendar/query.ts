@@ -233,6 +233,16 @@ export async function fetchCalendarDayEntries(
 }
 
 /**
+ * Published and cancelled announcements for a visible date range; RLS scopes readers.
+ */
+export async function fetchReaderCalendarEntries(fromDate: string, toDate: string): Promise<CalendarEntryRow[]> {
+  const supabase = await createServerSupabaseClient()
+  return fetchAllRows<CalendarEntryRow>((from, to) => supabase.from("calendar_entries").select("*")
+    .in("status", ["published", "cancelled"]).lte("starts_on", toDate).gte("ends_on", fromDate)
+    .order("is_pinned", { ascending: false }).order("starts_on").order("id").range(from, to))
+}
+
+/**
  * Upcoming published entries for teacher/student calendars.
  * Limited to next 30 days, excludes cancelled.
  */
@@ -241,16 +251,19 @@ export async function fetchUpcomingCalendarEntries(
 ): Promise<CalendarEntryRow[]> {
   const supabase = await createServerSupabaseClient()
   const today = schoolDateKey(new Date())
-  const until = schoolDateKey(new Date(Date.now() + days * 86400000))
+  const end = new Date(`${today}T12:00:00Z`)
+  end.setUTCDate(end.getUTCDate() + days - 1)
+  const until = end.toISOString().slice(0, 10)
 
   const { data, error } = await supabase
     .from("calendar_entries")
     .select("*")
     .eq("status", "published")
-    .gte("starts_on", today)
+    .gte("ends_on", today)
     .lte("starts_on", until)
     .order("starts_on", { ascending: true })
     .order("is_pinned", { ascending: false })
+    .order("id", { ascending: true })
     .limit(50)
 
   if (error) throw new Error(error.message)

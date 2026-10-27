@@ -18,6 +18,10 @@ import React from 'react'; import { createRoot } from 'react-dom/client';
 import { EntryFormDialog } from '@/app/(portal)/admin/schedules/calendar/components/entry-form-dialog';
 import { EntryActions } from '@/app/(portal)/admin/schedules/calendar/components/entry-actions';
 import { DeliveryControl } from '@/app/(portal)/admin/schedules/calendar/components/delivery-controls';
+import { ReaderCalendar } from '@/components/calendar/reader-calendar';
+const readerRoot=document.createElement('section');readerRoot.id='reader-calendar';readerRoot.className='p-4';document.body.appendChild(readerRoot);
+const readerEntry={id:71,title:'School assembly',tags:['event'],status:'published',attendance_impact:'normal',campuses:[],starts_on:'2026-11-05',ends_on:'2026-11-05',description:'School assembly details',start_time:null,end_time:null};
+createRoot(readerRoot).render(<ReaderCalendar panel={{month:'2026-11',date:'2026-11-05',today:'2026-11-05',entries:[readerEntry,{...readerEntry,id:72,title:'Cancelled break',status:'cancelled',campuses:['Main Campus']},{...readerEntry,id:73,title:'Online lessons',attendance_impact:'online_manual',tags:['online_class']}],upcoming:[{...readerEntry,id:74,title:'December assembly',starts_on:'2026-12-01',ends_on:'2026-12-01'}]}} />);
 const controls=document.createElement('div');document.body.appendChild(controls);createRoot(controls).render(<div className="p-4"><DeliveryControl today="2026-11-05" /><DeliveryControl today="2026-11-05" target={{id:9}} /><DeliveryControl today="2026-11-05" target={{batchId:'00000000-0000-0000-0000-000000000001'}} /></div>);
 const base={id:1,title:'School event',description:null,reason:null,location:null,tags:['event'],attendance_impact:'normal',audience:'everyone',campuses:[],starts_on:'2026-11-05',ends_on:'2026-11-05',start_time:null,end_time:null,is_pinned:false,published_at:null,status:'draft'};
 createRoot(document.getElementById('root')).render(<main className="space-y-5 p-4"><EntryFormDialog date="2026-11-05" today="2026-10-26" campuses={['Main Campus']} />{[base,{...base,id:2,title:'Published event',status:'published',published_at:'2026-10-26T00:00:00Z'},{...base,id:3,title:'Cancelled event',status:'cancelled',published_at:'2026-10-26T00:00:00Z'},{...base,id:4,title:'Past break',status:'published',published_at:'2026-10-24T00:00:00Z',starts_on:'2026-10-25',attendance_impact:'no_classes',tags:['no_classes'],reason:'Storm'}].map(entry=><section key={entry.id}><h2>{entry.title}</h2><EntryActions entry={entry} today="2026-10-26" campuses={['Main Campus']} /></section>)}</main>);
@@ -36,7 +40,7 @@ export const previewCalendarRecipientsAction=async()=>{await new Promise(r=>setT
 `
 const result = await build({ absWorkingDir: root, stdin: { contents: fixture, resolveDir: root, loader: "tsx" }, bundle: true, write: false, format: "iife", jsx: "automatic", define: { "process.env.NODE_ENV": '"development"' }, plugins: [{ name: "isolated-browser-mocks", setup(build) {
   build.onResolve({ filter: /^(@\/features\/calendar\/actions|next\/navigation|@\/components\/ui\/goey-toaster)$/ }, args => ({ path: args.path, namespace: "mock" }))
-  build.onLoad({ filter: /.*/, namespace: "mock" }, args => ({ contents: args.path.includes("actions") ? actions : args.path.includes("navigation") ? 'export const useRouter=()=>({refresh(){}});' : 'export const gooeyToast={success(){},error(){}};', loader: "js" }))
+  build.onLoad({ filter: /.*/, namespace: "mock" }, args => ({ contents: args.path.includes("actions") ? actions : args.path.includes("navigation") ? 'export const useRouter=()=>({refresh(){},replace(url){window.__navigation=url;}});export const usePathname=()=>"/student/calendar";export const useSearchParams=()=>new URLSearchParams();' : 'export const gooeyToast={success(){},error(){}};', loader: "js" }))
 } }] })
 const css = await postcss([tailwind()]).process(await readFile("src/app/globals.css", "utf8"), { from: resolve("src/app/globals.css") })
 const server = createServer((req, res) => {
@@ -46,14 +50,15 @@ const server = createServer((req, res) => {
 })
 await new Promise(resolve => server.listen(0, "127.0.0.1", resolve))
 let browser
+let page
 try {
   browser = await chromium.launch({ headless: true, executablePath: process.env.CALENDAR_CHROMIUM })
-  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+  page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
   const errors = []; page.on("pageerror", error => errors.push(error.message))
   await page.goto(`http://127.0.0.1:${server.address().port}`)
   const open = page.getByRole("button", { name: "New announcement", exact: true })
   await open.focus(); await page.keyboard.press("Enter")
-  const dialog = page.getByRole("dialog")
+  const dialog = page.locator('[data-slot="dialog-content"]')
   await dialog.waitFor()
   await page.getByLabel("Title", { exact: true }).fill("New event")
   assert.equal(await page.getByLabel("Start date", { exact: true }).inputValue(), "2026-11-05")
@@ -133,9 +138,11 @@ try {
   assert.ok(pickerBounds.x >= 0 && pickerBounds.x + pickerBounds.width <= 376 && pickerBounds.y >= 0 && pickerBounds.y + pickerBounds.height <= 813)
   await page.screenshot({ path: join(output, "mobile-date-picker.png") })
   await page.keyboard.press("Escape")
+  await page.locator('[data-slot="popover-content"]').waitFor({ state: "detached" })
   await dialog.getByRole("button", { name: "Close", exact: true }).last().scrollIntoViewIfNeeded()
   await page.screenshot({ path: join(output, "mobile-form.png") })
   await page.keyboard.press("Escape")
+  await dialog.waitFor({ state: "hidden" })
   await page.getByRole("button", { name: "Preview recipients", exact: true }).first().click()
   await page.getByText(/3 recipients: 1 teachers, 2 students/).waitFor()
   await page.getByRole("button", { name: "Sync attendance marks", exact: true }).click()
@@ -162,9 +169,34 @@ try {
   await dialog.getByRole("status").waitFor()
   assert.equal((await page.evaluate(() => window.__calls)).at(-1).payload.batchId, "00000000-0000-0000-0000-000000000001")
   await page.keyboard.press("Escape")
+  const reader = page.locator("#reader-calendar")
+  assert.equal(await reader.getByRole("button", { name: "New announcement", exact: true }).count(), 0)
+  await reader.getByText("Campus: Main Campus", { exact: true }).first().waitFor()
+  await reader.getByText("Attendance is confirmed in Subject Attendance.", { exact: false }).waitFor()
+  const readerBounds = await reader.boundingBox()
+  assert.ok(readerBounds.x >= 0 && readerBounds.x + readerBounds.width <= 376)
+  await reader.getByLabel("Month", { exact: true }).fill("2026-12")
+  assert.equal(await page.evaluate(() => window.__navigation), "/student/calendar?month=2026-12&date=2026-12-01")
+  await reader.getByRole("button", { name: "December assembly", exact: true }).click()
+  assert.equal(await page.evaluate(() => window.__navigation), "/student/calendar?month=2026-12&date=2026-12-01")
+  await reader.getByLabel("Selected date", { exact: true }).fill("2026-11-06")
+  assert.equal(await page.evaluate(() => window.__navigation), "/student/calendar?month=2026-11&date=2026-11-06")
+  await reader.screenshot({ path: join(output, "reader-mobile.png") })
+  await page.setViewportSize({ width: 1280, height: 900 })
+  const selectedDay = reader.getByRole("button", { name: /November 5th, 2026.*School assembly/ })
+  await selectedDay.focus()
+  await page.keyboard.press("ArrowRight")
+  await page.keyboard.press("Enter")
+  assert.equal(await page.evaluate(() => window.__navigation), "/student/calendar?month=2026-11&date=2026-11-06")
+  await reader.screenshot({ path: join(output, "reader-desktop.png") })
   assert.deepEqual(errors, [])
-  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, and mobile dialog bounds.\n")
+  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, mobile dialog bounds, sync/retry controls, reader layouts, deep links, and keyboard day selection.\n")
   console.log(`PASS calendar dialog browser checks. Screenshots: ${output}`)
+} catch (error) {
+  await page?.screenshot({ path: join(output, "failure.png"), fullPage: true })
+  if (page) await writeFile(join(output, "failure.html"), await page.content())
+  console.error(`Browser failure artifacts: ${output}`)
+  throw error
 } finally {
   await browser?.close()
   await new Promise(resolve => server.close(resolve))

@@ -86,6 +86,7 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
             { title: "Subject Schedules", url: "/admin/schedules/subject-schedules" },
             { title: "Student Subject Enrollment", url: "/admin/schedules/student-subject-enrollment" },
             { title: "Class Schedules", url: "/admin/schedules/class-schedules" },
+            { title: "Calendar", url: "/admin/schedules/calendar" },
           ],
         },
         { title: "Reports", url: "/admin/reports", icon: ReportsIcon },
@@ -102,6 +103,7 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
       items: [
         { title: "Dashboard", url: "/teacher/dashboard", icon: DashboardIcon },
         { title: "My Schedule", url: "/teacher/my-schedule", icon: SchedulesIcon },
+        { title: "Calendar", url: "/teacher/calendar", icon: SchedulesIcon },
         {
           title: "Attendance", url: "/teacher/attendance", icon: AttendanceIcon,
           items: [
@@ -123,6 +125,7 @@ export const navigationByRole: Record<UserRole, NavigationGroup[]> = {
         { title: "Dashboard", url: "/student/dashboard", icon: DashboardIcon },
         { title: "Current Enrollment", url: "/student/current-enrollment", icon: AcademicIcon },
         { title: "My Attendance", url: "/student/my-attendance", icon: AttendanceIcon },
+        { title: "Calendar", url: "/student/calendar", icon: SchedulesIcon },
         { title: "Profile", url: "/student/profile", icon: UserRound },
       ],
     },

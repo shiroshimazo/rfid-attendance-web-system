@@ -174,3 +174,33 @@ columns, sync validation, retry visibility, and escaped rendering. The isolated
 `tests/calendar-dialogs.browser.mjs` harness also covers preview, sync, row and
 batch retry, errors, and duplicate-submit prevention with mocked actions. Hosted
 realtime, actual retries, and real sends were not exercised.
+
+## Teacher/student calendars and navigation (Task 21)
+
+Open `/teacher/calendar` or `/student/calendar` through the role's Calendar
+navigation item. Administrators have Calendar after Class Schedules in the
+Schedules submenu. Routes and the reader feature require the exact role before
+reading data. All reader queries use the authenticated Supabase client and the
+existing campus/audience RLS policies; drafts are excluded explicitly as well.
+
+The two reader routes share a read-only month grid, day details, and a mobile
+agenda. Published normal events, no-class/online exceptions, and cancelled
+announcements appear on every overlapping date. Every item includes campus
+scope; cancelled entries have a text badge and no current/future attendance
+guidance. Admins reuse the same month-grid component, including accessible day
+labels and capped status dots. Reader views expose no mutation controls.
+
+`date=YYYY-MM-DD` selects a day and infers its month. `month=YYYY-MM` selects a
+month; a mismatched or invalid date falls back to today in that month or its
+first day. Month/day controls and upcoming links preserve date/month parameters.
+Dates use the existing Manila calendar parser. Upcoming entries include ongoing
+published announcements and dates through today plus 29 days, with a 50-entry
+cap. Cancelled entries remain visible in the calendar but never in upcoming.
+
+`tests/calendar-reader.test.mjs` covers scoped query construction, reads beyond
+server caps, upcoming bounds, role guards, deep links, safe failure handling,
+read-only rendering, campus/cancellation labels, escaping, and navigation order.
+The isolated browser harness checks reader mobile layout, date/month/upcoming
+links, and desktop keyboard selection. Database RLS visibility is covered by the
+existing calendar migration test. Full hosted role sessions and notification
+integration remain later tasks; no hosted writes or real sends are performed.

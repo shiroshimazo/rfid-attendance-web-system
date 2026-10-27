@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { CalendarDays, CalendarOff } from "lucide-react"
-import { Calendar, CalendarDayButton } from "@/components/ui/calendar"
+import { MonthCalendar } from "@/components/calendar/month-calendar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table"
@@ -14,29 +14,15 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TablePagination } from "@/components/data-table"
 import { EmptyState } from "@/components/empty-state"
-import { calendarDate, calendarDateKey, calendarDays, calendarLabels } from "@/features/calendar/admin-view"
+import { calendarDate, calendarDays, calendarLabels } from "@/features/calendar/admin-view"
 import { calendarTags, calendarStatuses, calendarAudiences, calendarAttendanceImpacts } from "@/features/calendar/schema"
 import type { AdminCalendarPanel } from "@/features/calendar/admin"
 import { EntryFormDialog } from "./entry-form-dialog"
 import { EntryActions } from "./entry-actions"
 import type { CalendarEntryRow } from "@/services/calendar/query"
 
-const DaysContext = React.createContext<Record<string, CalendarEntryRow[]>>({})
 const dateLabel = (date: string) => calendarDate(date).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })
 const scope = (entry: CalendarEntryRow) => entry.campuses.join(", ") || "All campuses"
-const impactColor = (entry: CalendarEntryRow) => entry.status === "cancelled" ? "bg-muted-foreground" : entry.status === "draft" ? "border border-foreground bg-background" : entry.attendance_impact === "no_classes" ? "bg-destructive" : entry.attendance_impact === "online_manual" ? "bg-blue-500" : "bg-emerald-600"
-
-function EntryDayButton(props: React.ComponentProps<typeof CalendarDayButton>) {
-  const days = React.useContext(DaysContext)
-  const entries = days[calendarDateKey(props.day.date)] ?? []
-  return <CalendarDayButton {...props} className="h-16 min-w-10 gap-1 rounded-md sm:h-20" aria-label={`${props["aria-label"] ?? dateLabel(calendarDateKey(props.day.date))}. ${entries.length} announcements${entries.length ? `: ${entries.map(entry => `${entry.title}, ${calendarLabels[entry.status]}`).join("; ")}` : ""}`}>
-    <span>{props.day.date.getDate()}</span>
-    <span aria-hidden className="flex h-3 items-center gap-1">
-      {entries.slice(0, 3).map(entry => <span key={entry.id} className={`size-1.5 rounded-full ${impactColor(entry)}`} />)}
-      {entries.length > 3 && <span className="text-[10px]">+{entries.length - 3}</span>}
-    </span>
-  </CalendarDayButton>
-}
 
 function EntryDetails({ entry, today, campuses }: { entry: CalendarEntryRow; today: string; campuses: string[] }) {
   return <article className="space-y-2 rounded-lg border p-4">
@@ -102,10 +88,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
         <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <Card className="min-w-0"><CardHeader><CardTitle>{calendarDate(`${query.month}-01`).toLocaleDateString("en-PH", { month: "long", year: "numeric" })}</CardTitle><CardDescription>Choose a date to view announcements across all campuses.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
-              <div className="hidden sm:block"><DaysContext.Provider value={days}><Calendar mode="single" required selected={calendarDate(query.date)} month={calendarDate(`${query.month}-01`)} today={calendarDate(query.today)}
-                startMonth={calendarDate("0001-01-01")} endMonth={calendarDate("9998-12-01")} showOutsideDays={false}
-                onSelect={date => { if (date) selectDate(calendarDateKey(date)) }} onMonthChange={date => navigate({ month: calendarDateKey(date).slice(0, 7), date: calendarDateKey(date) })}
-                className="w-full p-0 [--cell-size:3rem]" classNames={{ root: "w-full", month_grid: "w-full border-collapse", weekdays: "flex", weekday: "flex-1 text-xs text-muted-foreground", week: "mt-1 flex w-full" }} components={{ DayButton: EntryDayButton }} /></DaysContext.Provider></div>
+              <div className="hidden sm:block"><MonthCalendar days={days} month={query.month} date={query.date} today={query.today} onSelect={selectDate} onMonthChange={(month, date) => navigate({ month, date })} /></div>
               <div className="space-y-3 sm:hidden">
                 <Label htmlFor="calendar-date">Selected date</Label><Input id="calendar-date" type="date" value={query.date} onChange={event => { if (event.target.value) selectDate(event.target.value) }} />
                 {Object.entries(days).sort(([a], [b]) => a.localeCompare(b)).map(([date, entries]) => <div key={date} className="rounded-lg border p-3"><Button variant="link" className="h-auto px-0" onClick={() => selectDate(date)} aria-pressed={date === query.date}>{dateLabel(date)}</Button><ul className="space-y-1 text-sm">{entries.map(entry => <li className="break-words" key={entry.id}>{entry.title} <span className="text-muted-foreground">· {calendarLabels[entry.status]}</span></li>)}</ul></div>)}
