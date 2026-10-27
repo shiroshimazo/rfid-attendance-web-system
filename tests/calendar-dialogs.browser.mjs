@@ -17,6 +17,8 @@ const fixture = `
 import React from 'react'; import { createRoot } from 'react-dom/client';
 import { EntryFormDialog } from '@/app/(portal)/admin/schedules/calendar/components/entry-form-dialog';
 import { EntryActions } from '@/app/(portal)/admin/schedules/calendar/components/entry-actions';
+import { DeliveryControl } from '@/app/(portal)/admin/schedules/calendar/components/delivery-controls';
+const controls=document.createElement('div');document.body.appendChild(controls);createRoot(controls).render(<div className="p-4"><DeliveryControl today="2026-11-05" /><DeliveryControl today="2026-11-05" target={{id:9}} /><DeliveryControl today="2026-11-05" target={{batchId:'00000000-0000-0000-0000-000000000001'}} /></div>);
 const base={id:1,title:'School event',description:null,reason:null,location:null,tags:['event'],attendance_impact:'normal',audience:'everyone',campuses:[],starts_on:'2026-11-05',ends_on:'2026-11-05',start_time:null,end_time:null,is_pinned:false,published_at:null,status:'draft'};
 createRoot(document.getElementById('root')).render(<main className="space-y-5 p-4"><EntryFormDialog date="2026-11-05" today="2026-10-26" campuses={['Main Campus']} />{[base,{...base,id:2,title:'Published event',status:'published',published_at:'2026-10-26T00:00:00Z'},{...base,id:3,title:'Cancelled event',status:'cancelled',published_at:'2026-10-26T00:00:00Z'},{...base,id:4,title:'Past break',status:'published',published_at:'2026-10-24T00:00:00Z',starts_on:'2026-10-25',attendance_impact:'no_classes',tags:['no_classes'],reason:'Storm'}].map(entry=><section key={entry.id}><h2>{entry.title}</h2><EntryActions entry={entry} today="2026-10-26" campuses={['Main Campus']} /></section>)}</main>);
 `
@@ -28,6 +30,8 @@ export const publishCalendarEntryAction=p=>run('publish',p);
 export const republishCalendarEntryAction=p=>run('republish',p);
 export const cancelCalendarEntryAction=p=>run('cancel',p);
 export const deleteCalendarDraftAction=p=>run('delete',p);
+export const retryCalendarEmailAction=p=>run('retry',p);
+export const syncAttendanceMarksAction=(from,to)=>run('sync',{from,to});
 export const previewCalendarRecipientsAction=async()=>{await new Promise(r=>setTimeout(r,80));return window.__previewFailure?{ok:false,message:'Preview unavailable'}:{ok:true,recipients:{total:3,teacher_count:1,student_count:2}};};
 `
 const result = await build({ absWorkingDir: root, stdin: { contents: fixture, resolveDir: root, loader: "tsx" }, bundle: true, write: false, format: "iife", jsx: "automatic", define: { "process.env.NODE_ENV": '"development"' }, plugins: [{ name: "isolated-browser-mocks", setup(build) {
@@ -131,6 +135,32 @@ try {
   await page.keyboard.press("Escape")
   await dialog.getByRole("button", { name: "Close", exact: true }).last().scrollIntoViewIfNeeded()
   await page.screenshot({ path: join(output, "mobile-form.png") })
+  await page.keyboard.press("Escape")
+  await page.getByRole("button", { name: "Preview recipients", exact: true }).first().click()
+  await page.getByText(/3 recipients: 1 teachers, 2 students/).waitFor()
+  await page.getByRole("button", { name: "Sync attendance marks", exact: true }).click()
+  await page.getByLabel("From date", { exact: true }).fill("2026-11-06")
+  await page.getByLabel("To date", { exact: true }).fill("2026-11-07")
+  await dialog.getByRole("button", { name: "Sync attendance marks", exact: true }).click()
+  await dialog.getByRole("status").waitFor()
+  assert.deepEqual((await page.evaluate(() => window.__calls)).at(-1), { name: "sync", payload: { from: "2026-11-06", to: "2026-11-07" } })
+  assert.equal(await dialog.getByRole("button", { name: "Sync attendance marks", exact: true }).isDisabled(), true)
+  await page.keyboard.press("Escape")
+  await page.getByRole("button", { name: "Retry email", exact: true }).click()
+  await page.evaluate(() => window.__failure = true)
+  await dialog.getByRole("button", { name: "Retry email", exact: true }).click()
+  await dialog.getByRole("alert").waitFor()
+  assert.equal(await dialog.isVisible(), true)
+  await page.evaluate(() => window.__failure = false)
+  await dialog.getByRole("button", { name: "Retry email", exact: true }).click()
+  await dialog.getByRole("status").waitFor()
+  assert.deepEqual((await page.evaluate(() => window.__calls)).at(-1), { name: "retry", payload: { id: 9 } })
+  await page.keyboard.press("Escape")
+  await page.getByRole("button", { name: "Retry batch", exact: true }).click()
+  await page.getByText(/even outside these filters/).waitFor()
+  await dialog.getByRole("button", { name: "Retry batch", exact: true }).click()
+  await dialog.getByRole("status").waitFor()
+  assert.equal((await page.evaluate(() => window.__calls)).at(-1).payload.batchId, "00000000-0000-0000-0000-000000000001")
   await page.keyboard.press("Escape")
   assert.deepEqual(errors, [])
   await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, and mobile dialog bounds.\n")

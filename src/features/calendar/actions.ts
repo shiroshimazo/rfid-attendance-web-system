@@ -7,6 +7,7 @@ import { requireCurrentAccount, requireRole } from "@/features/auth/server"
 import { isCalendarUnread } from "@/features/calendar/query"
 import {
   calendarEntrySchema,
+  calendarDateRangeSchema,
   type CalendarEntryValues,
 } from "@/features/calendar/schema"
 import {
@@ -228,11 +229,14 @@ export async function syncAttendanceMarksAction(
   return auditActivity("sync_attendance_day_marks", "attendance_day_marks", async () => {
     await requireRole("admin")
 
+    const parsed = calendarDateRangeSchema.safeParse({ startsOn: fromDate, endsOn: toDate })
+    if (!parsed.success) return failure("Choose valid dates in order, spanning no more than 366 days.")
+
     const supabase = await adminOnlyClient()
 
     const { data, error } = await supabase.rpc("sync_attendance_day_marks", {
-      p_from_date: fromDate,
-      p_to_date: toDate,
+      p_from_date: parsed.data.startsOn,
+      p_to_date: parsed.data.endsOn,
     })
 
     if (error) {

@@ -108,7 +108,7 @@ export async function getDashboardPosts(): Promise<DashboardPostRow[]> {
 export async function getCalendarDeliveryLog(
   page = 1,
   pageSize = 25
-): Promise<{ deliveries: CalendarEmailDeliveryRow[]; total: number }> {
+): Promise<{ deliveries: calendarService.CalendarDeliveryLogRow[]; total: number }> {
   return calendarService.fetchCalendarDeliveryLog(page, pageSize)
 }
 

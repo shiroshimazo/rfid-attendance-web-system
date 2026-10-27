@@ -97,7 +97,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
       <p className="text-xs text-muted-foreground">Philippines time · Summary across all campuses{pending ? " · Updating…" : ""}</p>
     </div>
     <Tabs value={query.tab} onValueChange={tab => navigate({ tab })}>
-      <TabsList aria-label="Calendar views"><TabsTrigger value="calendar">Calendar</TabsTrigger><TabsTrigger value="list">All announcements</TabsTrigger></TabsList>
+      <TabsList aria-label="Calendar views" className="h-auto flex-wrap"><TabsTrigger value="calendar">Calendar</TabsTrigger><TabsTrigger value="list">All announcements</TabsTrigger><TabsTrigger value="deliveries">Email deliveries</TabsTrigger></TabsList>
       <TabsContent value="calendar" className="mt-4">
         <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <Card className="min-w-0"><CardHeader><CardTitle>{calendarDate(`${query.month}-01`).toLocaleDateString("en-PH", { month: "long", year: "numeric" })}</CardTitle><CardDescription>Choose a date to view announcements across all campuses.</CardDescription></CardHeader>

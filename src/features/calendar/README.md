@@ -93,7 +93,7 @@ All delivery tests are mocked; database tests use disposable PGlite.
 Open `/admin/schedules/calendar` as a verified active administrator. This task
 provides Calendar and All announcements tabs. Sidebar navigation is Task 21;
 creation/editing/lifecycle controls are complete in Task 19, and the delivery log and sync
-controls are Task 20.
+controls are complete in Task 20.
 
 The calendar includes drafts, published entries, cancelled entries, normal events,
 and every overlapping day of a multi-day entry. Desktop day cells show up to three
@@ -145,3 +145,32 @@ The harness compiles the real UI and styles, mocks server actions, writes tempor
 screenshots, and never writes hosted data or sends notifications. It checks
 validation, lifecycle choices, recipient preview retries, keyboard focus/Escape,
 and mobile form/date-picker bounds. Full role workflows remain Task 29.
+
+## Delivery log and maintenance (Task 20)
+
+Open the Email deliveries tab at `/admin/schedules/calendar?tab=deliveries`.
+Verified administrators can filter by entry ID, notification type, delivery
+status, and inclusive creation dates in Asia/Manila. Results paginate 25 rows,
+ordered by creation time and ID. Stored HTML and plain-text payloads are not
+sent to this view. Sent means provider acceptance, not confirmed inbox delivery.
+The existing LiveRefresh component refreshes delivery changes; Refresh also
+reloads the current view manually.
+
+Retry email targets one eligible failed row. Retry batch targets all eligible
+failures in that batch, including rows outside the displayed filters. Both
+require an explicit dialog submission and reuse stored payloads. Pending, sent,
+and uncertain attempts have no retry control. Check provider records before
+manual recovery of uncertain attempts; pending rows may require scheduling
+investigation. A successful retry response means queued, not delivered.
+
+Preview recipients is available alongside entry actions and never sends email.
+Sync attendance marks accepts an inclusive range of up to 366 days and displays
+created/removed counts. The database preserves dates before today in Manila,
+RFID evidence, and SMS records. It reconciles all campuses, independently of
+current delivery filters.
+
+`tests/calendar-delivery.test.mjs` covers access, filters, pagination, selected
+columns, sync validation, retry visibility, and escaped rendering. The isolated
+`tests/calendar-dialogs.browser.mjs` harness also covers preview, sync, row and
+batch retry, errors, and duplicate-submit prevention with mocked actions. Hosted
+realtime, actual retries, and real sends were not exercised.

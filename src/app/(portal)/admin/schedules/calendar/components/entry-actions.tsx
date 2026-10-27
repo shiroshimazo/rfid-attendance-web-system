@@ -10,6 +10,7 @@ import { calendarLifecycleOptions } from "@/features/calendar/form"
 import { calendarLabels } from "@/features/calendar/admin-view"
 import type { CalendarEntryRow, RecipientCountRow } from "@/services/calendar/query"
 import { EntryFormDialog } from "./entry-form-dialog"
+import { RecipientPreview } from "./delivery-controls"
 
 const operations = {
   publish: { label: "Publish", action: publishCalendarEntryAction },
@@ -21,6 +22,7 @@ const operations = {
 export function EntryActions({ entry, today, campuses }: { entry: CalendarEntryRow; today: string; campuses: string[] }) {
   return <div className="flex flex-wrap gap-2" aria-label={`Actions for ${entry.title}`}>
     <EntryFormDialog entry={entry} date={entry.starts_on} today={today} campuses={campuses} />
+    <RecipientPreview entryId={entry.id} />
     {calendarLifecycleOptions(entry).map(operation => <LifecycleDialog key={operation} operation={operation} entry={entry} today={today} />)}
   </div>
 }

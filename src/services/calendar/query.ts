@@ -410,28 +410,47 @@ export async function fetchDashboardPosts(): Promise<DashboardPostRow[]> {
 /**
  * Delivery log for admin: all delivery rows with entry context.
  */
+export type CalendarDeliveryLogRow = Pick<CalendarEmailDeliveryRow,
+  "id" | "calendar_entry_id" | "batch_id" | "notification_type" | "recipient_email" | "recipient_role" | "status" | "error_message" | "attempt_count" | "retry_allowed" | "last_attempt_at" | "sent_at" | "created_at"> & {
+    calendar_entries: { id: number; title: string } | null
+  }
+
+export interface CalendarDeliveryFilters {
+  entryId?: number
+  type?: CalendarEmailDeliveryRow["notification_type"]
+  status?: CalendarEmailDeliveryRow["status"]
+  from?: string
+  to?: string
+}
+
 export async function fetchCalendarDeliveryLog(
   page = 1,
-  pageSize = 25
-): Promise<{ deliveries: CalendarEmailDeliveryRow[]; total: number }> {
+  pageSize = 25,
+  filters: CalendarDeliveryFilters = {}
+): Promise<{ deliveries: CalendarDeliveryLogRow[]; total: number }> {
   const supabase = await createServerSupabaseClient()
 
   const fromIndex = (page - 1) * pageSize
   const toIndex = fromIndex + pageSize - 1
 
-  const { data, error, count } = await supabase
+  let query = supabase
     .from("calendar_email_deliveries")
     .select(
-      "*, calendar_entries(id, title, status, published_at)",
+      "id, calendar_entry_id, batch_id, notification_type, recipient_email, recipient_role, status, error_message, attempt_count, retry_allowed, last_attempt_at, sent_at, created_at, calendar_entries(id, title)",
       { count: "exact" }
     )
-    .order("created_at", { ascending: false })
-    .range(fromIndex, toIndex)
+    .order("created_at", { ascending: false }).order("id", { ascending: false })
+  if (filters.entryId) query = query.eq("calendar_entry_id", filters.entryId)
+  if (filters.type) query = query.eq("notification_type", filters.type)
+  if (filters.status) query = query.eq("status", filters.status)
+  if (filters.from) query = query.gte("created_at", `${filters.from}T00:00:00+08:00`)
+  if (filters.to) query = query.lte("created_at", `${filters.to}T23:59:59.999999+08:00`)
+  const { data, error, count } = await query.range(fromIndex, toIndex)
 
   if (error) throw new Error(error.message)
 
   return {
-    deliveries: data ?? [],
+    deliveries: (data ?? []) as unknown as CalendarDeliveryLogRow[],
     total: count ?? 0,
   }
 }
