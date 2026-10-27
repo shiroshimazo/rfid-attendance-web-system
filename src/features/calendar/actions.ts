@@ -18,7 +18,7 @@ import {
   type ActionResult,
 } from "@/features/shared/actions"
 import { createServerSupabaseClient } from "@/services/supabase/server"
-import { fetchVisibleCalendarEntries } from "@/services/calendar/query"
+import { fetchCalendarEntryRecipientCount, type RecipientCountRow, fetchVisibleCalendarEntries } from "@/services/calendar/query"
 
 const CALENDAR_ADMIN_PATH = "/admin/schedules/calendar"
 
@@ -33,6 +33,13 @@ function refreshCalendarViews() {
   ]) {
     revalidatePath(path)
   }
+}
+
+function mutationFailure(result: { code?: string; message?: string } | null, fallback: string) {
+  const message = result?.message || fallback
+  const fieldErrors = result?.code === "CALENDAR_CONFLICT" || result?.code === "PAST_ATTENDANCE_DATE" || result?.code === "HISTORICAL_SCOPE"
+    ? { startsOn: message } : undefined
+  return failure(message, fieldErrors)
 }
 
 async function adminOnlyClient() {
@@ -77,9 +84,9 @@ export async function saveCalendarEntryAction(
       return failure(msg)
     }
 
-    const result = data as { ok: boolean; id: number; notification?: CalendarNotification } | null
+    const result = data as { ok: boolean; id: number; notification?: CalendarNotification; code?: string; message?: string } | null
     if (!result?.ok) {
-      return failure("The entry was not saved.")
+      return mutationFailure(result, "The entry was not saved.")
     }
 
     refreshCalendarViews()
@@ -108,9 +115,9 @@ export async function publishCalendarEntryAction(entryId: number): Promise<Actio
       return failure(msg)
     }
 
-    const result = data as { ok: boolean; notification?: CalendarNotification } | null
+    const result = data as { ok: boolean; notification?: CalendarNotification; code?: string; message?: string } | null
     if (!result?.ok) {
-      return failure("The entry could not be published.")
+      return mutationFailure(result, "The entry could not be published.")
     }
 
     refreshCalendarViews()
@@ -138,9 +145,9 @@ export async function republishCalendarEntryAction(entryId: number): Promise<Act
       return failure(msg)
     }
 
-    const result = data as { ok: boolean; notification?: CalendarNotification } | null
+    const result = data as { ok: boolean; notification?: CalendarNotification; code?: string; message?: string } | null
     if (!result?.ok) {
-      return failure("The entry could not be republished.")
+      return mutationFailure(result, "The entry could not be republished.")
     }
 
     refreshCalendarViews()
@@ -169,9 +176,9 @@ export async function cancelCalendarEntryAction(entryId: number): Promise<Action
       return failure(msg)
     }
 
-    const result = data as { ok: boolean; notification?: CalendarNotification } | null
+    const result = data as { ok: boolean; notification?: CalendarNotification; code?: string; message?: string } | null
     if (!result?.ok) {
-      return failure("The entry could not be cancelled.")
+      return mutationFailure(result, "The entry could not be cancelled.")
     }
 
     refreshCalendarViews()
@@ -369,4 +376,16 @@ export async function retryCalendarEmailAction(target: { id: number } | { batchI
       return failure("Email retry could not be scheduled.")
     }
   })
+}
+
+/** Read-only preview; publication resolves recipients again under the mutation lock. */
+export async function previewCalendarRecipientsAction(entryId: number): Promise<ActionResult & { recipients?: RecipientCountRow }> {
+  await requireRole("admin")
+  if (!Number.isSafeInteger(entryId) || entryId <= 0) return failure("Invalid calendar entry.")
+  try {
+    const recipients = await fetchCalendarEntryRecipientCount(entryId)
+    return { ...success("Recipient preview loaded."), recipients }
+  } catch {
+    return failure("Recipients could not be loaded. Try again before publishing.")
+  }
 }

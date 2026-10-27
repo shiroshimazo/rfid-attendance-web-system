@@ -17,6 +17,8 @@ import { EmptyState } from "@/components/empty-state"
 import { calendarDate, calendarDateKey, calendarDays, calendarLabels } from "@/features/calendar/admin-view"
 import { calendarTags, calendarStatuses, calendarAudiences, calendarAttendanceImpacts } from "@/features/calendar/schema"
 import type { AdminCalendarPanel } from "@/features/calendar/admin"
+import { EntryFormDialog } from "./entry-form-dialog"
+import { EntryActions } from "./entry-actions"
 import type { CalendarEntryRow } from "@/services/calendar/query"
 
 const DaysContext = React.createContext<Record<string, CalendarEntryRow[]>>({})
@@ -36,7 +38,7 @@ function EntryDayButton(props: React.ComponentProps<typeof CalendarDayButton>) {
   </CalendarDayButton>
 }
 
-function EntryDetails({ entry }: { entry: CalendarEntryRow }) {
+function EntryDetails({ entry, today, campuses }: { entry: CalendarEntryRow; today: string; campuses: string[] }) {
   return <article className="space-y-2 rounded-lg border p-4">
     <div className="flex flex-wrap items-start justify-between gap-2">
       <h3 className="min-w-0 break-words font-medium">{entry.title}</h3>
@@ -53,6 +55,7 @@ function EntryDetails({ entry }: { entry: CalendarEntryRow }) {
     </dl>
     {entry.reason && <p className="whitespace-pre-wrap break-words text-sm"><span className="font-medium">Reason: </span>{entry.reason}</p>}
     {entry.description && <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{entry.description}</p>}
+    <EntryActions entry={entry} today={today} campuses={campuses} />
   </article>
 }
 
@@ -89,6 +92,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
       {summary.map(([label, value, description]) => <Card key={label} className="gap-3"><CardHeader><CardDescription>{label}</CardDescription><CardTitle className="text-3xl tabular-nums">{value.toLocaleString("en-PH")}</CardTitle></CardHeader><CardFooter className="text-xs text-muted-foreground">{description}</CardFooter></Card>)}
     </section>
     <div className="flex flex-wrap items-end justify-between gap-3">
+      <EntryFormDialog date={query.date} today={query.today} campuses={panel.campuses} />
       <div className="space-y-1.5"><Label htmlFor="calendar-month">Calendar month</Label><Input id="calendar-month" type="month" min="0001-01" max="9998-12" value={query.month} className="w-48" onChange={event => { if (event.target.value) navigate({ month: event.target.value, date: `${event.target.value}-01` }) }} /></div>
       <p className="text-xs text-muted-foreground">Philippines time · Summary across all campuses{pending ? " · Updating…" : ""}</p>
     </div>
@@ -111,7 +115,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
             </CardContent>
           </Card>
           <Card className="min-w-0"><CardHeader><CardTitle>{dateLabel(query.date)}</CardTitle><CardDescription>{(days[query.date] ?? []).length} announcements · All campuses</CardDescription></CardHeader><CardContent className="space-y-3">
-            {(days[query.date] ?? []).length ? days[query.date].map(entry => <EntryDetails key={entry.id} entry={entry} />) : <EmptyState icon={CalendarDays} title="No announcements on this date" description="Select another day to see its details." />}
+            {(days[query.date] ?? []).length ? days[query.date].map(entry => <EntryDetails key={entry.id} entry={entry} today={query.today} campuses={panel.campuses} />) : <EmptyState icon={CalendarDays} title="No announcements on this date" description="Select another day to see its details." />}
           </CardContent></Card>
         </div>
       </TabsContent>
@@ -126,7 +130,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
           </form>
         </CardContent></Card>
         <Card className="min-w-0"><CardHeader><CardTitle>All announcements</CardTitle><CardDescription>{panel.list.total.toLocaleString("en-PH")} matching announcements</CardDescription></CardHeader><CardContent>
-          {!panel.list.entries.length ? <EmptyState icon={CalendarOff} title="No matching announcements" description="Clear filters or choose a wider date range." /> : <Table><TableHeader><TableRow>{["Title", "Tags", "Impact", "Audience", "Campuses", "Dates", "Status", "Published", "Email status"].map(label => <TableHead key={label}>{label}</TableHead>)}</TableRow></TableHeader><TableBody>
+          {!panel.list.entries.length ? <EmptyState icon={CalendarOff} title="No matching announcements" description="Clear filters or choose a wider date range." /> : <Table><TableHeader><TableRow>{["Title", "Tags", "Impact", "Audience", "Campuses", "Dates", "Status", "Published", "Email status", "Actions"].map(label => <TableHead key={label}>{label}</TableHead>)}</TableRow></TableHeader><TableBody>
             {panel.list.entries.map(entry => <TableRow key={entry.id}>
               <TableCell><Button variant="link" className="h-auto max-w-64 justify-start whitespace-normal px-0 text-left" onClick={() => selectDate(entry.starts_on)}>{entry.title}</Button>{entry.is_pinned && <Badge variant="outline" className="ml-2">Pinned</Badge>}</TableCell>
               <TableCell><div className="flex max-w-48 flex-wrap gap-1">{entry.tags.map(tag => <Badge variant="secondary" key={tag}>{calendarLabels[tag] ?? tag}</Badge>)}</div></TableCell>
@@ -134,6 +138,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
               <TableCell className="tabular-nums">{dateLabel(entry.starts_on)}{entry.ends_on !== entry.starts_on && <><br />to {dateLabel(entry.ends_on)}</>}</TableCell><TableCell><Badge variant={entry.status === "published" ? "default" : "outline"}>{calendarLabels[entry.status]}</Badge></TableCell>
               <TableCell>{entry.published_at ? new Date(entry.published_at).toLocaleDateString("en-PH", { timeZone: "Asia/Manila", month: "short", day: "numeric", year: "numeric" }) : "Not published"}</TableCell>
               <TableCell>{panel.deliveries[entry.id] ? <div className="space-y-1">{Object.entries(panel.deliveries[entry.id]).filter(([, count]) => count > 0).map(([status, count]) => <div key={status} className="text-xs tabular-nums">{status}: {count}</div>)}</div> : "No deliveries"}</TableCell>
+              <TableCell><EntryActions entry={entry} today={query.today} campuses={panel.campuses} /></TableCell>
             </TableRow>)}
           </TableBody></Table>}
         </CardContent><CardFooter className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm tabular-nums text-muted-foreground">Page {query.page} of {Math.max(1, Math.ceil(panel.list.total / query.pageSize))}</p><TablePagination page={query.page} pageCount={Math.ceil(panel.list.total / query.pageSize)} onPageChange={page => navigate({ page: String(page) })} /></CardFooter></Card>

@@ -92,7 +92,7 @@ All delivery tests are mocked; database tests use disposable PGlite.
 
 Open `/admin/schedules/calendar` as a verified active administrator. This task
 provides Calendar and All announcements tabs. Sidebar navigation is Task 21;
-creation/editing/lifecycle controls are Task 19, and the delivery log and sync
+creation/editing/lifecycle controls are complete in Task 19, and the delivery log and sync
 controls are Task 20.
 
 The calendar includes drafts, published entries, cancelled entries, normal events,
@@ -119,3 +119,29 @@ inbox delivery. Read failures display a retry panel instead of fabricated zeros.
 clipping, filters, pagination/caps, authorization, KPIs, component rendering,
 escaping, empty states, and read errors. Production compilation is verified;
 interactive browser, mobile layout, and keyboard observations remain Task 29.
+
+## Entry forms and lifecycle dialogs (Task 19)
+
+New announcements save as drafts. Edit controls preserve status. Tags determine
+attendance impact; exceptions require a reason, everyone audience, and all-day
+dates. Campus scope supports all campuses or explicit selections. Historical
+attendance scope is locked; cancel and create a new entry to replace its remaining
+schedule. Published edits send updates only when Notify recipients is checked
+and important fields change.
+
+Publication and republication require a successful recipient-count preview.
+Counts are informational; the mutation resolves recipients again. Confirmation
+dialogs describe notification and attendance effects. Failed mutations stay open
+with errors; pending mutations prevent repeated submission or dismissal.
+The shared DateRangePicker opts into future dates and one month here; reporting
+callers retain their existing defaults.
+
+Run form/action checks with `node --test tests/calendar-form.test.mjs`.
+Run `node tests/calendar-dialogs.browser.mjs` for isolated, mocked browser checks.
+Install optional `esbuild` and `playwright` outside the repository in the temporary
+`rfid-browser-tools` directory, or set `CALENDAR_BROWSER_TOOLS` to their package
+root. Set `CALENDAR_CHROMIUM` to an existing Chromium executable if needed.
+The harness compiles the real UI and styles, mocks server actions, writes temporary
+screenshots, and never writes hosted data or sends notifications. It checks
+validation, lifecycle choices, recipient preview retries, keyboard focus/Escape,
+and mobile form/date-picker bounds. Full role workflows remain Task 29.

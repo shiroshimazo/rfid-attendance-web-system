@@ -113,7 +113,7 @@ test("panel counts distinct no-class dates, clamps empty pages, aggregates email
 })
 
 test("calendar and list render real components with labels, overflow indicators, escaping and empty states", async () => {
-  const load = createSourceLoader({ "next/navigation": {
+  const load = createSourceLoader({ "@/features/calendar/actions": {}, "@/components/ui/goey-toaster": { gooeyToast: {} }, "next/navigation": {
     useRouter: () => ({ replace() {} }), usePathname: () => "/admin/schedules/calendar", useSearchParams: () => new URLSearchParams(),
   } })
   const { CalendarPanel } = load("src/app/(portal)/admin/schedules/calendar/components/calendar-panel.tsx")

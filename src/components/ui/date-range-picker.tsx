@@ -61,6 +61,8 @@ interface DateRangePickerProps {
   /** Fired when Apply is pressed, so callers commit only a finished range. */
   onApply?: (range: DateRange | undefined) => void
   className?: string
+  allowFuture?: boolean
+  numberOfMonths?: number
 }
 
 export function DateRangePicker({
@@ -68,6 +70,8 @@ export function DateRangePicker({
   onChange,
   onApply,
   className,
+  allowFuture = false,
+  numberOfMonths = 2,
 }: DateRangePickerProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -91,6 +95,7 @@ export function DateRangePicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          type="button"
           variant="outline"
           className={cn(
             "h-11 w-full justify-between rounded-lg px-3 font-normal tabular-nums",
@@ -196,9 +201,9 @@ export function DateRangePicker({
               mode="range"
               selected={range}
               onSelect={updateRange}
-              numberOfMonths={2}
+              numberOfMonths={numberOfMonths}
               defaultMonth={range?.from}
-              disabled={{ after: new Date() }}
+              disabled={allowFuture ? undefined : { after: new Date() }}
               autoFocus
               className="p-3"
             />
@@ -217,6 +222,7 @@ export function DateRangePicker({
               </div>
 
               <Button
+                type="button"
                 size="sm"
                 onClick={() => {
                   onApply?.(range)

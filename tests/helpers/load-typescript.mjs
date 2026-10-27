@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs"
 import { createRequire } from "node:module"
-import { resolve } from "node:path"
+import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import ts from "typescript"
 
@@ -30,6 +30,10 @@ export function createSourceLoader(mocks = {}) {
       if (specifier.startsWith("@/")) {
         const path = `src/${specifier.slice(2)}`
         return load(existsSync(resolve(root, `${path}.ts`)) ? `${path}.ts` : `${path}.tsx`)
+      }
+      if (specifier.startsWith(".")) {
+        const path = resolve(dirname(filename), specifier)
+        return load(existsSync(`${path}.ts`) ? `${path}.ts` : `${path}.tsx`)
       }
       return require(specifier)
     }
