@@ -20,6 +20,9 @@ import { EntryActions } from '@/app/(portal)/admin/schedules/calendar/components
 import { DeliveryControl } from '@/app/(portal)/admin/schedules/calendar/components/delivery-controls';
 import { ReaderCalendar } from '@/components/calendar/reader-calendar';
 import { NotificationBell } from '@/components/calendar/notification-bell';
+import { AnnouncementPosts } from '@/components/calendar/announcement-posts';
+const postsElement=document.createElement('section');postsElement.id='dashboard-posts';postsElement.className='p-4';document.body.appendChild(postsElement);const postsRoot=createRoot(postsElement);
+window.__renderPosts=(options={})=>postsRoot.render(<AnnouncementPosts role={options.role||'student'} entries={options.empty?[]:[{id:201,title:'Pinned closure',tags:['no_classes'],attendance_impact:'no_classes',campuses:['Main Campus'],starts_on:'2026-11-05',ends_on:'2026-11-06',reason:'Storm warning. '+('School notice details. '.repeat(30)),description:null,is_pinned:true,published_at:new Date(Date.now()-7*86400000+(options.expiring?1000:7*86400000)).toISOString()},{id:202,title:'Exam schedule',tags:['exam'],attendance_impact:'normal',campuses:[],starts_on:'2026-11-06',ends_on:'2026-11-06',reason:null,description:'Exam schedule details.',is_pinned:false,published_at:new Date().toISOString()},{id:203,title:'Online lessons update',tags:['online_class'],attendance_impact:'online_manual',campuses:['MV Campus'],starts_on:'2026-11-07',ends_on:'2026-11-07',reason:null,description:'Confirm attendance in Subject Attendance.',is_pinned:false,published_at:new Date().toISOString()}]} />);window.__renderPosts();
 const bellElement=document.createElement('div');bellElement.className='flex justify-end p-4';document.body.appendChild(bellElement);const bellRoot=createRoot(bellElement);
 const bellEntries=[{id:91,title:'Campus break',description:null,tags:['no_classes'],attendance_impact:'no_classes',audience:'everyone',campuses:['Main Campus'],starts_on:'2026-11-05',ends_on:'2026-11-05',published_at:'2026-11-01T00:00:00Z',updated_at:'2026-11-01T00:00:00Z',read_at:null},{id:92,title:'Online lessons notice',description:null,tags:['online_class'],attendance_impact:'online_manual',audience:'everyone',campuses:[],starts_on:'2026-11-06',ends_on:'2026-11-06',published_at:'2026-11-02T00:00:00Z',updated_at:'2026-11-02T00:00:00Z',read_at:null}];
 window.__renderBell=(options={})=>bellRoot.render(<NotificationBell key={options.userId||'bell-user'} role={options.role||'student'} userId={options.userId||'bell-user'} entries={options.empty?[]:bellEntries.map(entry=>({...entry,read_at:options.read?'2026-11-03T00:00:00Z':null}))} />);window.__renderBell();
@@ -45,8 +48,8 @@ export const markAllCalendarEntriesReadAction=()=>run('readAll',null);
 export const previewCalendarRecipientsAction=async()=>{await new Promise(r=>setTimeout(r,80));return window.__previewFailure?{ok:false,message:'Preview unavailable'}:{ok:true,recipients:{total:3,teacher_count:1,student_count:2}};};
 `
 const result = await build({ absWorkingDir: root, stdin: { contents: fixture, resolveDir: root, loader: "tsx" }, bundle: true, write: false, format: "iife", jsx: "automatic", define: { "process.env.NODE_ENV": '"development"' }, plugins: [{ name: "isolated-browser-mocks", setup(build) {
-  build.onResolve({ filter: /^(@\/features\/calendar\/actions|next\/navigation|@\/components\/ui\/goey-toaster)$/ }, args => ({ path: args.path, namespace: "mock" }))
-  build.onLoad({ filter: /.*/, namespace: "mock" }, args => ({ contents: args.path.includes("actions") ? actions : args.path.includes("navigation") ? 'export const useRouter=()=>({refresh(){window.__refreshes=(window.__refreshes||0)+1;},replace(url){window.__navigation=url;},push(url){window.__navigation=url;}});export const usePathname=()=>"/student/calendar";export const useSearchParams=()=>new URLSearchParams();' : 'export const gooeyToast={success(){},error(){},info(title,options){(window.__toasts??=[]).push({title,description:options.description});window.__toastAction=options.action.onClick;}};', loader: "js" }))
+  build.onResolve({ filter: /^(@\/features\/calendar\/actions|next\/(navigation|link)|@\/components\/ui\/goey-toaster)$/ }, args => ({ path: args.path, namespace: "mock" }))
+  build.onLoad({ filter: /.*/, namespace: "mock" }, args => ({ contents: args.path.includes("actions") ? actions : args.path.includes("navigation") ? 'export const useRouter=()=>({refresh(){window.__refreshes=(window.__refreshes||0)+1;},replace(url){window.__navigation=url;},push(url){window.__navigation=url;}});export const usePathname=()=>"/student/calendar";export const useSearchParams=()=>new URLSearchParams();' : args.path === "next/link" ? 'import React from "react";export default function Link(props){return React.createElement("a",props);}' : 'export const gooeyToast={success(){},error(){},info(title,options){(window.__toasts??=[]).push({title,description:options.description});window.__toastAction=options.action.onClick;}};', loader: "js", resolveDir: root }))
 } }] })
 const css = await postcss([tailwind()]).process(await readFile("src/app/globals.css", "utf8"), { from: resolve("src/app/globals.css") })
 const server = createServer((req, res) => {
@@ -60,6 +63,7 @@ let page
 try {
   browser = await chromium.launch({ headless: true, executablePath: process.env.CALENDAR_CHROMIUM })
   page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+  await page.clock.install({ time: new Date("2026-11-05T12:00:00Z") })
   const errors = []; page.on("pageerror", error => errors.push(error.message))
   await page.goto(`http://127.0.0.1:${server.address().port}`)
   const open = page.getByRole("button", { name: "New announcement", exact: true })
@@ -236,8 +240,35 @@ try {
   await page.getByText("No announcements.", { exact: true }).waitFor()
   assert.equal(await page.evaluate(() => (window.__toasts??[]).length), 1)
   assert.equal(await page.evaluate(() => sessionStorage.getItem('calendar-login-toast:empty-bell')), null)
+  await page.keyboard.press("Escape")
+  await page.getByRole("dialog", { name: "Announcements", exact: true }).waitFor({ state: "hidden" })
+  const posts = page.locator("#dashboard-posts")
+  assert.equal(await posts.getByRole("heading", { level: 3 }).count(), 3)
+  assert.equal(await posts.getByRole("heading", { level: 3 }).first().textContent(), "Pinned closure")
+  assert.equal(await posts.getByRole("link", { name: /View calendar.*Pinned closure/ }).getAttribute("href"), "/student/calendar?date=2026-11-05")
+  const postsBounds = await posts.boundingBox()
+  assert.ok(postsBounds.x >= 0 && postsBounds.x + postsBounds.width <= 376)
+  await posts.screenshot({ path: join(output, "dashboard-posts-mobile.png") })
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await posts.screenshot({ path: join(output, "dashboard-posts-desktop.png") })
+  await page.clock.pauseAt(await page.evaluate(() => new Date(Date.now()+1000).toISOString()))
+  const callsBeforePosts = await page.evaluate(() => window.__calls.length)
+  await page.evaluate(() => window.__renderPosts({expiring:true}))
+  await posts.getByRole("heading", { name: "Pinned closure", exact: true }).waitFor()
+  await page.clock.runFor(999)
+  assert.equal(await posts.getByRole("heading", { name: "Pinned closure", exact: true }).isVisible(), true)
+  const refreshesBeforeExpiry = await page.evaluate(() => window.__refreshes || 0)
+  await page.clock.runFor(1)
+  await posts.getByRole("heading", { name: "Pinned closure", exact: true }).waitFor({ state: "hidden" })
+  assert.ok(await page.evaluate(() => window.__refreshes) > refreshesBeforeExpiry)
+  await page.evaluate(() => window.__renderPosts({role:'teacher'}))
+  await posts.getByRole("heading", { name: "Pinned closure", exact: true }).waitFor()
+  assert.equal(await posts.getByRole("link", { name: /View calendar.*Pinned closure/ }).getAttribute("href"), "/teacher/calendar?date=2026-11-05")
+  assert.equal(await page.evaluate(() => window.__calls.length), callsBeforePosts)
+  await page.evaluate(() => window.__renderPosts({empty:true}))
+  await posts.getByRole("heading", { name: "Announcements", exact: true }).waitFor({ state: "hidden" })
   assert.deepEqual(errors, [])
-  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, mobile dialog bounds, sync/retry controls, reader layouts, deep links, keyboard day selection, notification bell/read actions, and session toast suppression.\n")
+  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, mobile dialog bounds, sync/retry controls, reader layouts, deep links, keyboard day selection, notification bell/read actions, session toast suppression, dashboard post layouts, exact expiry, and republish visibility.\n")
   console.log(`PASS calendar dialog browser checks. Screenshots: ${output}`)
 } catch (error) {
   await page?.screenshot({ path: join(output, "failure.png"), fullPage: true })

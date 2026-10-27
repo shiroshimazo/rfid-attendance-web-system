@@ -242,3 +242,31 @@ browser harness mocks actions/toasts and checks bell errors, read navigation,
 mark-all, mobile bounds, session reload suppression, user changes, and empty
 state. Hosted realtime and actual multi-tab sessions remain rollout checks;
 these checks make no hosted writes and send no email.
+
+## Dashboard announcements (Task 23)
+
+Teacher and student dashboards render shared announcement posts above the RFID
+heading and KPI cards. The server component uses the current verified account,
+excludes administrators, and reads through authenticated campus/audience RLS.
+Empty or failed announcement reads return no posts. A separate Suspense boundary
+keeps announcement reads independent of attendance content.
+
+Posts include tags, attendance impact, campus scope, inclusive dates, a reason
+or description excerpt, and a role-specific View calendar link. Reading a post
+or opening its calendar link does not create a read receipt. Bell selection
+remains the read surface.
+
+The query includes only published entries newer than exactly seven days before
+now and no later than now. Pinned entries sort first, followed by publication
+time and ID descending, with a three-item limit. Pins and ordinary edits do not
+extend expiry. Republishing changes published_at and restarts the seven-day
+window. An open dashboard removes expired posts at their deadline and refreshes
+for replacements; visibility recovery handles a delayed background timer.
+Existing calendar realtime subscriptions handle publication and cancellation.
+
+`tests/calendar-posts.test.mjs` covers strict query bounds, ordering/limit,
+republish visibility, role guards, empty/failure fallback, safe rendering, role
+links, and placement above KPIs. The isolated browser harness checks mobile and
+desktop layout, expiry at the exact boundary, republish visibility, empty posts,
+and absence of read-action calls. Hosted role/realtime sessions remain rollout
+checks; no hosted writes or real sends are performed.

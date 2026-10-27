@@ -4,6 +4,7 @@ import { format, parseISO } from "date-fns"
 
 import { DataErrorCard } from "@/components/data-error-card"
 import { LiveRefresh } from "@/components/live-refresh"
+import { DashboardAnnouncements } from "@/components/calendar/dashboard-announcements"
 import { getTeacherDashboardData } from "@/features/attendance/teacher-dashboard"
 
 import { AssignedAttendanceTable } from "./components/assigned-attendance-table"
@@ -51,6 +52,8 @@ async function DashboardContent() {
           </p>
         </div>
       </div>
+
+      <Suspense fallback={null}><DashboardAnnouncements /></Suspense>
 
       <h2 className="text-lg font-semibold">Daily RFID evidence (separate from subject attendance)</h2>
 

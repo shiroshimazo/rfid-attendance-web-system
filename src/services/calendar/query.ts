@@ -93,6 +93,7 @@ export interface DashboardPostRow {
   id: number
   title: string
   description: string | null
+  reason: string | null
   tags: string[]
   attendance_impact: "normal" | "no_classes" | "online_manual"
   audience: "everyone" | "teachers" | "students"
@@ -403,17 +404,20 @@ export async function fetchVisibleCalendarEntries(
  */
 export async function fetchDashboardPosts(): Promise<DashboardPostRow[]> {
   const supabase = await createServerSupabaseClient()
-  const cutoff = new Date(Date.now() - 7 * 86400000).toISOString()
+  const now = new Date()
+  const cutoff = new Date(now.getTime() - 7 * 86400000).toISOString()
 
   const { data, error } = await supabase
     .from("calendar_entries")
     .select(
-      "id, title, description, tags, attendance_impact, audience, campuses, starts_on, ends_on, published_at, is_pinned"
+      "id, title, description, reason, tags, attendance_impact, audience, campuses, starts_on, ends_on, published_at, is_pinned"
     )
     .eq("status", "published")
     .gt("published_at", cutoff)
+    .lte("published_at", now.toISOString())
     .order("is_pinned", { ascending: false })
     .order("published_at", { ascending: false })
+    .order("id", { ascending: false })
     .limit(3)
 
   if (error) throw new Error(error.message)
