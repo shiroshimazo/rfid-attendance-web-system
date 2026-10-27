@@ -15,7 +15,7 @@ The database implementation follows `rfid-docs/rfid-docs/Database Design/Databas
 
 ## Calendar extension (R06; locally implemented database)
 
-[Calendar.md](../Calendar.md) defines the partially implemented calendar feature.
+[Calendar.md](../Calendar.md) defines the locally implemented calendar feature.
 Nine calendar migrations now supply these tables:
 
 - `calendar_entries`: scoped announcements and lifecycle state.
@@ -30,8 +30,13 @@ remain unchanged. Structural audit logs exclude announcement text and email
 payloads; all four tables join the existing realtime publication.
 See [migration, verification, and rollback guidance](migrations/README.md).
 [Verification SQL](verify_school_calendar.sql) and [rollback SQL](rollback_school_calendar.sql)
-are tested locally. Hosted execution and application rollout remain pending under
-the individually approved tasks in [Calendar-TODO.md](../Calendar-TODO.md).
+are tested locally. The original seven migrations were manually object-verified
+on preview (48/48 at Task 10); the email/RFID migrations remain local-only. The
+current script verifies all nine and must run again on the exact rollout target.
+Hosted execution and application rollout require separate confirmation under
+[Calendar-TODO.md](../Calendar-TODO.md). See the
+[preview execution record](SCHOOL-CALENDAR-PREVIEW-VERIFICATION.md) and
+[calendar module](../src/features/calendar/README.md) for configuration and limits.
 
 ## Setup and existing data
 
@@ -47,15 +52,15 @@ Demo-data alignment remains a separate P10 task in the
 
 ## Retired historical scripts (R04)
 
-These files are retained as historical maintenance references. They are excluded
-from normal setup, deployment, and pilot cleanup:
+These retired scripts are absent from the current tree. Their historical behavior
+is recorded below; they are excluded from setup, deployment, and pilot cleanup:
 
 | File | Historical behavior |
 | --- | --- |
-| [cleanup_bshm.sql](cleanup_bshm.sql) | Deletes BSHM students, courses, and assignments; sets the program inactive. |
-| [cleanup_old_sections.sql](cleanup_old_sections.sql) | Deletes students and assignments outside sections 21001–21010. |
+| `cleanup_bshm.sql` | Deletes BSHM students, courses, and assignments; sets the program inactive. |
+| `cleanup_old_sections.sql` | Deletes students and assignments outside sections 21001–21010. |
 
-Their SQL remains executable and destructive. Student deletion cascades to RFID,
+Copies of their SQL remain destructive. Student deletion cascades to RFID,
 attendance, and SMS records while login accounts survive. Do not run these files
 to enforce pilot scope or follow them with manual Auth-account deletion. Their
 retention documents old behavior; it does not authorize that behavior for the

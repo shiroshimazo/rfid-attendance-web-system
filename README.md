@@ -88,6 +88,7 @@ Classic 1K card, and a reader at the entrance does the rest:
 | **Attendance records** | Filter by date, status, program, year, section, or search; time-in/time-out columns; idempotent corrections. |
 | **Academic setup** | Programs, sections, and a subject catalog that is archived rather than deleted. |
 | **Schedules** | Subject session schedules, student subject enrollment, and class schedules, with overlap protection. |
+| **School calendar** | Campus/audience announcements, draft/publish/cancel lifecycle, email delivery history, and attendance exceptions. |
 | **Reports** | Date-range summaries, per-section tables, charts, and PDF export. |
 | **Archives and logs** | Archived students and teachers, system logs, and SMS logs. |
 | **SMS** | Guardian arrival notifications with delivery status. |
@@ -99,6 +100,7 @@ Classic 1K card, and a reader at the entrance does the rest:
 | --- | --- |
 | **Dashboard** | KPIs, trends, and distribution scoped to your assigned students only. |
 | **My schedule** | The subject sessions you are assigned to teach. |
+| **Calendar and announcements** | Read-only campus/audience calendar, header bell, session toast, and recent dashboard posts. |
 | **Daily attendance** | Your roster with date and filters, plus read-only student detail. |
 | **Subject attendance** | Confirm Present, Late, or Absent for each scheduled session, including students with no card. |
 | **Students** | A directory of only your assigned students. |
@@ -111,6 +113,7 @@ Classic 1K card, and a reader at the entrance does the rest:
 | --- | --- |
 | **Dashboard** | Today's attendance, RFID card status, SMS status, and your identity card. |
 | **Current enrollment** | The subjects you are enrolled in. |
+| **Calendar and announcements** | Your published calendar, header bell, session toast, and recent dashboard posts. |
 | **My attendance** | Your personal history with time-in and time-out detail. |
 | **Profile** | Your details and password. |
 
@@ -165,6 +168,12 @@ Next.js application (server actions / route handler)
 - **Subject attendance is separate.** Each scheduled session stays unconfirmed
   until its teacher confirms Present, Late, or Absent. A missing tap is never
   automatically an absence.
+- **Calendar exceptions:** published No classes and Online / manual entries block
+  RFID attendance and SMS creation for the student's campus. Existing taps/SMS
+  remain evidence. Rates exclude affected student-days; zero eligible recorded
+  decisions display as a dash. Teachers can still confirm Subject Attendance.
+- **History:** today/future use the effective calendar in Asia/Manila; past dates
+  use immutable student/campus snapshots, including after cancellation or transfer.
 
 ### What the server decides
 
@@ -328,6 +337,9 @@ Defined in [.env.example](.env.example):
 See [calendar email setup](src/features/calendar/README.md) for configuration,
 mocked tests, and delivery limitations. Apply the calendar email dispatch migration
 before deploying the notification actions.
+Calendar email has no enable flag: publish, republish, cancel, and opted-in important
+edits attempt delivery. `PHILSMS_ENABLED` controls SMS only. Missing Resend settings
+record failures without undoing calendar changes; uncertain sends need operator review.
 
 > Never prefix server secrets with `NEXT_PUBLIC_`, paste them into chat or
 > screenshots, or embed them in firmware source.
@@ -340,7 +352,16 @@ The schema follows the documented
 `users`, `teachers`, `students`, `programs`, `courses`,
 `academic_sections`, `teacher_assignments`, `rfid_cards`,
 `attendance_records`, `subject_schedules`, `subject_attendance`, and
-`sms_notifications`, plus supporting constraints, triggers, and RLS policies.
+`sms_notifications`, plus `calendar_entries`, `calendar_entry_reads`,
+`attendance_day_marks`, `calendar_email_deliveries`, supporting constraints,
+triggers, and RLS policies.
+
+Calendar rollout requires all nine migrations in filename order before the app.
+Follow [migration, verification, and rollback guidance](supabase/migrations/README.md).
+Only the first seven were object-verified on preview (48/48 at Task 10); email and
+RFID extension migrations remain locally verified only. The current read-only
+verification script covers all nine. Calendar rollback exports history first and
+restores the previous app and shared RFID/audit functions before removing objects.
 
 Key rules enforced in the database:
 
@@ -379,12 +400,16 @@ Repository helpers:
 Fast, database-independent suites use the Node.js test runner and PGlite:
 
 ```sh
-node --test tests/*.test.mjs
+node --test --test-concurrency=2 tests/*.test.mjs
 ```
 
 [tests/helpers/load-typescript.mjs](tests/helpers/load-typescript.mjs) runs the
 real TypeScript modules through the installed compiler with explicit
 server-boundary mocks, so no extra dependencies are needed.
+Limiting file concurrency reduces PGlite memory pressure. The suite covers calendar
+migrations/recovery, role policies/actions, attendance, RFID, mocked SMS/email,
+Subject Attendance, reports/PDF, lifecycle, and live refresh. Run `pnpm lint`,
+`node node_modules/typescript/bin/tsc --noEmit`, and `pnpm build` for application gates.
 
 Browser suites (`tests/*.browser.mjs`) render real components in headless
 Chromium with local fixtures:
@@ -440,6 +465,9 @@ Highlights:
 | [rfid-docs/rfid-docs/](rfid-docs/rfid-docs/) | Requirements, architecture, database design, role interactions, dev guidelines |
 | [supabase/README.md](supabase/README.md) | Schema overview, setup rules, demo data |
 | [supabase/migrations/README.md](supabase/migrations/README.md) | Per-feature migration rollout and rollback guidance |
+| [src/features/calendar/README.md](src/features/calendar/README.md) | Calendar workflows, notifications, email setup, attendance rules, and operational limits |
+| [src/services/calendar/README.md](src/services/calendar/README.md) | Calendar RLS reads, attendance inputs, and server-only delivery persistence |
+| [Calendar-TODO.md](Calendar-TODO.md) | Calendar task approvals, verification evidence, and remaining release gates |
 | [firmware/README.md](firmware/README.md) | ESP32 build, wiring, transports, acceptance checklist |
 | [src/app/api/rfid/tap/README.md](src/app/api/rfid/tap/README.md) | Tap endpoint contract, school rules, install/test steps |
 | [PHILSMS-SETUP.md](PHILSMS-SETUP.md) | SMS provider configuration and live acceptance |
@@ -458,12 +486,13 @@ scope checklist; module READMEs and the UI/UX plan must follow it.
   attendance confirmation, SMS, Realtime, and PDF reports.
 - **Excluded:** the Excused attendance workflow (historical values are preserved
   but not writable or charted).
-- **Approved plan, not implemented (R06):** [School Calendar & Announcements](Calendar.md),
-  executed one confirmed task at a time through [Calendar-TODO.md](Calendar-TODO.md).
-  It will reuse existing shadcn/ui components for campus-aware announcements,
-  no-class/online RFID exceptions, and teacher/student notifications. Daily
-  Attendance stays read-only; Subject Attendance remains the manual confirmation
-  surface. Historical exceptions will be preserved separately from RFID evidence.
+- **Implemented locally (R06):** [School Calendar & Announcements](Calendar.md)
+  includes campus/audience announcements, lifecycle controls, notifications,
+  email dispatch/retry, and no-class/online RFID and reporting exceptions.
+  Daily Attendance stays read-only; Subject Attendance remains editable.
+  Historical snapshots remain separate from retained RFID/SMS evidence.
+  [Calendar-TODO.md](Calendar-TODO.md) tracks remaining browser, hosted rollout,
+  and deferred physical-reader verification. Local success does not claim deployment.
 - **Deferred:** standalone Programs/Courses CRUD, assignment matrix, automatic
   nightly absence job, teacher schedule page, per-period attendance, holiday/exam
   overrides beyond the R06 calendar plan, and extra onboarding programs.

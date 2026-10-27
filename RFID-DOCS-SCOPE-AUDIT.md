@@ -16,7 +16,7 @@ hosted SQL verification results as PASS on 2026-09-06.
 
 ## 1. Which documents control the scope?
 
-**R06 scope amendment (2026-10-25):** the user requested School Calendar & Announcements and approved Task 01 to resolve its scope/rules. [Calendar.md](Calendar.md) defines this planned feature; [Calendar-TODO.md](Calendar-TODO.md) tracks separate approval for each implementation task. This amendment supersedes older holiday-management exclusions only for that feature. It does not claim implementation or authorize executing later tasks without confirmation.
+**R06 scope amendment (2026-10-25):** the user requested School Calendar & Announcements and approved Task 01 to resolve its scope/rules. [Calendar.md](Calendar.md) defines this approved feature; [Calendar-TODO.md](Calendar-TODO.md) tracks separate approval for each implementation task. This amendment supersedes older holiday-management exclusions only for that feature. Implementation status is recorded in the checklist; this amendment does not authorize later tasks without confirmation.
 
 Use your instruction for this audit first: **no Excused workflow and no additional features outside the RFID requirements.** Then use the current requirements and role interaction documents below. A future-improvement entry does not by itself authorize a new feature now. Existing code, tests, READMEs, and generated roadmaps are evidence of implementation, not proof that a feature is required.
 
@@ -186,9 +186,11 @@ These have no consumers in the searched application/test source:
 
 Do not mass-delete shadcn components or libraries because a business document does not list them. Verify imports before removing dependencies. This cleanup is lower priority than the required RFID path.
 
-### R06 - School Calendar & Announcements - PLANNED
+### R06 - School Calendar & Announcements - LOCALLY IMPLEMENTED; RELEASE GATES PENDING
 
-- [x] Task 01: document the user-requested scope expansion and resolve plan inconsistencies; implementation has not started.
+- [x] Task 01: document the user-requested scope expansion and resolve plan inconsistencies.
+- [x] Tasks 02-16 and 18-27: database/security/lifecycle/recovery, queries/actions, email, RFID exception checks, calendars, notifications, dashboards, Daily Attendance/history, and reports/PDF implemented locally. Only the original seven migrations were preview-verified (48/48); email/RFID migrations remain local-only. Task 17 hardware checks are deferred.
+- Task 28 records documentation and regression results in the [calendar module guide](src/features/calendar/README.md#regression-verification-task-28). Remaining browser and rollout gates require separate approval.
 - [ ] Implement and verify the individually approved tasks in [Calendar-TODO.md](Calendar-TODO.md), following [Calendar.md](Calendar.md).
 
 Admin-managed entries target campuses and teacher/student audiences. Published no-class and online/manual days affect RFID acceptance, daily rates, dashboards, and reports. Normal events do not change attendance. Only one published attendance-impacting entry may cover a campus/date; all-campus entries conflict with campus-specific entries, while normal events may overlap.

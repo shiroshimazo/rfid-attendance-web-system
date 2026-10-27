@@ -7,8 +7,11 @@ Module responsibilities do not authorize new screens or workflows. R02's exclude
 and deferred tasks are outside this release; preserve the documented role menus,
 pilot schedules, catalog selections, and assignments within teacher management.
 
-R06 explicitly adds the planned [School Calendar & Announcements](../../Calendar.md)
-scope, superseding only its holiday-management deferral. The calendar module is
-not implemented yet. Follow [Calendar-TODO.md](../../Calendar-TODO.md) with
-confirmation before each task. Reuse existing shadcn/ui and feature/service
-patterns; keep Daily Attendance read-only and Subject Attendance editable.
+R06 adds [School Calendar & Announcements](../../Calendar.md), superseding only
+its holiday-management deferral. The [calendar module](calendar/README.md) supplies
+role calendars, lifecycle actions, email, notifications, and shared attendance
+exceptions. Dashboards, Daily Attendance, history, reports, and PDFs consume the
+shared resolver while retaining RFID/SMS evidence. Daily Attendance stays read-only;
+Subject Attendance remains editable. Hosted rollout and physical verification are
+tracked separately in [Calendar-TODO.md](../../Calendar-TODO.md); each task
+requires confirmation.

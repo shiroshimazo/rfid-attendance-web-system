@@ -2,6 +2,12 @@
 
 **Status:** Complete. All seven migrations applied to the operator-identified preview database; final verification returned 48/48 PASS.
 
+This is the Task 10 record for the original seven migrations only. The later
+`202610260001_calendar_email_dispatch.sql` and `202610260002_calendar_rfid_tap.sql`
+remain locally tested, not hosted-applied. The current verification script covers
+all nine migrations; rerun it on the confirmed target before deployment. The
+historical 48/48 result does not certify the current application/database pairing.
+
 ## Execution record
 
 - Target project/branch: preview database identified by the operator. Project ref and branch name were withheld from this session; no production target was named.

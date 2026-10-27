@@ -1,7 +1,7 @@
 import { schoolDateKey } from "@/lib/school-time"
 import { searchTagsFromParams } from "@/lib/search-tags"
 
-export const logEntities = ["users", "students", "teachers", "teacher_assignments", "programs", "courses", "class_schedules", "subject_schedules", "subject_enrollments", "attendance_records", "subject_attendance", "rfid_cards", "rfid_tap_requests", "sms_notifications", "authentication", "archives", "reports", "calendar_entries", "attendance_day_marks", "calendar_email_deliveries"] as const
+export const logEntities = ["users", "students", "teachers", "teacher_assignments", "programs", "courses", "class_schedules", "subject_schedules", "subject_enrollments", "attendance_records", "subject_attendance", "rfid_cards", "rfid_tap_requests", "sms_notifications", "authentication", "archives", "reports", "calendar_entries", "calendar_entry_reads", "attendance_day_marks", "calendar_email_deliveries"] as const
 export const logOutcomes = ["success", "failed", "denied"] as const
 export type LogParams = Record<string, string | string[] | undefined>
 export interface LogQuery { search: string[]; entity: string; outcome: string; from: string; to: string; page: number }

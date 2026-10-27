@@ -1,4 +1,23 @@
-# Calendar email
+# School Calendar and Announcements
+
+Admin: `/admin/schedules/calendar`. Teacher/student: `/teacher/calendar` and
+`/student/calendar`. The module includes entry lifecycle controls, scoped readers,
+header notifications, dashboard posts, email dispatch/retries, and shared
+attendance exceptions used by dashboards, Daily Attendance, history, and reports/PDF.
+Daily Attendance is read-only; Subject Attendance remains independently editable.
+
+Apply all nine [calendar migrations](../../../supabase/migrations/README.md)
+before deploying the matching app. The original seven were verified on preview;
+the email/RFID extensions are local-only. [Calendar-TODO.md](../../../Calendar-TODO.md)
+tracks approvals and remaining browser/rollout checks. Physical-reader testing is
+deferred by request. Local tests never prove hosted realtime or actual delivery.
+
+The feature layer owns validation, role guards, audit, RPC mutations, and UI
+composition. [Calendar services](../../services/calendar/README.md) own persistence
+and authenticated reads. The attendance resolver is shared by all consumers;
+it never rewrites raw RFID, SMS, or Subject Attendance evidence.
+
+## Email setup
 
 Tasks 14 and 15 provide templates, the batch adapter, persisted delivery payloads,
 after-response sending, and admin retries. Apply
@@ -91,7 +110,7 @@ All delivery tests are mocked; database tests use disposable PGlite.
 ## Admin calendar browsing (Task 18)
 
 Open `/admin/schedules/calendar` as a verified active administrator. This task
-provides Calendar and All announcements tabs. Sidebar navigation is Task 21;
+provides Calendar, All announcements, and Email deliveries tabs. Sidebar navigation is complete in Task 21;
 creation/editing/lifecycle controls are complete in Task 19, and the delivery log and sync
 controls are complete in Task 20.
 
@@ -202,8 +221,9 @@ server caps, upcoming bounds, role guards, deep links, safe failure handling,
 read-only rendering, campus/cancellation labels, escaping, and navigation order.
 The isolated browser harness checks reader mobile layout, date/month/upcoming
 links, and desktop keyboard selection. Database RLS visibility is covered by the
-existing calendar migration test. Full hosted role sessions and notification
-integration remain later tasks; no hosted writes or real sends are performed.
+existing calendar migration test. Notification integration is complete below;
+full hosted role sessions remain operational checks. No hosted writes or real
+sends are performed by the local checks.
 
 ## Header notifications and session toast (Task 22)
 
@@ -319,8 +339,7 @@ average daily percentages. No unprovided dates are added.
 precedence, historical transfers/cancellations, missing snapshots, stale current
 marks, provisional/legacy records, duplicate handling, null rates, weighted
 buckets, caps, Manila midnight, complete paging, invalid ranges, and read errors.
-Dashboard, attendance, and report consumers remain separate Tasks 25–27; Task 24
-adds the shared foundation without changing their current behavior.
+Dashboard, attendance, and report consumers use this foundation in Tasks 25–27.
 
 
 ## Dashboard consumers (Task 25)
@@ -343,7 +362,7 @@ failures, student guidance, and rendered KPI/distribution values. Normal dashboa
 legacy, report, and attendance regressions remain covered. The isolated browser
 harness renders real KPI, NumberFlow, chart, strip, and student-card components
 with mocked data, including mobile layout and mixed/all-exception rates.
-Daily Attendance and report/PDF consumers remain Tasks 26–27. Hosted database and
+Daily Attendance and report/PDF consumers are integrated in Tasks 26–27. Hosted database and
 realtime observation remain rollout checks; no real hardware or sends are used.
 
 
@@ -369,7 +388,7 @@ checks confirm the three real attendance decisions remain available on exception
 dates and reject calendar display states as writes. Existing subject database,
 report, dashboard, and attendance regressions pass. The isolated browser harness
 checks actual filters, read-only tables, student details, and mobile/desktop
-layouts with mocked data. Reports/PDF remain Task 27. Hosted validation, real
+layouts with mocked data. Reports/PDF are integrated in Task 27. Hosted validation, real
 sends, and physical reader testing are not performed here.
 
 
@@ -393,3 +412,48 @@ exceptions and preserve the independent Subject Attendance confirmations. No
 calendar exception is counted as a manual confirmation. Local tests exercise
 actual PDF layout/text, authorization, scope, and mocked responsive rendering;
 no hosted synchronization or real sends occur during these checks.
+
+## Regression verification (Task 28)
+
+Verified locally on 2026-10-27. Documentation now covers implemented role routes,
+feature/service ownership, environment behavior, nine-migration ordering, preview
+limitations, recovery, attendance/history/report rules, and all four log entities.
+The missing `calendar_entry_reads` filter is now selectable; its regression also
+checks repeated search tags and category URLs. The old string-search assertion
+was updated to the existing tag-array contract. ESLint excludes the generated
+`.tmp-video-tools` tree, avoiding bundled third-party development artifacts.
+
+| Command | Result |
+| --- | --- |
+| `node --test --test-concurrency=2 tests/*.test.mjs` | 593 tests: 572 pass, 21 fail, 0 skipped |
+| `node node_modules/eslint/bin/eslint.js .` | Fails: 1 error and 1 warning, detailed below |
+| `node node_modules/typescript/bin/tsc --noEmit` | PASS |
+| `npm run build` | PASS, including all three calendar routes |
+| `git diff --check` | PASS |
+
+Passing suites include calendar database/RLS/lifecycle/recovery, queries/actions,
+receipt/email/notification logic, attendance/dashboards/history, RFID route/USB/
+serial/writer behavior, mocked SMS, Subject Attendance, reports/real PDF rendering,
+profile lifecycle, and live refresh. Provider calls use mocks; database tests use
+disposable PGlite instances. These results do not imply real provider delivery.
+
+Remaining failures are release blockers, not passing acceptance:
+
+- All 21 `tests/account-access.test.mjs` cases fail from a shared setup error:
+  `role "service_role" does not exist` when applying later email migrations. A
+  diagnostic addition of the missing fixture role exposed further assumptions
+  about later schema fields and verified sessions; that temporary edit was reverted.
+  The older account-access suite needs its own fixture/verification update. Its
+  assertions have not proved access behavior in this run; calendar-specific RLS
+  and lifecycle suites passed independently.
+- `fix-email.js:1`: `@typescript-eslint/no-require-imports` error. This existing
+  one-off script was not changed or run.
+- `src/components/ui/combobox.tsx:279`: unused `children` warning. The component
+  was not changed by this documentation/log-filter task.
+
+Task 28 completes documentation and regression reporting; the repository is not
+all green and is not approved for rollout. Task 29 owns the next browser/accessibility
+checks. No hosted migrations, synchronization, deployment, email/SMS sends, or
+physical-reader checks were performed. Task 17 remains deferred by request;
+hosted realtime, true multi-session locks, sender delivery, and the two newer
+migrations still require the separately approved rollout checks.

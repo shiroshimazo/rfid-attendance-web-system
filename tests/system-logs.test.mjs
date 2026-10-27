@@ -41,9 +41,17 @@ test('audit outage does not misreport an already completed operation',async()=>{
 test('log filters validate dates, bound pagination and remove query grammar',()=>{
   const {parseLogQuery,logPageUrl}=harness().load('src/features/system-logs/query.ts')
   const now=new Date('2026-09-15T01:00:00Z')
-  assert.deepEqual(parseLogQuery({},now),{search:'',entity:'all',outcome:'all',from:'2026-09-09',to:'2026-09-15',page:1})
+  assert.deepEqual(parseLogQuery({},now),{search:[],entity:'all',outcome:'all',from:'2026-09-09',to:'2026-09-15',page:1})
   const q=parseLogQuery({search:'test%,(event.eq.secret)',entity:'invalid',outcome:'invalid',from:'2026-02-30',page:'-9'},now)
-  assert.equal(q.from,'2026-09-09');assert.equal(q.page,1);assert(!/[%,()]/.test(q.search))
+  assert.equal(q.from,'2026-09-09');assert.equal(q.page,1)
+  assert.deepEqual(q.search,['testevent.eq.secret'])
   assert.equal(parseLogQuery({from:'2026-09-15',to:'2026-09-01'},now).from,'2026-09-01')
   assert(logPageUrl(q,2).includes('page=2'))
+  for (const entity of ['calendar_entries','calendar_entry_reads','attendance_day_marks','calendar_email_deliveries']) {
+    const calendarQuery=parseLogQuery({entity,search:['calendar','sync']},now)
+    assert.equal(calendarQuery.entity,entity)
+    const params=new URL(logPageUrl(calendarQuery,2),'https://school.example').searchParams
+    assert.equal(params.get('entity'),entity)
+    assert.deepEqual(params.getAll('search'),['calendar','sync'])
+  }
 })

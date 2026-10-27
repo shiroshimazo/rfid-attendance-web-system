@@ -38,9 +38,8 @@ existing SMS result stay visible. Personal present/late/absent totals exclude
 current effective and historical snapshot exceptions. Total RFID taps remains
 a count of retained evidence through today; future records do not enter totals.
 
-Daily Attendance pages, student history panels, and report/PDF integration remain
-Tasks 26 and 27. Dashboard links can therefore lead to evidence views whose
-calendar display integration is still pending. Writable attendance statuses,
+Daily Attendance pages, student history panels, and reports/PDF also consume
+calendar state, as described below and in the reports module. Writable attendance statuses,
 Subject Attendance, RFID/SMS persistence, and database migrations are unchanged.
 
 
@@ -76,6 +75,6 @@ visible separately from the calendar display status.
 
 Subject Attendance remains editable for Present, Late, and Absent independently
 of calendar exceptions. No subject production code, writable enums, daily write
-endpoint, migration, or RFID/SMS mutation is added. Report/PDF integration remains
-Task 27. The Subject History regression fixture was updated from string searches
+endpoint, migration, or RFID/SMS mutation is added. Report/PDF integration is complete
+in Task 27. The Subject History regression fixture was updated from string searches
 to the existing tag-array contract; its production behavior is unchanged.

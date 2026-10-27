@@ -1,4 +1,24 @@
-## School calendar migrations (R06; local implementation in progress)
+## School calendar migrations (R06; implemented locally)
+
+Apply calendar migrations after all earlier prerequisites, through
+`202609270001_enrollment_teacher_names.sql`, and before the matching application:
+
+| Order | Migration | Responsibility |
+| --- | --- | --- |
+| 1 | `202610250001_school_calendar.sql` | Enums, tables, constraints, default-deny access |
+| 2 | `202610250002_school_calendar_access.sql` | RLS, recipients, own receipts, effective view |
+| 3 | `202610250003_calendar_attendance_marks.sql` | Sync, roster hooks, immutable past snapshots |
+| 4 | `202610250004_save_calendar_entry.sql` | Validated saves and overlap/history guards |
+| 5 | `202610250005_publish_calendar_entry.sql` | Publish/republish and atomic mark reconciliation |
+| 6 | `202610250006_cancel_delete_calendar_entry.sql` | Cancellation and never-published draft deletion |
+| 7 | `202610250007_calendar_audit_realtime.sql` | Structural audit and realtime registration |
+| 8 | `202610260001_calendar_email_dispatch.sql` | Mutation/recipient snapshots and protected delivery retries |
+| 9 | `202610260002_calendar_rfid_tap.sql` | Calendar-aware service-only tap writer |
+
+`sync_attendance_day_marks` takes `p_from` and `p_to`. It clamps writes to today
+in Asia/Manila and preserves past marks. UI entry/sync ranges cap at 366 days;
+read/report ranges can span longer history. Only verified admin report/export
+paths sync before reading. Other attendance consumers and teacher reports only read.
 
 Task 03 now supplies `202610250001_school_calendar.sql` as a locally tested
 foundation: enums, tables, constraints, indexes, and default-deny access.
@@ -8,7 +28,7 @@ and the security-invoker effective calendar view. Apply order is foundation
 before access. Task 05 adds `202610250003_calendar_attendance_marks.sql` after
 access: verified-admin mark sync, private reconciliation, student roster hooks,
 and immutable past snapshots. The shared lock is acquired before student row
-changes; future entry RPCs must use the same lock. Historical snapshot guards
+changes; entry RPCs use the same lock. Historical snapshot guards
 also reject hard deletion of students with past calendar history; use archive.
 Task 06 adds `202610250004_save_calendar_entry.sql` after mark reconciliation:
 verified-admin draft creation and full-entry edits, protected lifecycle fields,
@@ -16,7 +36,7 @@ historical-scope restrictions, locked overlap checks, and published-edit mark
 reconciliation. The save payload/result contract is documented in Calendar.md.
 Task 07 adds `202610250005_publish_calendar_entry.sql` after saves: draft/cancelled
 publication, refreshed publish timestamps, overlap protection under the same lock,
-and atomic exception snapshots. Email sending remains a later task. PGlite tests
+and atomic exception snapshots. The application dispatches lifecycle email after response. PGlite tests
 cover queued conflicts and lock ownership, not true multi-session scheduling.
 Task 08 adds `202610250006_cancel_delete_calendar_entry.sql`: atomic cancellation,
 never-published draft deletion, and database lifecycle/history/overlap guards.
@@ -27,7 +47,8 @@ in one transaction. Task 15 connects cancellation emails through the application
 Task 09 adds `202610250007_calendar_audit_realtime.sql`: structural audit records
 for entries, marks, and deliveries, plus realtime publication of all four tables.
 Announcement text, reasons, locations, recipient emails, and rendered email bodies
-are excluded from audit values. Application action events remain part of later tasks.
+are excluded from audit values. Application lifecycle, receipt, retry, and sync
+actions also record results. Receipt rows have no database audit trigger.
 Task 15 adds `202610260001_calendar_email_dispatch.sql`: a verified-admin mutation
 wrapper captures entry/recipient snapshots, and `retry_allowed` protects uncertain
 email attempts. Service-role delivery writes are explicitly granted. Apply this
@@ -35,22 +56,27 @@ migration before the updated actions; the expanded verification script checks th
 wrapper, retry column, and service grants. Rollback removes the wrapper with the
 rest of the calendar feature.
 
-These migrations are tested locally only; they do not authorize hosted execution.
+Local implementation does not authorize hosted execution. Only the original
+seven were object-verified on preview; see the execution record below.
 Task 16 adds `202610260002_calendar_rfid_tap.sql`: calendar-aware service-only taps
 reject No classes/Online class before attendance or SMS writes, while retaining
 identity validation and successful replay. The shared calendar lock precedes
 student row locks. The verification script checks the replacement and grants;
 rollback restores the exact P04 function before dropping calendar objects.
-UI and hardware verification remain pending. The feature is not ready for rollout.
+The UI and attendance/report consumers are implemented locally. Full browser and
+accessibility verification is Task 29; hardware testing is deferred. Rollout needs
+Task 30 confirmation of the exact target and actions.
 
-### Calendar preview verification (Task 10; separate confirmation required)
+### Calendar target verification
 
 1. Identify the preview database and confirm its target before execution.
 2. Apply the existing prerequisite migrations, then calendar migrations
    `202610250001` through `202610250007`, then
    `202610260001_calendar_email_dispatch.sql` and
    `202610260002_calendar_rfid_tap.sql`, in filename order. The Task 10 preview
-   record covers only the original seven; both new migrations remain unapplied.
+   [execution record](../SCHOOL-CALENDAR-PREVIEW-VERIFICATION.md) covers only the
+   original seven (48/48 PASS at that time); both new migrations remain unapplied
+   to hosted databases. That result does not certify the current nine-migration state.
 3. Run [verify_school_calendar.sql](../verify_school_calendar.sql) as the database
    owner. Every result must be PASS; any SQL error or FAIL blocks deployment.
    The script is read-only and checks schema/security metadata, publication,
@@ -78,17 +104,10 @@ existing data/audit history, restored tap processing, and clean reinstallation.
 Task 16 verifies the rollback baseline, restores original tap behavior and grants,
 and tests reinstallation with the calendar-aware writer.
 
-[Calendar.md](../../Calendar.md) defines the planned calendar schema and separate
-RFID-function integration migration. [Calendar-TODO.md](../../Calendar-TODO.md)
-requires confirmation before each task; this section does not authorize applying
-migrations. Verification and rollback SQL are now supplied; Task 10 verifies a
-named preview database before later application rollout.
-
-Rollback first restores the previous app, then the pre-calendar record_rfid_tap
-function and grants, restores any changed shared audit helper, and removes
-calendar roster hooks before dropping new objects. Export calendar history and
-delivery records before a destructive rollback; existing RFID, subject attendance,
-and SMS data must remain intact. No database changes were made in Task 01.
+[Calendar.md](../../Calendar.md) defines the schema and behavior.
+[Calendar-TODO.md](../../Calendar-TODO.md) requires confirmation before each task;
+this section does not authorize migration, rollback, deployment, or recipient sends.
+Configure email using the [module guide](../../src/features/calendar/README.md).
 
 ## RFID card inventory and student assignment
 

@@ -10,6 +10,12 @@
   are labeled explicitly. No-op timestamp changes are skipped.
 - Server actions record their results for account management, profile/password changes,
   schedules, subject attendance/enrollment, RFID management, archives and email login.
+- Calendar filters include `calendar_entries`, `calendar_entry_reads`,
+  `attendance_day_marks`, and `calendar_email_deliveries`. Entry, mark, and delivery
+  row changes are structurally audited; receipt actions, lifecycle actions, delivery
+  retries, and admin report/manual mark sync record application results. Receipt
+  row writes have no database audit trigger. Announcement text, reasons, recipient
+  addresses, and stored email bodies are excluded from log values.
 - Route handlers record report download, profile image upload and RFID request results,
   including unauthorized requests and validation failures.
 - Auth triggers record password/profile changes and session verification. Native Auth
