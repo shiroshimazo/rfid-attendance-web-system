@@ -8,7 +8,7 @@ const today = "2026-09-04"
 const statuses = ["Present", "Late", "Absent", "NoRecord"]
 const students = statuses.map((status, index) => ({
   id: index + 1, student_id: `S-${index + 1}`, full_name: status,
-  year_level: "2nd Year", section: "21001", program_id: 1,
+  year_level: "2nd Year", section: "21001", program_id: 1, campus: "Main Campus",
   program: { program_code: "BSIT", program_name: "Information Technology" },
 }))
 const record = (student_id, attendance_status, attendance_date = today) => ({
@@ -58,11 +58,11 @@ for (const [role, build] of builders) {
       const data = build({ students, attendance: [], cards: [] }, date)
       assert(data.students.every(row => row.status === "NoRecord"))
       assert.equal(data.kpis.absentToday, 0)
-      assert.equal(data.kpis.attendanceRate, 0)
+      assert.equal(data.kpis.attendanceRate, null)
       assert.equal(data.distribution.find(slice => slice.status === "NoRecord").count, 4)
       for (const points of Object.values(data.trend)) {
         assert.equal(points[0].absent, 0)
-        assert.equal(points[0].rate, 0)
+        assert.equal(points[0].rate, null)
       }
     }
   })
@@ -80,9 +80,9 @@ for (const [role, build] of builders) {
     assert(!data.trend.daily.some(point => point.key > today))
   })
 
-  test(`${role}: empty roster has finite zero totals`, () => {
+  test(`${role}: empty roster has zero counts and no attendance rate`, () => {
     const data = build({ students: [], attendance: [], cards: [] }, today)
-    assert.equal(data.kpis.attendanceRate, 0)
+    assert.equal(data.kpis.attendanceRate, null)
     assert.equal(data.kpis.absentToday, 0)
     assert.equal(data.distribution.reduce((sum, slice) => sum + slice.count, 0), 0)
   })
@@ -100,6 +100,7 @@ test("shared badge renders readable labels for all four current display states",
 test("admin and teacher query the same Manila date at midnight", async () => {
   const queries = []
   const serverLoad = createSourceLoader({
+    "@/services/calendar/attendance-state": { fetchCalendarAttendanceState: async () => ({ today, effectiveDays: [], marks: [] }) },
     "@/features/auth/server": { requireRole: async () => ({ id: "teacher-user" }) },
     "@/services/attendance/dashboard": { fetchAdminDashboardSnapshot: async (input) => {
       queries.push(input)

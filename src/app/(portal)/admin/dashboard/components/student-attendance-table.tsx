@@ -40,7 +40,7 @@ import { matchesAnySearchTagIn } from "@/lib/search-tags"
 
 const PAGE_SIZE = 10
 
-const statusFilters = ["All", "Present", "Late", "Absent", "NoRecord"] as const
+const statusFilters = ["All", "Present", "Late", "Absent", "NoRecord", "NoClasses", "OnlineManual"] as const
 
 type StatusFilter = (typeof statusFilters)[number]
 
@@ -105,7 +105,7 @@ export function StudentAttendanceTable({
             <SelectContent align="end">
               {statusFilters.map((option) => (
                 <SelectItem key={option} value={option}>
-                  {option === "All" ? "All statuses" : option === "NoRecord" ? "No tap recorded yet" : option}
+                  {option === "All" ? "All statuses" : option === "NoRecord" ? "No tap recorded yet" : option === "NoClasses" ? "No classes" : option === "OnlineManual" ? "Online / manual" : option}
                 </SelectItem>
               ))}
             </SelectContent>

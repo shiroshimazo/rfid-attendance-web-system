@@ -321,3 +321,27 @@ marks, provisional/legacy records, duplicate handling, null rates, weighted
 buckets, caps, Manila midnight, complete paging, invalid ranges, and read errors.
 Dashboard, attendance, and report consumers remain separate Tasks 25–27; Task 24
 adds the shared foundation without changing their current behavior.
+
+
+## Dashboard consumers (Task 25)
+
+All three dashboard features now consume the Task 24 state read service and
+resolver. Admin and teacher aggregation uses one shared helper for eligible
+student counts, exception distributions, current campus strips, and weighted
+historical trends. Duplicate private trend calculations were removed. Nullable
+rates render as a dash and never reach numeric animations or rate subtraction.
+The admin dashboard still has no announcement post.
+
+Student cards show the effective current exception while keeping recorded tap
+and SMS evidence. Student historical totals respect stored exception snapshots.
+Today/future cancellation restores normal decisions; historical exclusions
+remain. No calendar integration writes or synchronizes marks on dashboard reads.
+
+`tests/calendar-dashboard.test.mjs` covers mixed campuses, current cancellation,
+all-exception null rates, retained taps/SMS, historical exclusions, state-load
+failures, student guidance, and rendered KPI/distribution values. Normal dashboard,
+legacy, report, and attendance regressions remain covered. The isolated browser
+harness renders real KPI, NumberFlow, chart, strip, and student-card components
+with mocked data, including mobile layout and mixed/all-exception rates.
+Daily Attendance and report/PDF consumers remain Tasks 26–27. Hosted database and
+realtime observation remain rollout checks; no real hardware or sends are used.

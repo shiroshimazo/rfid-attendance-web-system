@@ -115,6 +115,7 @@ test("Manila midnight and year boundaries are independent of the host timezone",
 test("dashboard query and history aggregation use the same Manila date", async () => {
   let query
   const serverLoad = createSourceLoader({
+    "@/services/calendar/attendance-state": { fetchCalendarAttendanceState: async () => ({ today, effectiveDays: [], marks: [] }) },
     "@/features/auth/server": { requireRole: async (role) => {
       assert.equal(role, "student")
       return { id: "student-user" }

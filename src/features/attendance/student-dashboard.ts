@@ -1,6 +1,9 @@
 import { isAttendanceStatus, recordStatus, type AttendanceRowStatus } from "@/features/attendance/schema"
 import { requireRole } from "@/features/auth/server"
 import { schoolDateKey } from "@/lib/school-time"
+import { createCalendarAttendanceResolver, type CalendarAttendanceInputs } from "@/features/calendar/attendance-state"
+import { fetchCalendarAttendanceState } from "@/services/calendar/attendance-state"
+import type { DashboardAttendanceStatus } from "@/features/attendance/calendar-dashboard"
 import {
   fetchStudentDashboardSnapshot,
   type SmsStatus,
@@ -33,7 +36,7 @@ export interface StudentIdentity {
 }
 
 export interface TodayAttendance {
-  status: AttendanceRowStatus
+  status: DashboardAttendanceStatus
   timeIn: string | null
   timeOut: string | null
 }
@@ -184,8 +187,15 @@ function buildKpis(
 /** Pure aggregation, so the shape can be reasoned about without a database. */
 export function buildStudentDashboardData(
   snapshot: StudentDashboardSnapshot,
-  today: string
+  today: string,
+  calendar?: CalendarAttendanceInputs,
 ): StudentDashboardData {
+  const resolve = createCalendarAttendanceResolver({ today, effectiveDays: calendar?.effectiveDays ?? [], marks: calendar?.marks ?? [] })
+  const state = resolve(snapshot.student.id, snapshot.student.campus, today)
+  const history = snapshot.history.filter(record => record.attendance_date <= today)
+  const eligibleHistory = history.filter(record => resolve(snapshot.student.id, snapshot.student.campus, record.attendance_date).status === "Normal")
+  const kpis = buildKpis(eligibleHistory, today)
+  kpis.totalRfidTaps = history.filter(record => isAttendanceStatus(record.attendance_status)).reduce((total, record) => total + 1 + Number(Boolean(record.time_out)), 0)
   return {
     today,
     student: {
@@ -196,13 +206,13 @@ export function buildStudentDashboardData(
       campus: snapshot.student.campus,
       profilePicture: snapshot.student.profile_picture,
     },
-    attendance: resolveTodayStatus(snapshot.attendance),
+    attendance: state.status === "Normal" ? resolveTodayStatus(snapshot.attendance) : { status: state.status, timeIn: snapshot.attendance?.time_in ?? null, timeOut: snapshot.attendance?.time_out ?? null },
     rfid: resolveRfidInfo(snapshot.cards),
     sms: {
       status: snapshot.sms?.sms_status ?? null,
       sentAt: snapshot.sms?.sent_at ?? null,
     },
-    kpis: buildKpis(snapshot.history, today),
+    kpis,
   }
 }
 
@@ -217,5 +227,7 @@ export async function getStudentDashboardData(
     date: today,
   })
 
-  return buildStudentDashboardData(snapshot, today)
+  const from = snapshot.history.reduce((earliest, record) => record.attendance_date < earliest ? record.attendance_date : earliest, today)
+  const calendar = await fetchCalendarAttendanceState(from, today, now)
+  return buildStudentDashboardData(snapshot, today, calendar)
 }

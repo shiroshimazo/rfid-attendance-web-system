@@ -21,6 +21,15 @@ import { DeliveryControl } from '@/app/(portal)/admin/schedules/calendar/compone
 import { ReaderCalendar } from '@/components/calendar/reader-calendar';
 import { NotificationBell } from '@/components/calendar/notification-bell';
 import { AnnouncementPosts } from '@/components/calendar/announcement-posts';
+import { KpiCards as AdminKpis } from '@/app/(portal)/admin/dashboard/components/kpi-cards';
+import { KpiCards as TeacherKpis } from '@/app/(portal)/teacher/dashboard/components/kpi-cards';
+import { AttendanceDistributionChart } from '@/app/(portal)/admin/dashboard/components/attendance-distribution-chart';
+import { AttendanceTrendChart } from '@/app/(portal)/admin/dashboard/components/attendance-trend-chart';
+import { TodayAttendanceCard } from '@/app/(portal)/student/dashboard/components/today-attendance-card';
+import { CampusStatusStrip } from '@/components/calendar/campus-status-strip';
+import { buildDashboardCalendar } from '@/features/attendance/calendar-dashboard';
+const dashboardElement=document.createElement('section');dashboardElement.id='calendar-dashboard';dashboardElement.className='@container/main space-y-5 p-4';document.body.appendChild(dashboardElement);const dashboardRoot=createRoot(dashboardElement);
+window.__renderDashboard=(all=false)=>{const today='2026-11-05';const students=[{id:1,campus:'Main Campus'},{id:2,campus:'Main Campus'},{id:3,campus:'MV Campus'},{id:4,campus:'MV Campus'}];const records=students.map(student=>({student_id:student.id,attendance_date:today,attendance_status:student.id%2?'Present':'Absent'}));const effectiveDays=[{entry_id:1,attendance_date:today,campus:'Main Campus',attendance_impact:'no_classes'},...(all?[{entry_id:2,attendance_date:today,campus:'MV Campus',attendance_impact:'online_manual'}]:[])];const result=buildDashboardCalendar(students,records,today,{today,effectiveDays,marks:[]});const data={today,kpis:{totalStudents:4,totalAssigned:4,presentToday:result.counts.present,lateToday:result.counts.late,absentToday:result.counts.absent,expectedStudents:result.counts.expectedStudentDays,attendanceRate:result.counts.rate,rfidTapsToday:4},trend:result.trend};dashboardRoot.render(<><section id="calendar-dashboard-admin" className="space-y-4"><h2>Admin calendar attendance</h2><CampusStatusStrip states={result.campusStates}/><AdminKpis data={data}/><div className="grid gap-4 lg:grid-cols-2"><AttendanceDistributionChart distribution={result.distribution} attendanceRate={result.counts.rate}/><AttendanceTrendChart trend={result.trend} hasHistory={true}/></div></section><section id="calendar-dashboard-teacher"><h2>Teacher calendar attendance</h2><TeacherKpis data={data}/></section><TodayAttendanceCard attendance={{status:'OnlineManual',timeIn:'07:00:00',timeOut:null}}/></>);};
 const postsElement=document.createElement('section');postsElement.id='dashboard-posts';postsElement.className='p-4';document.body.appendChild(postsElement);const postsRoot=createRoot(postsElement);
 window.__renderPosts=(options={})=>postsRoot.render(<AnnouncementPosts role={options.role||'student'} entries={options.empty?[]:[{id:201,title:'Pinned closure',tags:['no_classes'],attendance_impact:'no_classes',campuses:['Main Campus'],starts_on:'2026-11-05',ends_on:'2026-11-06',reason:'Storm warning. '+('School notice details. '.repeat(30)),description:null,is_pinned:true,published_at:new Date(Date.now()-7*86400000+(options.expiring?1000:7*86400000)).toISOString()},{id:202,title:'Exam schedule',tags:['exam'],attendance_impact:'normal',campuses:[],starts_on:'2026-11-06',ends_on:'2026-11-06',reason:null,description:'Exam schedule details.',is_pinned:false,published_at:new Date().toISOString()},{id:203,title:'Online lessons update',tags:['online_class'],attendance_impact:'online_manual',campuses:['MV Campus'],starts_on:'2026-11-07',ends_on:'2026-11-07',reason:null,description:'Confirm attendance in Subject Attendance.',is_pinned:false,published_at:new Date().toISOString()}]} />);window.__renderPosts();
 const bellElement=document.createElement('div');bellElement.className='flex justify-end p-4';document.body.appendChild(bellElement);const bellRoot=createRoot(bellElement);
@@ -267,8 +276,31 @@ try {
   assert.equal(await page.evaluate(() => window.__calls.length), callsBeforePosts)
   await page.evaluate(() => window.__renderPosts({empty:true}))
   await posts.getByRole("heading", { name: "Announcements", exact: true }).waitFor({ state: "hidden" })
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await page.evaluate(() => window.__renderDashboard(false))
+  await page.clock.runFor(1000)
+  const dashboard = page.locator("#calendar-dashboard")
+  await dashboard.getByRole("heading", { name: "Admin calendar attendance", exact: true }).waitFor()
+  for (const role of ["admin", "teacher"]) {
+    const rate = dashboard.locator(`#calendar-dashboard-${role}`).getByRole("link", { name: "View attendance rate", exact: true })
+    await rate.getByRole("img", { name: "50.0%", exact: true }).waitFor()
+  }
+  await page.evaluate(() => window.__renderDashboard(true))
+  await page.clock.runFor(1000)
+  for (const role of ["admin", "teacher"]) {
+    const rate = dashboard.locator(`#calendar-dashboard-${role}`).getByRole("link", { name: "View attendance rate", exact: true })
+    assert.match(await rate.innerText(), /—/); assert.doesNotMatch(await rate.innerText(), /0%|NaN/)
+  }
+  await dashboard.getByText(/Online class today/).waitFor()
+  assert.doesNotMatch(await dashboard.innerText(), /NaN|null%|undefined/)
+  await dashboard.screenshot({ path: join(output, "calendar-dashboard-desktop.png") })
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.clock.runFor(1000)
+  const dashboardBounds = await dashboard.boundingBox()
+  assert.ok(dashboardBounds.x >= 0 && dashboardBounds.x + dashboardBounds.width <= 376)
+  await dashboard.screenshot({ path: join(output, "calendar-dashboard-mobile.png") })
   assert.deepEqual(errors, [])
-  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, mobile dialog bounds, sync/retry controls, reader layouts, deep links, keyboard day selection, notification bell/read actions, session toast suppression, dashboard post layouts, exact expiry, and republish visibility.\n")
+  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, mobile dialog bounds, sync/retry controls, reader layouts, deep links, keyboard day selection, notification bell/read actions, session toast suppression, dashboard post layouts, exact expiry, republish visibility, and mixed/all-exception dashboard rates with real charts.\n")
   console.log(`PASS calendar dialog browser checks. Screenshots: ${output}`)
 } catch (error) {
   await page?.screenshot({ path: join(output, "failure.png"), fullPage: true })

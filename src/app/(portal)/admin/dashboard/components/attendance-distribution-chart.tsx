@@ -16,6 +16,8 @@ import { RadialStatusChart } from "@/features/attendance/radial-status-chart"
 import type { StatusSlice } from "@/features/attendance/dashboard"
 
 const chartConfig = {
+  noclasses: { label: "No classes", color: "var(--chart-3)" },
+  onlinemanual: { label: "Online / manual", color: "var(--chart-5)" },
   present: { label: "Present", color: "var(--chart-2)" },
   late: { label: "Late", color: "var(--chart-4)" },
   absent: { label: "Absent", color: "var(--destructive)" },
@@ -27,7 +29,7 @@ export function AttendanceDistributionChart({
   attendanceRate,
 }: {
   distribution: StatusSlice[]
-  attendanceRate: number
+  attendanceRate: number | null
 }) {
   const total = distribution.reduce((sum, slice) => sum + slice.count, 0)
 
@@ -35,7 +37,7 @@ export function AttendanceDistributionChart({
     <Card className="flex flex-col">
       <CardHeader>
         <CardTitle>Attendance Status Distribution</CardTitle>
-        <CardDescription>Recorded statuses and students with no tap yet today</CardDescription>
+        <CardDescription>Recorded decisions, calendar exceptions, and provisional missing taps</CardDescription>
       </CardHeader>
       <CardContent className="flex-1">
         {total > 0 ? (
@@ -43,7 +45,7 @@ export function AttendanceDistributionChart({
             slices={distribution}
             config={chartConfig}
             headline={
-              <SlidingNumber value={attendanceRate} decimalPlaces={1} suffix="%" />
+              attendanceRate === null ? "—" : <SlidingNumber value={attendanceRate} decimalPlaces={1} suffix="%" />
             }
             caption={
               <>

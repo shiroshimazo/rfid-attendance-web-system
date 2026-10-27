@@ -47,6 +47,8 @@ type SortColumn =
 const PAGE_SIZE = 10
 
 const statusOrder: Record<TeacherStudentAttendanceRow["status"], number> = {
+  NoClasses: 5,
+  OnlineManual: 6,
   Present: 0,
   Late: 1,
   LegacyRecord: 4,

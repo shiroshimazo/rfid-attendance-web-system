@@ -2,11 +2,13 @@ import { Badge } from "@/components/ui/badge"
 import type { StudentRfidStatus } from "@/features/attendance/dashboard"
 import {
   attendanceStatusLabel,
-  type AttendanceRowStatus,
 } from "@/features/attendance/schema"
+import type { DashboardAttendanceStatus } from "@/features/attendance/calendar-dashboard"
 import { cn } from "@/lib/utils"
 
-const attendanceStatusStyles: Record<AttendanceRowStatus, string> = {
+const attendanceStatusStyles: Record<DashboardAttendanceStatus, string> = {
+  NoClasses: "border-border bg-muted text-foreground",
+  OnlineManual: "border-blue-600/20 bg-blue-500/10 text-blue-700 dark:text-blue-300",
   Present:
     "border-emerald-600/20 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/25 dark:text-emerald-300",
   Late: "border-amber-600/20 bg-amber-500/10 text-amber-700 dark:border-amber-400/25 dark:text-amber-300",
@@ -29,11 +31,11 @@ const rfidStatusStyles: Record<StudentRfidStatus, string> = {
 export function AttendanceStatusBadge({
   status,
 }: {
-  status: AttendanceRowStatus
+  status: DashboardAttendanceStatus
 }) {
   return (
     <Badge variant="outline" className={cn(attendanceStatusStyles[status])}>
-      {attendanceStatusLabel(status)}
+      {status === "NoClasses" ? "No classes" : status === "OnlineManual" ? "Online / manual" : attendanceStatusLabel(status)}
     </Badge>
   )
 }

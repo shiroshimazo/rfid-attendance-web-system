@@ -119,14 +119,14 @@ export function AttendanceTrendChart({
         </CardAction>
       </CardHeader>
       <CardContent className="relative mx-6 min-h-64 flex-1 px-0">
-        {hasHistory && points.length > 0 ? (
+        {hasHistory && points.some(point => point.rate !== null) ? (
           <ChartContainer
             config={chartConfig}
             role="img"
             aria-label={`Attendance trend, ${activeRange.caption.toLowerCase()}`}
             className="absolute inset-0 aspect-auto h-full w-full"
           >
-            <LineChart accessibilityLayer data={points} margin={{ top: 12, left: 4, right: 12, bottom: 4 }}>
+            <LineChart accessibilityLayer data={points.map(point => ({ ...point, present: point.rate === null ? null : point.present, absent: point.rate === null ? null : point.absent }))} margin={{ top: 12, left: 4, right: 12, bottom: 4 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis
                 dataKey="label"
@@ -154,7 +154,7 @@ export function AttendanceTrendChart({
 
                       return rate === undefined
                         ? String(value)
-                        : `${value} · ${formatPercent(rate)} rate`
+                        : `${value} · ${(rate === null ? "—" : formatPercent(rate))} rate`
                     }}
                   />
                 }
@@ -187,8 +187,8 @@ export function AttendanceTrendChart({
         ) : (
           <EmptyState
             icon={LineChartIcon}
-            title="No attendance history yet"
-            description="Trends appear once RFID taps start creating records for your assigned students."
+            title={hasHistory ? "No finalized RFID attendance" : "No attendance history yet"}
+            description={hasHistory ? "Calendar exceptions and provisional missing taps have no daily RFID rate (—)." : "Trends appear once RFID taps start creating records for your assigned students."}
           />
         )}
       </CardContent>

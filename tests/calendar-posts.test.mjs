@@ -90,7 +90,8 @@ test("dashboard posts stream above KPIs and post failures do not replace attenda
     const postsIndex = children.findIndex(child => child?.props?.children?.type === noop)
     assert.ok(postsIndex >= 0)
     assert.equal(children[postsIndex].props.fallback, null)
-    assert.equal(children[postsIndex + 1].type, "h2")
-    assert.equal(typeof children[postsIndex + 2].type, "function")
+    const offset = role === "teacher" ? 2 : 1
+    assert.equal(children[postsIndex + offset].type, "h2")
+    assert.equal(typeof children[postsIndex + offset + 1].type, "function")
   }
 })

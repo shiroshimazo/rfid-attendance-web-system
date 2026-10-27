@@ -63,7 +63,7 @@ export function KpiCards({ kpis }: { kpis: StudentDashboardKpis }) {
         value={<SlidingNumber value={kpis.totalPresent} />}
         icon={UserRoundCheck}
         headline="Days tapped in"
-        detail="Present and late arrivals combined."
+        detail="Present and late arrivals combined; calendar exceptions excluded."
       />
       <KpiCard
         href="/student/my-attendance?status=Late"
@@ -79,7 +79,7 @@ export function KpiCards({ kpis }: { kpis: StudentDashboardKpis }) {
         value={<SlidingNumber value={kpis.totalAbsent} />}
         icon={UserRoundX}
         headline="School days missed"
-        detail="Recorded absences; unrecorded days excluded."
+        detail="Eligible recorded absences; unrecorded days excluded."
       />
       <KpiCard
         href="/student/my-attendance"

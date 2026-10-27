@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { formatNumber } from "@/lib/format"
 import type { ReactNode } from "react"
 
 import {
@@ -82,6 +83,7 @@ function rateTrend(data: TeacherDashboardData) {
 
   const current = daily[daily.length - 1].rate
   const previous = daily[daily.length - 2].rate
+  if (current === null || previous === null) return undefined
   const delta = current - previous
   const direction = delta > 0.05 ? "up" : delta < -0.05 ? "down" : "flat"
   const sign = delta > 0 ? "+" : ""
@@ -115,7 +117,7 @@ export function KpiCards({ data }: { data: TeacherDashboardData }) {
         value={<SlidingNumber value={kpis.presentToday} />}
         icon={UserRoundCheck}
         headline="Tapped in today"
-        detail="Assigned students with a time-in recorded today."
+        detail="Eligible assigned students with a time-in today."
       />
       <KpiCard
         href={`/teacher/attendance?date=${data.today}&status=Late`}
@@ -136,10 +138,10 @@ export function KpiCards({ data }: { data: TeacherDashboardData }) {
       <KpiCard
         href={`/teacher/attendance?date=${data.today}`}
         label="Attendance Rate"
-        value={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
+        value={kpis.attendanceRate === null ? "—" : <SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={TrendingUp}
         headline="Present over present plus absent"
-        detail="Compared with the previous session day."
+        detail={`${formatNumber(kpis.expectedStudents)} eligible students; calendar exceptions excluded.`}
         trend={trend}
       />
     </section>

@@ -9,11 +9,14 @@ export interface CalendarAttendanceState {
   campus: string
   calendarEntryId: number | null
 }
+export interface CalendarAttendanceInputs {
+  today: string
+  effectiveDays: EffectiveCalendarDay[]
+  marks: CalendarAttendanceMark[]
+}
 
 /** Today/future use the campus view; history uses only immutable student snapshots. */
-export function createCalendarAttendanceResolver({ today, effectiveDays, marks }: {
-  today: string; effectiveDays: EffectiveCalendarDay[]; marks: CalendarAttendanceMark[]
-}) {
+export function createCalendarAttendanceResolver({ today, effectiveDays, marks }: CalendarAttendanceInputs) {
   const effective = new Map<string, Map<string, CalendarAttendanceState>>()
   const historical = new Map<string, Map<number, CalendarAttendanceState>>()
   for (const row of effectiveDays) {

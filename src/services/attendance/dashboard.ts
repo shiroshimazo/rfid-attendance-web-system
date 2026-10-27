@@ -16,6 +16,7 @@ export interface StudentRow {
   full_name: string
   year_level: string
   section: string
+  campus: string
   program_id: number
   program: ProgramRef | null
 }
@@ -64,7 +65,7 @@ export async function fetchAdminDashboardSnapshot({
       supabase
         .from("students")
         .select(
-          "id, student_id, full_name, year_level, section, program_id, program:programs(program_code, program_name)"
+          "id, student_id, full_name, year_level, section, campus, program_id, program:programs(program_code, program_name)"
         )
         .eq("status", "active")
         .order("full_name", { ascending: true })

@@ -10,3 +10,9 @@ One Pending arrival SMS is persisted atomically; provider delivery remains P06.
 P05 subject attendance is teacher-confirmed as Present, Late or Absent. A campus
 tap leaves subject rosters unconfirmed and cannot create a subject result.
 No automatic absence job is part of the approved implementation plan.
+
+
+Task 25 adds campus to the admin dashboard roster read. Dashboard feature entry
+points combine these snapshots with read-only calendar state inputs under the
+same authenticated account and Manila date. Calendar errors propagate instead of
+assuming normal attendance; dashboard reads never synchronize marks.

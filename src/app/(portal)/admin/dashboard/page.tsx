@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { format, parseISO } from "date-fns"
 
 import { DataErrorCard } from "@/components/data-error-card"
+import { CampusStatusStrip } from "@/components/calendar/campus-status-strip"
 import { LiveRefresh } from "@/components/live-refresh"
 import { getAdminDashboardData } from "@/features/attendance/dashboard"
 
@@ -52,6 +53,8 @@ async function DashboardContent() {
           </p>
         </div>
       </div>
+
+      <CampusStatusStrip states={data.campusStates} />
 
       <h2 className="text-lg font-semibold">Daily RFID evidence (separate from subject attendance)</h2>
 

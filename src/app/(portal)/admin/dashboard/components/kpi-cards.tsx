@@ -84,6 +84,7 @@ function rateTrend(data: AdminDashboardData) {
 
   const current = daily[daily.length - 1].rate
   const previous = daily[daily.length - 2].rate
+  if (current === null || previous === null) return undefined
   const delta = current - previous
   const direction = delta > 0.05 ? "up" : delta < -0.05 ? "down" : "flat"
   const sign = delta > 0 ? "+" : ""
@@ -117,7 +118,7 @@ export function KpiCards({ data }: { data: AdminDashboardData }) {
         value={<SlidingNumber value={kpis.presentToday} />}
         icon={UserRoundCheck}
         headline={`${formatNumber(kpis.lateToday)} arrived late`}
-        detail="Students who tapped in at least once today."
+        detail="Eligible students who tapped in today; calendar exceptions excluded."
       />
       <KpiCard
         href={`/admin/attendance?date=${data.today}&status=Late`}
@@ -138,10 +139,10 @@ export function KpiCards({ data }: { data: AdminDashboardData }) {
       <KpiCard
         href={`/admin/attendance?date=${data.today}`}
         label="Attendance Rate"
-        value={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
+        value={kpis.attendanceRate === null ? "—" : <SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={TrendingUp}
         headline="Present over present plus absent"
-        detail="Compared with the previous session day."
+        detail={`${formatNumber(kpis.expectedStudents)} eligible students; calendar exceptions excluded.`}
         trend={trend}
       />
       <KpiCard
