@@ -109,6 +109,20 @@ All delivery tests are mocked; database tests use disposable PGlite.
 
 ## Admin calendar browsing (Task 18)
 
+Portal navigation and calendar tab links preload full route data on hover or
+keyboard focus, rather than eagerly loading every visible panel. Current pages
+and admin reports are excluded; report reads synchronize marks and must wait for
+actual navigation. Authentication still validates the user first, then performs
+email verification and the scoped account read concurrently. Existing session,
+role, and active-account guards remain enforced.
+
+Calendar mode skips hidden list/delivery queries. List delivery reads overlap the
+independent overview/campus reads, while preserving page clamping and errors.
+Calendar realtime subscriptions include delivery changes so email totals stay
+fresh. Deferred-read tests verify concurrent execution without timing thresholds;
+browser tests cover intent preloading and keyboard/tab behavior. Hosted latency
+has not been benchmarked, and development mode still incurs first-route compilation.
+
 Open `/admin/schedules/calendar` as a verified active administrator. This task
 provides Calendar, All announcements, and Email deliveries tabs. Sidebar navigation is complete in Task 21;
 creation/editing/lifecycle controls are complete in Task 19, and the delivery log and sync

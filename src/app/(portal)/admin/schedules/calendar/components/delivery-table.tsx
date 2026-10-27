@@ -13,6 +13,7 @@ import { LiveRefresh } from "@/components/live-refresh"
 import type { CalendarDeliveryPanel } from "@/features/calendar/delivery"
 import { calendarEmailTypes, calendarEmailStatuses } from "@/features/calendar/schema"
 import { DeliveryControl } from "./delivery-controls"
+import { PortalLink } from "@/components/portal-link"
 
 const timestamp = (value: string | null) => value ? new Date(value).toLocaleString("en-PH", { timeZone: "Asia/Manila" }) : "—"
 
@@ -28,7 +29,7 @@ export function DeliveryTable({ panel, today }: { panel: CalendarDeliveryPanel; 
   }
   return <div className="min-w-0 space-y-4">
     <LiveRefresh channel="admin-calendar-deliveries" tables={["calendar_email_deliveries"]} />
-    <Tabs value="deliveries" onValueChange={tab => router.replace(`${pathname}?tab=${tab}`, { scroll: false })}><TabsList aria-label="Calendar views" className="h-auto flex-wrap"><TabsTrigger value="calendar">Calendar</TabsTrigger><TabsTrigger value="list">All announcements</TabsTrigger><TabsTrigger value="deliveries">Email deliveries</TabsTrigger></TabsList><TabsContent value="deliveries" className="space-y-4">
+    <Tabs value="deliveries" onValueChange={tab => router.replace(`${pathname}?tab=${tab}`, { scroll: false })}><TabsList aria-label="Calendar views" className="h-auto flex-wrap">{[["calendar", "Calendar"], ["list", "All announcements"], ["deliveries", "Email deliveries"]].map(([tab, label]) => <TabsTrigger key={tab} value={tab} asChild><PortalLink href={`${pathname}?tab=${tab}`} onClick={event => event.preventDefault()}>{label}</PortalLink></TabsTrigger>)}</TabsList><TabsContent value="deliveries" className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold">Email deliveries</h2><div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => router.refresh()}>Refresh</Button><DeliveryControl today={today} /></div></div>
     <p className="text-sm text-muted-foreground">Sent means accepted by the email provider, not confirmed inbox delivery. Times use Asia/Manila.</p>
     <form className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6" onSubmit={event => { event.preventDefault(); const data = new FormData(event.currentTarget); navigate({ entry: String(data.get("entry") ?? ""), type: String(data.get("type") ?? ""), status: String(data.get("status") ?? ""), from: String(data.get("from") ?? ""), to: String(data.get("to") ?? ""), page: "1" }) }}>

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/ui/date-picker"
 import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
+import { PortalLink } from "@/components/portal-link"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TablePagination } from "@/components/data-table"
@@ -60,13 +61,16 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
   const router = useRouter(), pathname = usePathname(), searchParams = useSearchParams()
   const [pending, startTransition] = React.useTransition()
   const days = React.useMemo(() => calendarDays(panel.entries, query.month), [panel.entries, query.month])
-  function navigate(patch: Record<string, string | null>) {
+  function navigationUrl(patch: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString())
     for (const [key, value] of Object.entries(patch)) {
       if (!value || value === "all") params.delete(key)
       else params.set(key, value)
     }
-    startTransition(() => router.replace(`${pathname}?${params}`, { scroll: false }))
+    return `${pathname}?${params}`
+  }
+  function navigate(patch: Record<string, string | null>) {
+    startTransition(() => router.replace(navigationUrl(patch), { scroll: false }))
   }
   function selectDate(date: string) { navigate({ date, month: date.slice(0, 7), tab: "calendar" }) }
   const summary = [
@@ -84,7 +88,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
       <div className="space-y-1.5"><Label htmlFor="calendar-month">Calendar month</Label><DatePicker id="calendar-month" value={`${query.month}-01`} displayFormat="MMMM yyyy" min="0001-01-01" max="9998-12-31" clearable={false} captionLayout="dropdown-months" className="h-9 w-48" onChange={value => { const month = value.slice(0, 7); navigate({ month, date: `${month}-01` }) }} /></div>
     </div>
     <Tabs value={query.tab} onValueChange={tab => navigate({ tab })}>
-      <TabsList aria-label="Calendar views" className="h-auto flex-wrap"><TabsTrigger value="calendar">Calendar</TabsTrigger><TabsTrigger value="list">All announcements</TabsTrigger><TabsTrigger value="deliveries">Email deliveries</TabsTrigger></TabsList>
+      <TabsList aria-label="Calendar views" className="h-auto flex-wrap">{[["calendar", "Calendar"], ["list", "All announcements"], ["deliveries", "Email deliveries"]].map(([tab, label]) => <TabsTrigger key={tab} value={tab} asChild><PortalLink href={navigationUrl({ tab })} onClick={event => event.preventDefault()}>{label}</PortalLink></TabsTrigger>)}</TabsList>
       <TabsContent value="calendar" className="mt-4">
         <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <Card className="min-w-0"><CardHeader><CardTitle>{calendarDate(`${query.month}-01`).toLocaleDateString("en-PH", { month: "long", year: "numeric" })}</CardTitle><CardDescription>Choose a date to view announcements across all campuses.</CardDescription></CardHeader>

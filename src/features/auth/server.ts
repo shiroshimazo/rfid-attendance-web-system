@@ -34,14 +34,11 @@ export const getCurrentAccount = cache(async (): Promise<CurrentAccount | null> 
 
   if (!user) return null
 
-  const { data: verified, error: verificationError } = await supabase.rpc("has_verified_email_session")
+  const [{ data: verified, error: verificationError }, { data }] = await Promise.all([
+    supabase.rpc("has_verified_email_session"),
+    supabase.from("users").select("id, email, role, status").eq("id", user.id).maybeSingle(),
+  ])
   if (verificationError || verified !== true) return null
-
-  const { data } = await supabase
-    .from("users")
-    .select("id, email, role, status")
-    .eq("id", user.id)
-    .maybeSingle()
 
   const account = data as AccountRow | null
 

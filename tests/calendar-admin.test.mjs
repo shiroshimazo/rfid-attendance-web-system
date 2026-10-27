@@ -85,6 +85,7 @@ test("overview and campus queries read past server caps; KPIs use exact counts a
 
 function panelLoader(deny = false) {
   const calls = []
+  const deliveryCalls = []
   const entries = [entry(1, { attendance_impact: "no_classes", ends_on: "2026-11-03" }), entry(2, { attendance_impact: "no_classes", campuses: ["West"], ends_on: "2026-11-02" }), entry(3, { attendance_impact: "no_classes", status: "draft", ends_on: "2026-11-05" })]
   const load = createSourceLoader({
     "@/features/auth/server": { requireRole: async role => { assert.equal(role, "admin"); if (deny) throw new Error("Forbidden") } },
@@ -94,14 +95,42 @@ function panelLoader(deny = false) {
     },
     "@/services/calendar/admin": {
       fetchAdminCalendarOverview: async () => ({ entries, upcoming: 3, published: 2, failed: 1 }),
-      fetchCalendarDeliveryStatuses: async () => [{ calendar_entry_id: 1, status: "Sent" }, { calendar_entry_id: 1, status: "Failed" }],
+      fetchCalendarDeliveryStatuses: async ids => { deliveryCalls.push(ids); return [{ calendar_entry_id: 1, status: "Sent" }, { calendar_entry_id: 1, status: "Failed" }] },
     },
   })
-  return { get: load("src/features/calendar/admin.ts").getAdminCalendarPanel, calls }
+  return { get: load("src/features/calendar/admin.ts").getAdminCalendarPanel, calls, deliveryCalls }
 }
 
+test("calendar view skips hidden list and delivery reads while keeping overview data", async () => {
+  const fixture = panelLoader()
+  const panel = await fixture.get(view.parseAdminCalendarQuery({}, now))
+  assert.deepEqual(fixture.calls, []); assert.deepEqual(fixture.deliveryCalls, [])
+  assert.equal(panel.entries.length, 3); assert.equal(panel.kpis.noClasses, 3)
+})
+
+test("list delivery reads start while the independent overview is still pending", { timeout: 3000 }, async () => {
+  let finishOverview, startedDeliveries
+  const overview = new Promise(resolve => { finishOverview = resolve })
+  const deliveries = new Promise(resolve => { startedDeliveries = resolve })
+  const load = createSourceLoader({
+    "@/features/auth/server": { requireRole: async () => {} },
+    "@/services/calendar/query": {
+      fetchAdminCalendarEntries: async () => ({ entries: [entry(1)], total: 1 }),
+      fetchCalendarCampuses: async () => [],
+    },
+    "@/services/calendar/admin": {
+      fetchAdminCalendarOverview: () => overview,
+      fetchCalendarDeliveryStatuses: async () => { startedDeliveries(); return [] },
+    },
+  })
+  const result = load("src/features/calendar/admin.ts").getAdminCalendarPanel(view.parseAdminCalendarQuery({ tab: "list" }, now))
+  await deliveries
+  finishOverview({ entries: [], upcoming: 0, published: 0, failed: 0 })
+  assert.equal((await result).list.total, 1)
+})
+
 test("panel counts distinct no-class dates, clamps empty pages, aggregates emails and gates admin access", async () => {
-  const query = view.parseAdminCalendarQuery({ page: "99" }, now)
+  const query = view.parseAdminCalendarQuery({ page: "99", tab: "list" }, now)
   const fixture = panelLoader()
   const panel = await fixture.get(query)
   assert.deepEqual(fixture.calls, [99, 1]); assert.equal(panel.query.page, 1)
@@ -117,7 +146,8 @@ test("calendar and list render real components with labels, overflow indicators,
     useRouter: () => ({ replace() {} }), usePathname: () => "/admin/schedules/calendar", useSearchParams: () => new URLSearchParams(),
   } })
   const { CalendarPanel } = load("src/app/(portal)/admin/schedules/calendar/components/calendar-panel.tsx")
-  const panel = await panelLoader().get(view.parseAdminCalendarQuery({}, now))
+  const panel = await panelLoader().get(view.parseAdminCalendarQuery({ tab: "list" }, now))
+  panel.query.tab = "calendar"
   panel.entries = Array.from({ length: 5 }, (_, index) => entry(index, { title: "<script>Title</script>" }))
   let html = renderToStaticMarkup(React.createElement(CalendarPanel, { panel }))
   assert.ok(html.includes("+2")); assert.ok(html.includes("5 announcements"))

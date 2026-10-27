@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion } from "motion/react"
 import { ChevronRight, ChevronDown } from "lucide-react"
-import Link from "next/link"
+import { PortalLink as Link } from "@/components/portal-link"
 import { usePathname } from "next/navigation"
 import type { NavigationItem } from "@/config/navigation"
 

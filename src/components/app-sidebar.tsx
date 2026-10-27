@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { LayoutGroup } from "motion/react"
-import Link from "next/link"
+import { PortalLink as Link } from "@/components/portal-link"
 import { Logo } from "@/components/logo"
 
 import { NavMain } from "@/components/nav-main"
