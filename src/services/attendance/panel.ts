@@ -8,7 +8,7 @@ export type { AttendanceStatus }
  * Roster filters, not database statuses: "NoRecord" selects students with no
  * stored row for the date, so it is applied after the rows are read.
  */
-export type AttendanceFilterStatus = AttendanceStatus | "NoRecord" | "Attended" | "all"
+export type AttendanceFilterStatus = AttendanceStatus | "NoRecord" | "NoClasses" | "OnlineManual" | "Attended" | "all"
 
 export interface AttendancePanelFilters {
   date: string
@@ -40,6 +40,7 @@ export interface AttendancePanelStudentRow {
   full_name: string
   year_level: string
   section: string
+  campus: string
   program_id: number
   program: AttendanceProgramRef | null
 }
@@ -73,7 +74,7 @@ export interface AttendancePanelSnapshot {
 }
 
 const studentColumns =
-  "id, student_id, full_name, year_level, section, program_id, program:programs(program_code, program_name)"
+  "id, student_id, full_name, year_level, section, campus, program_id, program:programs(program_code, program_name)"
 
 const SEARCH_MAX_LENGTH = 80
 

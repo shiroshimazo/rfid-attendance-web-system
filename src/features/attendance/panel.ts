@@ -1,4 +1,7 @@
-import { recordStatus, type AttendanceRowStatus } from "@/features/attendance/schema"
+import { createCalendarAttendanceResolver, type CalendarAttendanceInputs } from "@/features/calendar/attendance-state"
+import { fetchCalendarAttendanceState } from "@/services/calendar/attendance-state"
+import type { AttendanceDisplayStatus } from "@/features/attendance/status"
+import { recordStatus } from "@/features/attendance/schema"
 import type { ProgramOption } from "@/features/teachers/directory"
 import {
   fetchAttendancePanelSnapshot,
@@ -18,6 +21,9 @@ export interface AttendancePanelKpis {
   absent: number
   /** Students with no record for the date, who may still tap in. */
   noRecord: number
+  noClasses: number
+  onlineManual: number
+  expectedStudents: number
 }
 
 export interface AttendancePanelRow {
@@ -28,7 +34,8 @@ export interface AttendancePanelRow {
   programName: string
   yearLevel: string
   section: string
-  status: AttendanceRowStatus
+  campus: string
+  status: AttendanceDisplayStatus
   timeIn: string | null
   timeOut: string | null
 }
@@ -49,7 +56,7 @@ export interface AttendancePanelData {
   hasStudents: boolean
 }
 
-function isAttended(status: AttendanceRowStatus) {
+function isAttended(status: AttendanceDisplayStatus) {
   return status === "Present" || status === "Late"
 }
 
@@ -61,9 +68,11 @@ function distinctSorted(values: string[]) {
 
 export function buildAttendancePanelData(
   snapshot: AttendancePanelSnapshot,
-  date: string
+  date: string,
+  calendar?: CalendarAttendanceInputs,
 ): AttendancePanelData {
   const { query, students, attendance, programs, placements } = snapshot
+  const resolve = createCalendarAttendanceResolver({ today: calendar?.today ?? date, effectiveDays: calendar?.effectiveDays ?? [], marks: calendar?.marks ?? [] })
 
   const recordsByStudent = new Map(
     attendance
@@ -73,6 +82,7 @@ export function buildAttendancePanelData(
 
   const cohort: AttendancePanelRow[] = students.map((student) => {
     const record = recordsByStudent.get(student.id)
+    const state = resolve(student.id, student.campus, date)
 
     return {
       id: student.id,
@@ -82,7 +92,8 @@ export function buildAttendancePanelData(
       programName: student.program?.program_name ?? "Unknown program",
       yearLevel: student.year_level,
       section: student.section,
-      status: record ? recordStatus(record.attendance_status) : "NoRecord",
+      campus: state.campus,
+      status: state.status !== "Normal" ? state.status : record ? recordStatus(record.attendance_status) : "NoRecord",
       timeIn: record?.time_in ?? null,
       timeOut: record?.time_out ?? null,
     }
@@ -93,6 +104,8 @@ export function buildAttendancePanelData(
   const late = cohort.filter((row) => row.status === "Late").length
   const absent = cohort.filter((row) => row.status === "Absent").length
   const noRecord = cohort.filter((row) => row.status === "NoRecord").length
+  const noClasses = cohort.filter(row => row.status === "NoClasses").length
+  const onlineManual = cohort.filter(row => row.status === "OnlineManual").length
 
   return {
     date,
@@ -103,6 +116,8 @@ export function buildAttendancePanelData(
       late,
       absent,
       noRecord,
+      noClasses, onlineManual,
+      expectedStudents: cohort.length - noClasses - onlineManual,
     },
     rows:
       query.status === "all"
@@ -130,9 +145,9 @@ export function buildAttendancePanelData(
 }
 
 export async function getAttendancePanelData(
-  query: AttendancePanelQuery
+  query: AttendancePanelQuery,
+  now = new Date(),
 ): Promise<AttendancePanelData> {
-  const snapshot = await fetchAttendancePanelSnapshot(query)
-
-  return buildAttendancePanelData(snapshot, query.date)
+  const [snapshot, calendar] = await Promise.all([fetchAttendancePanelSnapshot(query), fetchCalendarAttendanceState(query.date, query.date, now)])
+  return buildAttendancePanelData(snapshot, query.date, calendar)
 }

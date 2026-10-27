@@ -124,7 +124,7 @@ test("dashboard query and history aggregation use the same Manila date", async (
       query = input
       return makeSnapshot(null)
     } },
-    "@/services/attendance/student-attendance": { fetchStudentAttendanceSnapshot: async () => ({ records: [], cards: [], sms: [] }) },
+    "@/services/attendance/student-attendance": { fetchStudentAttendanceSnapshot: async () => ({ student, records: [], cards: [], sms: [] }) },
   })
   const now = new Date("2026-09-03T16:00:00Z")
   const dashboard = await serverLoad("src/features/attendance/student-dashboard.ts").getStudentDashboardData(now)

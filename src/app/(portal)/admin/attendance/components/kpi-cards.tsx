@@ -2,6 +2,8 @@ import type { ReactNode } from "react"
 
 import {
   Clock4,
+  CalendarOff,
+  Laptop,
   UserRoundCheck,
   UserRoundX,
   UsersRound,
@@ -69,7 +71,7 @@ export function KpiCards({
   return (
     <section
       aria-label="Attendance summary"
-      className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4"
+      className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-3"
     >
       <KpiCard
         label="Total Students"
@@ -81,23 +83,25 @@ export function KpiCards({
         label="Present"
         value={<SlidingNumber value={kpis.present} />}
         icon={UserRoundCheck}
-        share={shareOf(kpis.present, kpis.totalStudents)}
+        share={shareOf(kpis.present, kpis.expectedStudents)}
         detail={`Students who tapped in on ${readableDate}, late arrivals included.`}
       />
       <KpiCard
         label="Late"
         value={<SlidingNumber value={kpis.late} />}
         icon={Clock4}
-        share={shareOf(kpis.late, kpis.totalStudents)}
+        share={shareOf(kpis.late, kpis.expectedStudents)}
         detail={`Tapped in after the section cutoff on ${readableDate}. Late still counts as present.`}
       />
       <KpiCard
         label="Absent"
         value={<SlidingNumber value={kpis.absent} />}
         icon={UserRoundX}
-        share={shareOf(kpis.absent, kpis.totalStudents)}
+        share={shareOf(kpis.absent, kpis.expectedStudents)}
         detail={`Recorded absences only; ${formatNumber(kpis.noRecord)} students have no tap yet.`}
       />
+      <KpiCard label="No classes" value={<SlidingNumber value={kpis.noClasses} />} icon={CalendarOff} detail="Calendar exception; excluded from daily RFID decisions." />
+      <KpiCard label="Online / manual" value={<SlidingNumber value={kpis.onlineManual} />} icon={Laptop} detail="Attendance is confirmed in Subject Attendance." />
     </section>
   )
 }

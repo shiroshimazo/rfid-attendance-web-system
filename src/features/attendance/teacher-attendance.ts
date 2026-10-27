@@ -1,4 +1,7 @@
-import { recordStatus, type AttendanceRowStatus } from "@/features/attendance/schema"
+import { createCalendarAttendanceResolver, type CalendarAttendanceInputs } from "@/features/calendar/attendance-state"
+import { fetchCalendarAttendanceState } from "@/services/calendar/attendance-state"
+import type { AttendanceDisplayStatus } from "@/features/attendance/status"
+import { recordStatus } from "@/features/attendance/schema"
 import { requireRole } from "@/features/auth/server"
 import type { ProgramOption } from "@/features/teachers/directory"
 import {
@@ -27,6 +30,9 @@ export interface TeacherAttendancePanelKpis {
   absent: number
   /** Students with no record for the date, who may still tap in. */
   noRecord: number
+  noClasses: number
+  onlineManual: number
+  expectedStudents: number
 }
 
 export interface TeacherAttendancePanelRow {
@@ -37,7 +43,8 @@ export interface TeacherAttendancePanelRow {
   programName: string
   yearLevel: string
   section: string
-  status: AttendanceRowStatus
+  campus: string
+  status: AttendanceDisplayStatus
   timeIn: string | null
   timeOut: string | null
   rfidStatus: StudentRfidStatus
@@ -60,7 +67,7 @@ export interface TeacherAttendancePanelData {
 }
 
 /** Present and Late both mean the student physically tapped in. */
-function isAttended(status: AttendanceRowStatus) {
+function isAttended(status: AttendanceDisplayStatus) {
   return status === "Present" || status === "Late"
 }
 
@@ -90,10 +97,12 @@ function matchesSearch(
 /** Pure aggregation, so the shape can be reasoned about without a database. */
 export function buildTeacherAttendancePanelData(
   snapshot: TeacherAttendanceSnapshot,
-  query: AttendancePanelQuery
+  query: AttendancePanelQuery,
+  calendar?: CalendarAttendanceInputs,
 ): TeacherAttendancePanelData {
   const { students, attendance, cards, programs } = snapshot
   const date = snapshot.date
+  const resolve = createCalendarAttendanceResolver({ today: calendar?.today ?? snapshot.date, effectiveDays: calendar?.effectiveDays ?? [], marks: calendar?.marks ?? [] })
   const tags = query.search
 
   const recordsByStudent = new Map(
@@ -126,6 +135,7 @@ export function buildTeacherAttendancePanelData(
     })
     .map((student) => {
       const record = recordsByStudent.get(student.id)
+      const state = resolve(student.id, student.campus, date)
 
       return {
         id: student.id,
@@ -135,7 +145,8 @@ export function buildTeacherAttendancePanelData(
         programName: student.program?.program_name ?? "Unknown program",
         yearLevel: student.year_level,
         section: student.section,
-        status: record ? recordStatus(record.attendance_status) : "NoRecord",
+        campus: state.campus,
+        status: state.status !== "Normal" ? state.status : record ? recordStatus(record.attendance_status) : "NoRecord",
         timeIn: record?.time_in ?? null,
         timeOut: record?.time_out ?? null,
         rfidStatus: rfidByStudent.get(student.id) ?? "Unassigned",
@@ -147,6 +158,8 @@ export function buildTeacherAttendancePanelData(
   const late = cohort.filter((row) => row.status === "Late").length
   const absent = cohort.filter((row) => row.status === "Absent").length
   const noRecord = cohort.filter((row) => row.status === "NoRecord").length
+  const noClasses = cohort.filter(row => row.status === "NoClasses").length
+  const onlineManual = cohort.filter(row => row.status === "OnlineManual").length
 
   return {
     date,
@@ -157,6 +170,8 @@ export function buildTeacherAttendancePanelData(
       late,
       absent,
       noRecord,
+      noClasses, onlineManual,
+      expectedStudents: cohort.length - noClasses - onlineManual,
     },
     rows:
       query.status === "all"
@@ -183,13 +198,13 @@ export function buildTeacherAttendancePanelData(
 
 /** Server-side entry point used by the teacher attendance route. */
 export async function getTeacherAttendancePanelData(
-  query: AttendancePanelQuery
+  query: AttendancePanelQuery,
+  now = new Date(),
 ): Promise<TeacherAttendancePanelData> {
   const account = await requireRole("teacher")
-  const snapshot = await fetchTeacherAttendanceSnapshot({
-    authUserId: account.id,
-    date: query.date,
-  })
-
-  return buildTeacherAttendancePanelData(snapshot, query)
+  const [snapshot, calendar] = await Promise.all([
+    fetchTeacherAttendanceSnapshot({ authUserId: account.id, date: query.date }),
+    fetchCalendarAttendanceState(query.date, query.date, now),
+  ])
+  return buildTeacherAttendancePanelData(snapshot, query, calendar)
 }

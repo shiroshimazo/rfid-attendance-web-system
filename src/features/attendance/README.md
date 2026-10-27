@@ -42,3 +42,40 @@ Daily Attendance pages, student history panels, and report/PDF integration remai
 Tasks 26 and 27. Dashboard links can therefore lead to evidence views whose
 calendar display integration is still pending. Writable attendance statuses,
 Subject Attendance, RFID/SMS persistence, and database migrations are unchanged.
+
+
+## Daily Attendance and student history (Task 26)
+
+Admin and teacher Daily Attendance reads combine their existing scoped snapshot
+with read-only calendar inputs for the selected date. The admin roster includes
+campus. The resolver applies current effective campus state today/future and
+immutable per-student snapshots for past dates, including the snapshot's campus.
+Calendar failures propagate instead of assuming normal attendance.
+
+NoClasses and OnlineManual are display/filter states only. The writable status
+array remains Present, Late, and Absent. Existing NoRecord and legacy behavior is
+preserved. Normal eligible students enter present/late/absent/no-record totals;
+calendar exceptions have separate counts and are excluded from eligible shares.
+Non-status cohort filters apply before counts; status filters change displayed
+rows without changing the cohort totals. Both daily tables remain read-only and
+retain stored tap times alongside the resolved badge/campus.
+
+Student history also includes exception dates without a recorded tap. Historical
+dates come only from that student's snapshots; today's exception comes from the
+effective view. Calendar-only rows use a prefixed display ID and `hasTap: false`;
+they do not create database records, tap times, card assignments, or SMS evidence.
+Actual tap rows retain their numeric ID, original status, tap campus, card, times,
+and SMS fields. Where the exception campus differs, details label both campuses.
+Cancellation removes the current virtual exception, while past snapshots remain.
+
+Student totals and rate exclude exception decisions and future rows. Zero
+recorded-decision denominators render as a dash. Exception counts appear in the
+history chart and have role-local filter links. Looking at a calendar-only detail
+shows calendar guidance and no RFID assignment badge. Retained evidence remains
+visible separately from the calendar display status.
+
+Subject Attendance remains editable for Present, Late, and Absent independently
+of calendar exceptions. No subject production code, writable enums, daily write
+endpoint, migration, or RFID/SMS mutation is added. Report/PDF integration remains
+Task 27. The Subject History regression fixture was updated from string searches
+to the existing tag-array contract; its production behavior is unchanged.

@@ -33,6 +33,7 @@ export interface StudentAttendanceSmsRow {
 }
 
 export interface StudentAttendanceSnapshot {
+  student: { id: number; campus: string }
   records: StudentAttendanceRecordRow[]
   cards: StudentAttendanceCardRow[]
   sms: StudentAttendanceSmsRow[]
@@ -53,9 +54,9 @@ export async function fetchStudentAttendanceSnapshot({
 
   const { data: student, error: studentError } = await supabase
     .from("students")
-    .select("id")
+    .select("id, campus")
     .eq("user_id", authUserId)
-    .maybeSingle<{ id: number }>()
+    .maybeSingle<{ id: number; campus: string }>()
 
   if (studentError) throw new Error(studentError.message)
   if (!student) {
@@ -81,5 +82,5 @@ export async function fetchStudentAttendanceSnapshot({
       .order("created_at", { ascending: false }).order("id", { ascending: false })
       .range(from, to).returns<StudentAttendanceSmsRow[]>()),
   ])
-  return { records, cards, sms }
+  return { student, records, cards, sms }
 }

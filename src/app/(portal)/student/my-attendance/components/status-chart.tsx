@@ -10,20 +10,22 @@ import type { StudentAttendanceKpis } from "@/features/attendance/student-attend
 import { SlidingNumber } from "@/components/motion-primitives/sliding-number"
 
 const chartConfig = {
+  noclasses: { label: "No classes", color: "var(--chart-3)" },
+  onlinemanual: { label: "Online / manual", color: "var(--chart-5)" },
   present: { label: "On time", color: "var(--chart-2)" },
   late: { label: "Late", color: "var(--chart-4)" },
   absent: { label: "Absent", color: "var(--destructive)" },
 } satisfies ChartConfig
 
 export function StatusChart({ kpis }: { kpis: StudentAttendanceKpis }) {
-  const total = kpis.totalPresent + kpis.totalAbsent
+  const total = kpis.totalPresent + kpis.totalAbsent + kpis.noClasses + kpis.onlineManual
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>My Attendance Status</CardTitle>
         <CardDescription>
-          All recorded daily RFID attendance. Late arrivals are shown separately from on-time days.
+          Recorded daily RFID decisions and calendar exceptions. Late arrivals are shown separately from on-time days.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -33,9 +35,11 @@ export function StatusChart({ kpis }: { kpis: StudentAttendanceKpis }) {
               { status: "present", count: kpis.totalPresent - kpis.totalLate },
               { status: "late", count: kpis.totalLate },
               { status: "absent", count: kpis.totalAbsent },
+              { status: "noclasses", count: kpis.noClasses },
+              { status: "onlinemanual", count: kpis.onlineManual },
             ]}
             config={chartConfig}
-            headline={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
+            headline={kpis.attendanceRate === null ? "—" : <SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
             caption="attendance rate"
             ariaLabel="Personal attendance rate and share of on-time, late, and absent days across all recorded daily RFID history"
           />

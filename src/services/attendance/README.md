@@ -16,3 +16,10 @@ Task 25 adds campus to the admin dashboard roster read. Dashboard feature entry
 points combine these snapshots with read-only calendar state inputs under the
 same authenticated account and Manila date. Calendar errors propagate instead of
 assuming normal attendance; dashboard reads never synchronize marks.
+
+
+Task 26 adds campus to the admin daily roster and returns the owning student's ID
+and current campus with student history. Feature readers combine these scoped
+snapshots with authenticated calendar state. Student history requests all own
+past marks plus today's effective state, so exceptions before the first tap are
+not silently omitted. Reads never reconcile marks or write daily attendance.

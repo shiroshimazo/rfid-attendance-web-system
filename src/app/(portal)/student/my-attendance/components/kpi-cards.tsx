@@ -72,7 +72,7 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
             ? formatPercent((kpis.totalPresent / denominator) * 100)
             : undefined
         }
-        detail="Days tapped in, late arrivals included."
+        detail="Eligible days tapped in, late arrivals included."
       />
       <KpiCard
         label="Total Late"
@@ -98,7 +98,7 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
       />
       <KpiCard
         label="Attendance Rate"
-        value={<SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
+        value={kpis.attendanceRate === null ? "—" : <SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={Percent}
         detail="Present days over present plus absent days."
       />

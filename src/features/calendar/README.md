@@ -345,3 +345,29 @@ harness renders real KPI, NumberFlow, chart, strip, and student-card components
 with mocked data, including mobile layout and mixed/all-exception rates.
 Daily Attendance and report/PDF consumers remain Tasks 26–27. Hosted database and
 realtime observation remain rollout checks; no real hardware or sends are used.
+
+
+## Daily Attendance consumers (Task 26)
+
+Admin, teacher, and student attendance surfaces now consume the shared calendar
+resolver. Daily tables display scoped exception badges and campuses while
+retaining recorded times. Read-only exception filters and separate counts agree
+with cohort and status filters; writable attendance decisions remain unchanged.
+
+Student history merges retained tap records with calendar-only exception days.
+Past exceptions use immutable snapshots without source-entry joins; today's
+exception uses current campus state. No historical exceptions are reconstructed
+from current publication or campus. Virtual rows have prefixed display IDs and
+no tap evidence. Real rows retain original status and tap campus for details,
+including card and SMS history. No calendar history view writes marks, daily
+records, read receipts, or Subject Attendance.
+
+`tests/calendar-daily-attendance.test.mjs` covers filter/status contracts, mixed
+campus rows and counts, historical campus identity, cohort filters, virtual
+history, retained evidence, read failures, and read-only tables. Subject action
+checks confirm the three real attendance decisions remain available on exception
+dates and reject calendar display states as writes. Existing subject database,
+report, dashboard, and attendance regressions pass. The isolated browser harness
+checks actual filters, read-only tables, student details, and mobile/desktop
+layouts with mocked data. Reports/PDF remain Task 27. Hosted validation, real
+sends, and physical reader testing are not performed here.

@@ -28,6 +28,14 @@ import { AttendanceTrendChart } from '@/app/(portal)/admin/dashboard/components/
 import { TodayAttendanceCard } from '@/app/(portal)/student/dashboard/components/today-attendance-card';
 import { CampusStatusStrip } from '@/components/calendar/campus-status-strip';
 import { buildDashboardCalendar } from '@/features/attendance/calendar-dashboard';
+import { AttendanceTable as AdminDailyTable } from '@/app/(portal)/admin/attendance/components/attendance-table';
+import { AttendanceTable as TeacherDailyTable } from '@/app/(portal)/teacher/attendance/components/attendance-table';
+import { FiltersBar as DailyFilters } from '@/app/(portal)/admin/attendance/components/filters-bar';
+import { KpiCards as DailyKpis } from '@/app/(portal)/admin/attendance/components/kpi-cards';
+import { AttendanceHistoryTable } from '@/app/(portal)/student/my-attendance/components/attendance-history-table';
+import { KpiCards as HistoryKpis } from '@/app/(portal)/student/my-attendance/components/kpi-cards';
+const dailyElement=document.createElement('section');dailyElement.id='calendar-daily';dailyElement.className='@container/main space-y-5 p-4';document.body.appendChild(dailyElement);const dailyRoot=createRoot(dailyElement);
+window.__renderDaily=(status='all')=>{const rows=['NoClasses','Present','OnlineManual','NoRecord'].map((status,index)=>({id:index+1,name:'Student '+(index+1),studentId:'S-'+(index+1),programCode:'IT',programName:'Computing',section:'A',yearLevel:'1st Year',campus:index===0?'Main Campus':index===2?'Bulacan Campus':'MV Campus',status,timeIn:index<2?'07:00:00':null,timeOut:index===0?'15:00:00':null,rfidStatus:'Active'}));const visible=status==='all'?rows:rows.filter(row=>row.status===status);const history=[{id:'calendar:1:2026-11-05',hasTap:false,date:'2026-11-05',status:'NoClasses',campus:'Main Campus',timeIn:null,timeOut:null,rfidNumber:null,rfidStatus:'Unassigned',smsStatus:null,smsSentAt:null},{id:10,hasTap:true,date:'2026-11-04',status:'OnlineManual',recordedStatus:'Present',campus:'Old Campus',tapCampus:'Tap Campus',timeIn:'07:00:00',timeOut:'15:00:00',rfidNumber:'UID',rfidStatus:'Active',smsStatus:'Sent',smsSentAt:'2026-11-04T00:00:00Z'}];dailyRoot.render(<><section id="admin-daily" className="space-y-4"><h2>Admin daily attendance</h2><DailyKpis kpis={{totalStudents:4,present:1,late:0,absent:0,noRecord:1,noClasses:1,onlineManual:1,expectedStudents:2}} readableDate="Nov 5, 2026"/><DailyFilters query={{date:'2026-11-05',status,programId:null,yearLevel:null,section:null,search:[]}} options={{programs:[],yearLevels:[],sections:[]}}/><AdminDailyTable rows={visible} readableDate="Nov 5, 2026" hasStudents={true}/></section><section id="teacher-daily"><h2>Teacher daily attendance</h2><TeacherDailyTable rows={visible} readableDate="Nov 5, 2026" hasStudents={true}/></section><section id="student-daily" className="space-y-4"><h2>Student daily history</h2><HistoryKpis kpis={{totalPresent:0,totalLate:0,totalAbsent:0,attendanceRate:null,noClasses:1,onlineManual:1}}/><AttendanceHistoryTable rows={history}/></section></>);};
 const dashboardElement=document.createElement('section');dashboardElement.id='calendar-dashboard';dashboardElement.className='@container/main space-y-5 p-4';document.body.appendChild(dashboardElement);const dashboardRoot=createRoot(dashboardElement);
 window.__renderDashboard=(all=false)=>{const today='2026-11-05';const students=[{id:1,campus:'Main Campus'},{id:2,campus:'Main Campus'},{id:3,campus:'MV Campus'},{id:4,campus:'MV Campus'}];const records=students.map(student=>({student_id:student.id,attendance_date:today,attendance_status:student.id%2?'Present':'Absent'}));const effectiveDays=[{entry_id:1,attendance_date:today,campus:'Main Campus',attendance_impact:'no_classes'},...(all?[{entry_id:2,attendance_date:today,campus:'MV Campus',attendance_impact:'online_manual'}]:[])];const result=buildDashboardCalendar(students,records,today,{today,effectiveDays,marks:[]});const data={today,kpis:{totalStudents:4,totalAssigned:4,presentToday:result.counts.present,lateToday:result.counts.late,absentToday:result.counts.absent,expectedStudents:result.counts.expectedStudentDays,attendanceRate:result.counts.rate,rfidTapsToday:4},trend:result.trend};dashboardRoot.render(<><section id="calendar-dashboard-admin" className="space-y-4"><h2>Admin calendar attendance</h2><CampusStatusStrip states={result.campusStates}/><AdminKpis data={data}/><div className="grid gap-4 lg:grid-cols-2"><AttendanceDistributionChart distribution={result.distribution} attendanceRate={result.counts.rate}/><AttendanceTrendChart trend={result.trend} hasHistory={true}/></div></section><section id="calendar-dashboard-teacher"><h2>Teacher calendar attendance</h2><TeacherKpis data={data}/></section><TodayAttendanceCard attendance={{status:'OnlineManual',timeIn:'07:00:00',timeOut:null}}/></>);};
 const postsElement=document.createElement('section');postsElement.id='dashboard-posts';postsElement.className='p-4';document.body.appendChild(postsElement);const postsRoot=createRoot(postsElement);
@@ -56,14 +64,14 @@ export const markCalendarEntryReadAction=id=>run('read',id);
 export const markAllCalendarEntriesReadAction=()=>run('readAll',null);
 export const previewCalendarRecipientsAction=async()=>{await new Promise(r=>setTimeout(r,80));return window.__previewFailure?{ok:false,message:'Preview unavailable'}:{ok:true,recipients:{total:3,teacher_count:1,student_count:2}};};
 `
-const result = await build({ absWorkingDir: root, stdin: { contents: fixture, resolveDir: root, loader: "tsx" }, bundle: true, write: false, format: "iife", jsx: "automatic", define: { "process.env.NODE_ENV": '"development"' }, plugins: [{ name: "isolated-browser-mocks", setup(build) {
+const result = await build({ outfile: join(output, "app.js"), absWorkingDir: root, stdin: { contents: fixture, resolveDir: root, loader: "tsx" }, bundle: true, write: false, format: "iife", jsx: "automatic", define: { "process.env.NODE_ENV": '"development"' }, plugins: [{ name: "isolated-browser-mocks", setup(build) {
   build.onResolve({ filter: /^(@\/features\/calendar\/actions|next\/(navigation|link)|@\/components\/ui\/goey-toaster)$/ }, args => ({ path: args.path, namespace: "mock" }))
   build.onLoad({ filter: /.*/, namespace: "mock" }, args => ({ contents: args.path.includes("actions") ? actions : args.path.includes("navigation") ? 'export const useRouter=()=>({refresh(){window.__refreshes=(window.__refreshes||0)+1;},replace(url){window.__navigation=url;},push(url){window.__navigation=url;}});export const usePathname=()=>"/student/calendar";export const useSearchParams=()=>new URLSearchParams();' : args.path === "next/link" ? 'import React from "react";export default function Link(props){return React.createElement("a",props);}' : 'export const gooeyToast={success(){},error(){},info(title,options){(window.__toasts??=[]).push({title,description:options.description});window.__toastAction=options.action.onClick;}};', loader: "js", resolveDir: root }))
 } }] })
 const css = await postcss([tailwind()]).process(await readFile("src/app/globals.css", "utf8"), { from: resolve("src/app/globals.css") })
 const server = createServer((req, res) => {
-  if (req.url === "/app.js") { res.setHeader("Content-Type", "text/javascript"); res.end(result.outputFiles[0].text) }
-  else if (req.url === "/app.css") { res.setHeader("Content-Type", "text/css"); res.end(css.css) }
+  if (req.url === "/app.js") { res.setHeader("Content-Type", "text/javascript"); res.end(result.outputFiles.find(file => file.path.endsWith("app.js")).text) }
+  else if (req.url === "/app.css") { res.setHeader("Content-Type", "text/css"); res.end(css.css + result.outputFiles.filter(file => file.path.endsWith(".css")).map(file => file.text).join("\n")) }
   else { res.setHeader("Content-Type", "text/html"); res.end('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/app.css"></head><body><div id="root"></div><script src="/app.js"></script></body></html>') }
 })
 await new Promise(resolve => server.listen(0, "127.0.0.1", resolve))
@@ -299,8 +307,43 @@ try {
   const dashboardBounds = await dashboard.boundingBox()
   assert.ok(dashboardBounds.x >= 0 && dashboardBounds.x + dashboardBounds.width <= 376)
   await dashboard.screenshot({ path: join(output, "calendar-dashboard-mobile.png") })
+  await page.evaluate(() => window.__renderDaily())
+  await page.clock.runFor(1000)
+  const daily = page.locator("#calendar-daily")
+  await daily.getByRole("heading", { name: "Admin daily attendance", exact: true }).waitFor()
+  assert.equal(await daily.locator('#admin-daily tbody tr').count(), 4)
+  assert.equal(await daily.locator('#teacher-daily tbody tr').count(), 4)
+  assert.equal(await daily.getByRole("button", { name: /Edit attendance|Save attendance|Confirm attendance/ }).count(), 0)
+  await daily.getByRole("combobox", { name: "Filter by attendance status", exact: true }).click()
+  await page.getByRole("option", { name: "No classes", exact: true }).click()
+  assert.match(await page.evaluate(() => window.__navigation), /status=NoClasses/)
+  await page.evaluate(() => window.__renderDaily('NoClasses'))
+  await page.clock.runFor(1000)
+  assert.equal(await daily.locator('#admin-daily tbody tr').count(), 1)
+  assert.match(await daily.locator('#admin-daily tbody').innerText(), /No classes/)
+  const historySection = daily.locator('#student-daily')
+  await historySection.getByRole("button", { name: "View details for Nov 5, 2026", exact: true }).click()
+  const historyDialog = page.getByRole("dialog", { name: "Attendance details", exact: true })
+  await historyDialog.waitFor()
+  await historyDialog.getByText(/Calendar exception for/).waitFor()
+  assert.doesNotMatch(await historyDialog.innerText(), /Unassigned|UID|7:00 AM|Sent/)
+  await page.keyboard.press("Escape")
+  await historyDialog.waitFor({ state: "hidden" })
+  await historySection.getByRole("button", { name: "View details for Nov 4, 2026", exact: true }).click()
+  await historyDialog.getByText("Recorded tap campus", { exact: true }).waitFor()
+  assert.match(await historyDialog.innerText(), /Tap Campus/); assert.match(await historyDialog.innerText(), /Subject Attendance/)
+  assert.match(await historyDialog.innerText(), /Retained RFID status/); assert.match(await historyDialog.innerText(), /7:00 AM/)
+  await page.keyboard.press("Escape")
+  await historyDialog.waitFor({ state: "hidden" })
+  await page.clock.runFor(1000)
+  const dailyBounds = await daily.boundingBox()
+  assert.ok(dailyBounds.x >= 0 && dailyBounds.x + dailyBounds.width <= 376)
+  await daily.screenshot({ path: join(output, "calendar-daily-mobile.png"), animations: "disabled" })
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.clock.runFor(1000)
+  await daily.screenshot({ path: join(output, "calendar-daily-desktop.png"), animations: "disabled" })
   assert.deepEqual(errors, [])
-  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, mobile dialog bounds, sync/retry controls, reader layouts, deep links, keyboard day selection, notification bell/read actions, session toast suppression, dashboard post layouts, exact expiry, republish visibility, and mixed/all-exception dashboard rates with real charts.\n")
+  await writeFile(join(output, "result.txt"), "PASS: mocked create/edit, validation, impact rules, historical scope, lifecycle actions, recipient preview, keyboard focus/escape, mobile dialog bounds, sync/retry controls, reader layouts, deep links, keyboard day selection, notification bell/read actions, session toast suppression, dashboard post layouts, exact expiry, republish visibility, and mixed/all-exception dashboard rates with real charts, daily filters, read-only tables, and calendar history details.\n")
   console.log(`PASS calendar dialog browser checks. Screenshots: ${output}`)
 } catch (error) {
   await page?.screenshot({ path: join(output, "failure.png"), fullPage: true })

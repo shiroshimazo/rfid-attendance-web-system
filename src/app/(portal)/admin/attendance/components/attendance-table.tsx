@@ -42,6 +42,8 @@ type SortColumn =
 const PAGE_SIZE = 10
 
 const statusOrder: Record<AttendancePanelRow["status"], number> = {
+  NoClasses: 5,
+  OnlineManual: 6,
   Present: 0,
   Late: 1,
   LegacyRecord: 4,
@@ -222,7 +224,7 @@ export function AttendanceTable({
                       {row.section}
                     </TableCell>
                     <TableCell className="px-3">
-                      <AttendanceStatusBadge status={row.status} />
+                      <AttendanceStatusBadge status={row.status} /><p className="mt-1 text-xs text-muted-foreground">{row.campus}</p>
                     </TableCell>
                     <TableCell className="hidden px-3 tabular-nums sm:table-cell">
                       {formatClockTime(row.timeIn)}

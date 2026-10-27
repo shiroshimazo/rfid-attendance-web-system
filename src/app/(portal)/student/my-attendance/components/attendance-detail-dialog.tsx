@@ -46,7 +46,7 @@ export function AttendanceDetailDialog({
             <DialogHeader>
               <DialogTitle>Attendance details</DialogTitle>
               <DialogDescription>
-                Tap record for {formatDateValue(record.date)}.
+                {record.hasTap ? "Tap evidence" : "Calendar exception"} for {formatDateValue(record.date)}.
               </DialogDescription>
             </DialogHeader>
 
@@ -63,13 +63,17 @@ export function AttendanceDetailDialog({
               />
             </dl>
 
+            {record.tapCampus && record.tapCampus !== record.campus && <DetailRow label="Recorded tap campus" value={record.tapCampus} />}
+            {record.status === "NoClasses" && <p className="text-sm">No classes. RFID taps are not expected for this date.</p>}
+            {record.status === "OnlineManual" && <p className="text-sm">Online class. Attendance is confirmed in Subject Attendance.</p>}
+            {record.hasTap && record.recordedStatus && record.status !== record.recordedStatus && <p className="text-sm">Retained RFID status: <AttendanceStatusBadge status={record.recordedStatus} /></p>}
             <Separator />
 
             <div className="space-y-3">
               <h3 className="text-sm font-semibold">Statuses</h3>
               <div className="flex flex-wrap gap-1.5">
                 <AttendanceStatusBadge status={record.status} />
-                <RfidStatusBadge status={record.rfidStatus} />
+                {record.hasTap && <RfidStatusBadge status={record.rfidStatus} />}
                 {record.smsStatus ? (
                   <SmsStatusBadge status={record.smsStatus} />
                 ) : (

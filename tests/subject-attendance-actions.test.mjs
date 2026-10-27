@@ -16,6 +16,14 @@ function setup({ forbidden = false, error = null } = {}) {
   return { actions: load("src/features/subject-attendance/actions.ts"), load, calls, paths }
 }
 const confirmation = { scheduleId: 1, studentId: 2, date: "2026-09-08", status: "Present", expectedConfirmedAt: null }
+
+test("subject confirmations remain available on dates displayed as no-class or online calendar exceptions", async () => {
+  const { actions, calls } = setup()
+  for (const date of ["2026-11-05", "2026-11-06"]) {
+    for (const status of ["Present", "Late", "Absent"]) assert.equal((await actions.confirmSubjectAction({ ...confirmation, date, status })).ok, true)
+  }
+  assert.equal(calls.filter(call => call[0] === "confirm_subject_attendance").length, 6)
+})
 test("teacher confirmation sends only decision/session/version fields, without a fabricated tap or caller-supplied identity", async () => {
   const { actions, calls, paths } = setup()
   const result = await actions.confirmSubjectAction({ ...confirmation, timeIn: "00:00", teacherId: 99, rfidCardId: 99 })
@@ -26,7 +34,7 @@ test("teacher confirmation sends only decision/session/version fields, without a
   for (const path of ["/admin/reports", "/teacher/reports", "/student/dashboard", "/student/my-attendance"]) assert(paths.includes(path))
 })
 test("invalid dates, IDs and retired statuses fail before database writes", async () => {
-  for (const invalid of [{ date: "2026-02-30" }, { status: "Excused" }, { studentId: 0 }, { status: "Pending" }]) {
+  for (const invalid of [{ date: "2026-02-30" }, { status: "Excused" }, { studentId: 0 }, { status: "Pending" }, { status: "NoClasses" }, { status: "OnlineManual" }]) {
     const { actions, calls } = setup()
     assert.equal((await actions.confirmSubjectAction({ ...confirmation, ...invalid })).ok, false)
     assert.equal(calls.length, 1)

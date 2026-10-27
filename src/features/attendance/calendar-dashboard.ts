@@ -1,7 +1,7 @@
-import { isAttendanceStatus, type AttendanceRecordStatus } from "@/features/attendance/status"
+import { isAttendanceStatus, type AttendanceDisplayStatus } from "@/features/attendance/status"
 import { createCalendarAttendanceResolver, summarizeCalendarAttendance, buildCalendarAttendanceTrend, type CalendarAttendanceInputs, type CalendarAttendanceState, type CalendarStudentDay } from "@/features/calendar/attendance-state"
 
-export type DashboardAttendanceStatus = AttendanceRecordStatus | "NoRecord" | "NoClasses" | "OnlineManual"
+export type DashboardAttendanceStatus = AttendanceDisplayStatus
 export interface CampusAttendanceState {
   campus: string
   status: "NoClasses" | "OnlineManual"

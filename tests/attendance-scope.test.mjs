@@ -104,7 +104,7 @@ test("student history retains legacy rows and SMS without treating them as atten
   assert.equal(history.rows[0].smsStatus, "Sent")
   assert.equal(history.kpis.totalPresent, 0)
   assert.equal(history.kpis.totalAbsent, 0)
-  assert.equal(history.kpis.attendanceRate, 0)
+  assert.equal(history.kpis.attendanceRate, null)
   const { AttendanceStatusBadge } = load("src/components/attendance-status-badge.tsx")
   const html = renderToStaticMarkup(createElement(AttendanceStatusBadge, { status: history.rows[0].status }))
   assert.match(html, /Historical record/)

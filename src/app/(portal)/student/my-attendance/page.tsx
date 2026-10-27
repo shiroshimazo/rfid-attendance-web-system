@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import { parseAttendancePanelQuery, attendanceStatusLabel, type AttendanceSearchParams } from "@/features/attendance/schema"
 import { SubjectHistoryPanel } from "@/features/subject-attendance/server-panels"
 import { Suspense } from "react"
@@ -43,6 +44,7 @@ async function AttendanceContent({ status }: { status: string }) {
       <h2 className="text-lg font-semibold">Daily RFID history (separate from subject attendance)</h2>
       <KpiCards kpis={data.kpis} />
       <StatusChart kpis={data.kpis} />
+      <div className="flex flex-wrap gap-2"><Button asChild variant="outline" size="sm"><Link href="/student/my-attendance?status=NoClasses">No classes ({data.kpis.noClasses})</Link></Button><Button asChild variant="outline" size="sm"><Link href="/student/my-attendance?status=OnlineManual">Online / manual ({data.kpis.onlineManual})</Link></Button></div>
       {status !== "all" ? (
         <p className="text-sm text-muted-foreground">
           Showing: {attendanceStatusLabel(status)}.{" "}

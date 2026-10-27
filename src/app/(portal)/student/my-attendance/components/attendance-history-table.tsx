@@ -48,6 +48,8 @@ type SortColumn =
 const PAGE_SIZE = 10
 
 const statusOrder: Record<StudentAttendanceRow["status"], number> = {
+  NoClasses: 5,
+  OnlineManual: 6,
   Present: 0,
   Late: 1,
   LegacyRecord: 4,
@@ -126,7 +128,7 @@ export function AttendanceHistoryTable({
       <CardHeader>
         <CardTitle>Attendance history</CardTitle>
         <CardDescription>
-          Every recorded tap day, newest first. Select a row for full details.
+          Recorded tap days and calendar exceptions, newest first. Select a row for full details.
         </CardDescription>
       </CardHeader>
 
@@ -135,7 +137,7 @@ export function AttendanceHistoryTable({
           <EmptyState
             icon={CalendarX2}
             title={filtered ? "No matching attendance records" : "No attendance records yet"}
-            description={filtered ? "No records match this status. Select Show all records to view your full history." : "History appears here once the first RFID tap is recorded."}
+            description={filtered ? "No records match this status. Select Show all records to view your full history." : "History appears when RFID taps or calendar exceptions exist."}
           />
         ) : (
           <div className="rounded-lg border">
@@ -205,7 +207,7 @@ export function AttendanceHistoryTable({
                       {formatClockTime(row.timeOut)}
                     </TableCell>
                     <TableCell className="hidden px-3 md:table-cell">
-                      <RfidStatusBadge status={row.rfidStatus} />
+                      {row.hasTap ? <RfidStatusBadge status={row.rfidStatus} /> : <span className="text-muted-foreground">No recorded tap</span>}
                     </TableCell>
                     <TableCell className="hidden px-3 md:table-cell">
                       {row.smsStatus ? (

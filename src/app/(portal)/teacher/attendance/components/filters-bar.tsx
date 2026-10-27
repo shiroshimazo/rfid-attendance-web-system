@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select"
 import type { TeacherAttendancePanelOptions } from "@/features/attendance/teacher-attendance"
 import {
-  attendanceRowStatuses,
+  attendanceDisplayStatuses,
   attendanceStatusLabel,
   isAttendancePanelFiltered,
   type AttendancePanelQuery,
@@ -133,7 +133,7 @@ export function FiltersBar({
         <SelectContent>
           <SelectItem value="all">All statuses</SelectItem>
           <SelectItem value="Attended">Present and late</SelectItem>
-          {attendanceRowStatuses.map((status) => (
+          {attendanceDisplayStatuses.map((status) => (
             <SelectItem key={status} value={status}>
               {attendanceStatusLabel(status)}
             </SelectItem>

@@ -33,6 +33,7 @@ export const attendanceRowStatuses = [
   ...attendanceStatuses,
   "NoRecord",
 ] as const satisfies readonly AttendanceRowStatus[]
+export const attendanceDisplayStatuses = [...attendanceRowStatuses, "NoClasses", "OnlineManual"] as const
 
 export const NO_RECORD_LABEL = "No tap recorded yet"
 
@@ -41,6 +42,8 @@ export const NO_RECORD_LABEL = "No tap recorded yet"
  * plain string so filter values read straight off a select can be labelled.
  */
 export function attendanceStatusLabel(status: string) {
+  if (status === "NoClasses") return "No classes"
+  if (status === "OnlineManual") return "Online / manual"
   if (status === "Attended") return "Present and late"
   if (status === "LegacyRecord") return "Historical record"
   return status === "NoRecord" ? NO_RECORD_LABEL : status
@@ -78,7 +81,7 @@ function readStatus(value: string): AttendanceFilterStatus {
 
   if (candidate === "Attended") return candidate
 
-  return attendanceRowStatuses.find((status) => status === candidate) ?? "all"
+  return attendanceDisplayStatuses.find((status) => status === candidate) ?? "all"
 }
 
 function readProgramId(value: string) {
