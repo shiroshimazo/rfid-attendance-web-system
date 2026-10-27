@@ -118,6 +118,16 @@
   * {
     @apply border-border outline-ring/50;
   }
+  :is(
+    button,
+    [role="button"],
+    [data-slot="button"],
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"]
+  ):not(:disabled):not([disabled]):not([aria-disabled="true"]):not([data-disabled]) {
+    cursor: pointer;
+  }
   body {
     @apply bg-background text-foreground;
     /* Dashboard default: every digit gets the same width, so clocks, counters,
