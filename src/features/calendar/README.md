@@ -270,3 +270,54 @@ links, and placement above KPIs. The isolated browser harness checks mobile and
 desktop layout, expiry at the exact boundary, republish visibility, empty posts,
 and absence of read-action calls. Hosted role/realtime sessions remain rollout
 checks; no hosted writes or real sends are performed.
+
+## Shared attendance state and calculations (Task 24)
+
+`src/services/calendar/attendance-state.ts` reads the inputs for an inclusive
+range with the authenticated Supabase client. Today is the Asia/Manila date.
+Today/future inputs come from the security-invoker calendar_attendance_days
+view; earlier inputs come only from attendance_day_marks. Both reads paginate
+past response caps with stable ordering. Invalid/reversed ranges and read
+failures propagate; a failed read must never be treated as normal attendance.
+Historical ranges may exceed the entry form's 366-day limit. This service never
+synchronizes or writes marks.
+
+`createCalendarAttendanceResolver` indexes these inputs once and resolves a
+student ID, campus, and date. Today/future matches the campus exactly, with
+OnlineManual taking precedence over NoClasses. All-campus entries are already
+expanded into campus rows by the database view. Past dates use the student's
+immutable snapshot, including its stored campus and source entry ID. They do
+not depend on current entry visibility/status or the student's current campus.
+Missing past snapshots are Normal; no historical exceptions are reconstructed.
+Current/future snapshots are deliberately ignored in favor of the effective
+view, so cancellation and transfers apply to the whole current Manila day.
+
+`summarizeCalendarAttendance` accepts explicit scoped student/session-day rows
+and the resolver. It counts eligible (Normal) student-days separately from
+NoClasses and OnlineManual. Exception-day RFID records remain untouched but do
+not enter present/late/absent totals or rates. Late counts as present. Missing
+records remain provisional, and legacy statuses remain separate. Identical
+student/date duplicates count once; conflicting duplicates fail explicitly.
+Callers select the legitimate roster/session dates; these functions do not
+invent school days, historical roster membership, or absences.
+
+`expectedStudentDays` counts eligible supplied student-days.
+`rateDenominator` preserves the existing recorded-decision policy: Present
+(including Late) plus explicitly stored Absent. NoRecord and legacy records do
+not enter that denominator. Rates are percentages and return null when the
+denominator is zero, including when no student is expected. A recorded all-absent
+normal day still has a real 0% rate. This distinction preserves the unresolved
+absence-finalization policy documented in the attendance module.
+
+`buildCalendarAttendanceTrend` uses the same exclusions and weighted counts.
+It returns the latest 14 daily, 12 Monday-based weekly, and six calendar-month
+buckets, matching existing dashboards. Entirely excluded dates remain as
+null-rate points. Buckets add counts before calculating rates; they never
+average daily percentages. No unprovided dates are added.
+
+`tests/calendar-attendance-state.test.mjs` covers mixed campuses, online
+precedence, historical transfers/cancellations, missing snapshots, stale current
+marks, provisional/legacy records, duplicate handling, null rates, weighted
+buckets, caps, Manila midnight, complete paging, invalid ranges, and read errors.
+Dashboard, attendance, and report consumers remain separate Tasks 25–27; Task 24
+adds the shared foundation without changing their current behavior.
