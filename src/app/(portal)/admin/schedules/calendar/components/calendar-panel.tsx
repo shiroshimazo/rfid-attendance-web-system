@@ -10,6 +10,7 @@ import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { TablePagination } from "@/components/data-table"
@@ -79,8 +80,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
     </section>
     <div className="flex flex-wrap items-end justify-between gap-3">
       <EntryFormDialog date={query.date} today={query.today} campuses={panel.campuses} />
-      <div className="space-y-1.5"><Label htmlFor="calendar-month">Calendar month</Label><Input id="calendar-month" type="month" min="0001-01" max="9998-12" value={query.month} className="w-48" onChange={event => { if (event.target.value) navigate({ month: event.target.value, date: `${event.target.value}-01` }) }} /></div>
-      <p className="text-xs text-muted-foreground">Philippines time · Summary across all campuses{pending ? " · Updating…" : ""}</p>
+      <div className="space-y-1.5"><Label htmlFor="calendar-month">Calendar month</Label><DatePicker id="calendar-month" value={`${query.month}-01`} displayFormat="MMMM yyyy" min="0001-01-01" max="9998-12-31" clearable={false} captionLayout="dropdown-months" className="h-9 w-48" onChange={value => { const month = value.slice(0, 7); navigate({ month, date: `${month}-01` }) }} /></div>
     </div>
     <Tabs value={query.tab} onValueChange={tab => navigate({ tab })}>
       <TabsList aria-label="Calendar views" className="h-auto flex-wrap"><TabsTrigger value="calendar">Calendar</TabsTrigger><TabsTrigger value="list">All announcements</TabsTrigger><TabsTrigger value="deliveries">Email deliveries</TabsTrigger></TabsList>

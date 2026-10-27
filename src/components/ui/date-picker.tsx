@@ -35,6 +35,7 @@ export interface DatePickerProps {
   onChange: (value: string) => void
   onBlur?: () => void
   placeholder?: string
+  displayFormat?: string
   /** Inclusive `yyyy-MM-dd` bounds; days outside them cannot be picked. */
   min?: string
   max?: string
@@ -58,6 +59,7 @@ export function DatePicker({
   onChange,
   onBlur,
   placeholder = "Select date",
+  displayFormat = "MMM d, yyyy",
   min,
   max,
   disabled,
@@ -107,7 +109,7 @@ export function DatePicker({
           {...props}
         >
           <CalendarIcon aria-hidden className="size-4 text-muted-foreground" />
-          {selected ? format(selected, "MMM d, yyyy") : placeholder}
+          {selected ? format(selected, displayFormat) : placeholder}
         </Button>
       </PopoverTrigger>
 
