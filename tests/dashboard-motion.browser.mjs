@@ -32,7 +32,7 @@ const bundle = await build({
     const summary = [
       { date: '2025-09-01', label: 'Sep 1', present: 10, absent: 2, rate: 83.3 },
       { date: '2025-09-02', label: 'Sep 2', present: 12, absent: 3, rate: 80 },
-      { date: '2026-08-31', label: 'Aug 31', present: 99, absent: 99, rate: null },
+      { date: '2026-08-31', label: 'Aug 31', present: NaN, absent: NaN, rate: null },
       { date: '2026-09-01', label: 'Sep 1', present: 15, absent: 1, rate: 93.8 },
       { date: '2026-09-02', label: 'Sep 2', present: 13, absent: 2, rate: 86.7 },
     ];
@@ -41,13 +41,15 @@ const bundle = await build({
     function Content() {
       const initial = use(data);
       const [value, setValue] = useState(initial);
+      const [chartTrend, setChartTrend] = useState(trend);
       window.updateValue = value => setValue(value);
+      window.updateTrend = setChartTrend;
       return <>
         <SlidingNumber value={value} decimalPlaces={1} suffix="%" />
         <SummaryChart summary={summary} rangeLabel="This week" />
         <TeacherSummaryChart summary={summary} rangeLabel="This week" />
-        <div style={{ position: 'relative', height: 380 }}><AttendanceTrendChart trend={trend} hasHistory /></div>
-        <div style={{ position: 'relative', height: 380 }}><TeacherTrendChart trend={trend} hasHistory /></div>
+        <div style={{ position: 'relative', height: 380 }}><AttendanceTrendChart trend={chartTrend} hasHistory /></div>
+        <div style={{ position: 'relative', height: 380 }}><TeacherTrendChart trend={chartTrend} hasHistory /></div>
         <GroupBreakdownChart byProgram={[{ group: 'IT', present: 10, absent: 2, total: 12, rate: 83.3 }]} byYearLevel={[]} />
         <RadialStatusChart slices={[{ status: 'present', count: 10 }, { status: 'absent', count: 2 }]}
           config={{ present: { label: 'Present', color: 'green' }, absent: { label: 'Absent', color: 'red' } }}
@@ -129,6 +131,33 @@ try {
     }
     assert.match(await charts.first().locator('table').innerText(), /Sep 1, 2025/)
     assert.match(await charts.first().locator('table').innerText(), /Sep 1, 2026/)
+    await page.evaluate(() => {
+      const dates = ['Sep 8', 'Sep 9', 'Sep 10', 'Sep 22', 'Sep 25', 'Sep 27', 'Sep 28', 'Oct 28']
+      const counts = [1, 4, 1, 1, 4, 1, 4, 0]
+      const daily = dates.map((label, index) => ({
+        key: label, label, present: counts[index], absent: 0, rate: index === 7 ? null : 100,
+      }))
+      window.updateTrend({ daily, weekly: [daily[0]], monthly: [daily[7]] })
+    })
+    await page.waitForFunction(() => [...document.querySelectorAll('[aria-label="Attendance trend, last 14 session days"]')].every(chart => {
+      if (chart.querySelectorAll('tbody tr').length !== 8) return false
+      return [...chart.querySelectorAll('path[stroke="var(--chart-2)"], path[stroke="var(--destructive)"]')].every(line => {
+        const end = line.getPointAtLength(line.getTotalLength())
+        return Math.abs(end.x - (Number(chart.querySelector('svg').getAttribute('width')) - 16)) < 1 &&
+          Math.abs(end.y - (Number(chart.querySelector('svg').getAttribute('height')) - 8)) < 1
+      })
+    }))
+    for (const chart of await page.locator('[aria-label="Attendance trend, last 14 session days"]').all()) {
+      const inspector = chart.getByRole('slider')
+      await inspector.focus()
+      await inspector.press('End')
+      assert.match(await inspector.getAttribute('aria-valuetext'), /Oct 28\. Present 0\. Absent 0/)
+      await chart.getByRole('tooltip').waitFor()
+      assert.match(await chart.getByRole('tooltip').innerText(), /Oct 28 · — rate/)
+      assert.deepEqual(await chart.locator('tbody tr').last().locator('td').allTextContents(), ['0', '0'])
+      await inspector.press('Escape')
+    }
+    await charts.nth(2).screenshot({ path: join(tmpdir(), 'rfid-beui-oct28-fixed.png') })
     for (const weekly of await page.getByRole('tab', { name: 'Weekly', exact: true }).all()) {
       await weekly.click()
     }

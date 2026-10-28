@@ -56,7 +56,7 @@ export function AttendanceTrendChart({
     <Card className="@container/chart h-full">
       <CardHeader>
         <CardTitle>Attendance Trend</CardTitle>
-        <CardDescription>{activeRange.caption}. Calendar exceptions excluded; gaps mean no finalized RFID rate (—).</CardDescription>
+        <CardDescription>{activeRange.caption}. Calendar exceptions excluded; — means no finalized RFID rate.</CardDescription>
         <CardAction>
           <Tabs
             value={range}

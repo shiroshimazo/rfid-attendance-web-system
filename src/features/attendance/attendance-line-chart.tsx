@@ -39,8 +39,8 @@ export function AttendanceLineChart({
     [points]
   )
   const series = useMemo(() => [
-    { id: "present", name: "Present", color: "var(--chart-2)", values: points.map((point) => point.rate === null ? null : point.present) },
-    { id: "absent", name: "Absent", color: "var(--destructive)", values: points.map((point) => point.rate === null ? null : point.absent) },
+    { id: "present", name: "Present", color: "var(--chart-2)", values: points.map((point) => point.present) },
+    { id: "absent", name: "Absent", color: "var(--destructive)", values: points.map((point) => point.absent) },
   ], [points])
 
   if (!ready) return <div className={cn("min-h-64", className)} />
