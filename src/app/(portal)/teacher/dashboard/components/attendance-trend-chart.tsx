@@ -2,9 +2,6 @@
 
 import * as React from "react"
 import { LineChartIcon } from "lucide-react"
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
-
-import { useReducedMotion } from "motion/react"
 
 import { EmptyState } from "@/components/empty-state"
 import {
@@ -15,14 +12,7 @@ import {
   CardContent,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
+import { AttendanceLineChart } from "@/features/attendance/attendance-line-chart"
 import {
   Select,
   SelectContent,
@@ -35,12 +25,6 @@ import type {
   TrendRange,
   TrendSeries,
 } from "@/features/attendance/teacher-dashboard"
-import { formatNumber, formatPercent } from "@/lib/format"
-
-const chartConfig = {
-  present: { label: "Present", color: "var(--chart-2)" },
-  absent: { label: "Absent", color: "var(--destructive)" },
-} satisfies ChartConfig
 
 const ranges: Array<{ value: TrendRange; label: string; caption: string }> = [
   {
@@ -67,14 +51,9 @@ export function AttendanceTrendChart({
   trend: TrendSeries
   hasHistory: boolean
 }) {
-  const reduceMotion = useReducedMotion()
   const [range, setRange] = React.useState<TrendRange>("daily")
   const points = trend[range]
   const activeRange = ranges.find((item) => item.value === range) ?? ranges[0]
-  const rateByKey = React.useMemo(
-    () => new Map(points.map((point) => [point.key, point.rate])),
-    [points]
-  )
 
   return (
     <Card className="@container/chart h-full">
@@ -120,70 +99,11 @@ export function AttendanceTrendChart({
       </CardHeader>
       <CardContent className="relative mx-6 min-h-64 flex-1 px-0">
         {hasHistory && points.some(point => point.rate !== null) ? (
-          <ChartContainer
-            config={chartConfig}
-            role="img"
-            aria-label={`Attendance trend, ${activeRange.caption.toLowerCase()}`}
-            className="absolute inset-0 aspect-auto h-full w-full"
-          >
-            <LineChart accessibilityLayer data={points.map(point => ({ ...point, present: point.rate === null ? null : point.present, absent: point.rate === null ? null : point.absent }))} margin={{ top: 12, left: 4, right: 12, bottom: 4 }}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis
-                dataKey="label"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                minTickGap={16}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                width={36}
-                allowDecimals={false}
-                tickFormatter={(value: number) => formatNumber(value)}
-              />
-              <ChartTooltip
-                cursor={false}
-                content={
-                  <ChartTooltipContent
-                    labelFormatter={(value, payload) => {
-                      const key = payload?.[0]?.payload?.key as
-                        | string
-                        | undefined
-                      const rate = key ? rateByKey.get(key) : undefined
-
-                      return rate === undefined
-                        ? String(value)
-                        : `${value} · ${(rate === null ? "—" : formatPercent(rate))} rate`
-                    }}
-                  />
-                }
-              />
-              <ChartLegend content={<ChartLegendContent />} />
-              <Line
-                isAnimationActive={!reduceMotion}
-                animationDuration={900}
-                animationEasing="ease-out"
-                dataKey="present"
-                type="monotone"
-                stroke="var(--color-present)"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
-              />
-              <Line
-                isAnimationActive={!reduceMotion}
-                animationDuration={900}
-                animationEasing="ease-out"
-                dataKey="absent"
-                type="monotone"
-                stroke="var(--color-absent)"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
-              />
-            </LineChart>
-          </ChartContainer>
+          <AttendanceLineChart
+            points={points}
+            label={`Attendance trend, ${activeRange.caption.toLowerCase()}`}
+            className="absolute inset-0 h-full w-full"
+          />
         ) : (
           <EmptyState
             icon={LineChartIcon}
