@@ -6,7 +6,7 @@ Successful verification records the new Auth session ID. Server account checks, 
 
 ## Required rollout
 
-1. In Supabase Authentication, configure a production SMTP sender that can deliver to all school accounts. Confirm email addresses are real, complete addresses such as `name@example.com`.
+1. In Supabase Authentication, configure a production SMTP sender that can deliver to all school accounts. For Resend, follow [Resend SMTP setup](RESEND-SETUP.md#sign-in-and-password-recovery). Confirm email addresses are real, complete addresses such as `name@example.com`.
 2. Update the **Magic Link** email template to contain the code, without a login link:
    ```html
    <h2>Your sign-in verification code</h2>
@@ -14,7 +14,7 @@ Successful verification records the new Auth session ID. Server account checks, 
    <p>If you did not request this code, ignore this email.</p>
    ```
 3. Set Email OTP length to **6** and expiration to **600 seconds**. Supabase shares this expiration setting with other email links, including password recovery. Review that effect before rollout. Keep Auth rate limits enabled.
-4. Confirm `SUPABASE_SERVICE_ROLE_KEY` exists only on the Next.js server. No additional mail API key is needed in this application.
+4. Confirm `SUPABASE_SERVICE_ROLE_KEY` exists only on the Next.js server. Sign-in and recovery email credentials belong in Supabase SMTP settings. The application's `RESEND_API_KEY` is used separately for calendar notifications.
 5. During a coordinated maintenance window, apply `supabase/migrations/202609180001_email_login_verification.sql` and deploy the application together. Old application versions cannot log in after the migration. The migration preserves account and attendance data. It refuses to overwrite a different PostgREST pre-request hook; compose existing enforcement before proceeding if one is installed.
 6. Verify password then email sign-in for each role, wrong/expired codes, resend limits, browser refresh, sign-out, inactive accounts, and password recovery. Test a direct password-only Supabase session: table requests and RPCs must fail. Test private storage and Realtime too. Supabase Auth endpoints remain governed by Supabase's own policies; this change does not turn email OTP into native AAL2.
 

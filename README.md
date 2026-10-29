@@ -334,6 +334,7 @@ Defined in [.env.example](.env.example):
 | `DATABASE_URL` | Server | Pooled PostgreSQL connection string (migrations/tooling) |
 | `DIRECT_URL` | Server | Direct PostgreSQL connection string (migrations/tooling) |
 
+See [Resend setup](RESEND-SETUP.md) for API key storage and Supabase SMTP settings.
 See [calendar email setup](src/features/calendar/README.md) for configuration,
 mocked tests, and delivery limitations. Apply the calendar email dispatch migration
 before deploying the notification actions.
