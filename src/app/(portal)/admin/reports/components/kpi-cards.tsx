@@ -45,44 +45,44 @@ function KpiCard({ label, value, icon: Icon, detail }: KpiCardProps) {
   )
 }
 
-export function KpiCards({
-  kpis,
-  sessionDays,
-}: {
-  kpis: ReportsKpis
-  sessionDays: number
+export function ReportKpiCard({ kpis, sessionDays, index }: {
+  kpis: ReportsKpis; sessionDays: number; index: number
 }) {
   const dayLabel = `${formatNumber(sessionDays)} recorded day${sessionDays === 1 ? "" : "s"}`
-
-  return (
-    <section
-      aria-label="Report key performance indicators"
-      className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4"
-    >
+  return [
       <KpiCard
+        key="0"
         label="Current Active Students"
         value={<SlidingNumber value={kpis.totalStudents} />}
         icon={UsersRound}
         detail={`${kpis.representedStudents} students have records in this range, including retained history.`}
-      />
+      />,
       <KpiCard
+        key="1"
         label="Total Present"
         value={<SlidingNumber value={kpis.totalPresent} />}
         icon={UserRoundCheck}
         detail={`Time-ins recorded across ${dayLabel}, late arrivals included.`}
-      />
+      />,
       <KpiCard
+        key="2"
         label="Total Absent"
         value={<SlidingNumber value={kpis.totalAbsent} />}
         icon={UserRoundX}
         detail={`Recorded absences across ${dayLabel}.`}
-      />
+      />,
       <KpiCard
+        key="3"
         label="RFID Scans"
         value={<SlidingNumber value={kpis.rfidScans} />}
         icon={ScanLine}
         detail="Captured time-ins plus time-outs in this range; historical status values excluded."
       />
-    </section>
-  )
+  ][index]
+}
+
+export function KpiCards({ kpis, sessionDays }: { kpis: ReportsKpis; sessionDays: number }) {
+  return <section aria-label="Report key performance indicators" className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+    {[0, 1, 2, 3].map(index => <ReportKpiCard key={index} index={index} kpis={kpis} sessionDays={sessionDays} />)}
+  </section>
 }

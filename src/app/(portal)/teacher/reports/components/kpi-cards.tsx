@@ -45,44 +45,44 @@ function KpiCard({ label, value, icon: Icon, detail }: KpiCardProps) {
   )
 }
 
-export function KpiCards({
-  kpis,
-  sessionDays,
-}: {
-  kpis: TeacherReportsKpis
-  sessionDays: number
+export function ReportKpiCard({ kpis, sessionDays, index }: {
+  kpis: TeacherReportsKpis; sessionDays: number; index: number
 }) {
   const dayLabel = `${formatNumber(sessionDays)} recorded day${sessionDays === 1 ? "" : "s"}`
-
-  return (
-    <section
-      aria-label="Report key performance indicators"
-      className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4"
-    >
+  return [
       <KpiCard
+        key="0"
         label="Total Assigned"
         value={<SlidingNumber value={kpis.totalAssigned} />}
         icon={UsersRound}
         detail="Assigned students counted in this report."
-      />
+      />,
       <KpiCard
+        key="1"
         label="Total Present"
         value={<SlidingNumber value={kpis.totalPresent} />}
         icon={UserRoundCheck}
         detail={`Time-ins recorded across ${dayLabel}, late arrivals included.`}
-      />
+      />,
       <KpiCard
+        key="2"
         label="Total Absent"
         value={<SlidingNumber value={kpis.totalAbsent} />}
         icon={UserRoundX}
         detail={`Recorded absences across ${dayLabel}.`}
-      />
+      />,
       <KpiCard
+        key="3"
         label="Recorded Attendance Rate"
         value={kpis.attendanceRate === null ? "—" : <SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={TrendingUp}
         detail="Present and Late over attended plus recorded absent sessions."
       />
-    </section>
-  )
+  ][index]
+}
+
+export function KpiCards({ kpis, sessionDays }: { kpis: TeacherReportsKpis; sessionDays: number }) {
+  return <section aria-label="Report key performance indicators" className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+    {[0, 1, 2, 3].map(index => <ReportKpiCard key={index} index={index} kpis={kpis} sessionDays={sessionDays} />)}
+  </section>
 }
