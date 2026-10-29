@@ -27,5 +27,5 @@ export function MonthCalendar({ days, month, date, today, onSelect, onMonthChang
   return <DaysContext.Provider value={days}><Calendar mode="single" required selected={calendarDate(date)} month={calendarDate(`${month}-01`)} today={calendarDate(today)}
     startMonth={calendarDate("0001-01-01")} endMonth={calendarDate("9998-12-01")} showOutsideDays={false}
     onSelect={value => { if (value) onSelect(calendarDateKey(value)) }} onMonthChange={value => onMonthChange(calendarDateKey(value).slice(0, 7), calendarDateKey(value))}
-    className="w-full p-0 [--cell-size:3rem]" classNames={{ root: "w-full", month_grid: "w-full border-collapse", weekdays: "flex", weekday: "flex-1 text-xs text-muted-foreground", week: "mt-1 flex w-full" }} components={{ DayButton: EntryDayButton }} /></DaysContext.Provider>
+    className="w-full p-0 [--cell-size:3rem]" classNames={{ root: "w-full", month_grid: "w-full border-collapse", weekdays: "flex", weekday: "flex-1 text-xs text-muted-foreground", week: "mt-1 flex w-full", today: "[&>button:not([data-selected-single=true])]:bg-accent [&>button:not([data-selected-single=true])]:text-accent-foreground" }} components={{ DayButton: EntryDayButton }} /></DaysContext.Provider>
 }
