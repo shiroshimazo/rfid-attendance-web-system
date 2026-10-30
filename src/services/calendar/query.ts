@@ -442,7 +442,7 @@ export interface CalendarDeliveryFilters {
 
 export async function fetchCalendarDeliveryLog(
   page = 1,
-  pageSize = 25,
+  pageSize = 10,
   filters: CalendarDeliveryFilters = {}
 ): Promise<{ deliveries: CalendarDeliveryLogRow[]; total: number }> {
   const supabase = await createServerSupabaseClient()

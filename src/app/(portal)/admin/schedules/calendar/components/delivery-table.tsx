@@ -16,7 +16,7 @@ import { EmptyState } from "@/components/empty-state"
 import { LiveRefresh } from "@/components/live-refresh"
 import type { CalendarDeliveryPanel } from "@/features/calendar/delivery"
 import { calendarEmailTypes, calendarEmailStatuses } from "@/features/calendar/schema"
-import { DeliveryControl } from "./delivery-controls"
+import { DeliveryControl, DeliveryRetryMenu } from "./delivery-controls"
 import { PortalLink } from "@/components/portal-link"
 
 const timestamp = (value: string | null) => value ? new Date(value).toLocaleString("en-PH", { timeZone: "Asia/Manila" }) : "—"
@@ -73,7 +73,7 @@ export function DeliveryTable({ panel, today }: { panel: CalendarDeliveryPanel; 
                 <TableCell className="px-3"><span className="block min-w-32 max-w-56 whitespace-normal break-words">{row.calendar_entries?.title ?? "Announcement"}</span><span className="text-xs text-muted-foreground tabular-nums">#{row.calendar_entry_id}</span></TableCell>
                 <TableCell className="px-3">{row.notification_type}</TableCell><TableCell className="px-3">{row.recipient_email}</TableCell><TableCell className="px-3">{row.recipient_role}</TableCell>
                 <TableCell className="px-3"><Badge variant={row.status === "Failed" ? "destructive" : "secondary"} title={row.error_message ?? undefined}>{row.status}</Badge></TableCell><TableCell className="px-3 tabular-nums">{row.attempt_count}</TableCell><TableCell className="px-3">{timestamp(row.last_attempt_at)}</TableCell><TableCell className="px-3">{timestamp(row.sent_at)}</TableCell>
-                <TableCell className="px-3">{row.status === "Failed" && row.retry_allowed ? <div className="flex gap-2"><DeliveryControl today={today} target={{ id: row.id }} /><DeliveryControl today={today} target={{ batchId: row.batch_id }} /></div> : "—"}</TableCell>
+                <TableCell className="px-3">{row.status === "Failed" && row.retry_allowed ? <DeliveryRetryMenu id={row.id} batchId={row.batch_id} today={today} /> : "—"}</TableCell>
               </TableRow>)}
             </TableBody>
           </Table>
