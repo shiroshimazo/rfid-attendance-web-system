@@ -144,7 +144,6 @@ export function ReportsPanelSkeleton({ role }: { role: "admin" | "teacher" }) {
       <div aria-hidden="true" className="space-y-1">
         <Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3 md:hidden" />
       </div>
-      {admin && <TableCardSkeleton title="Subject Attendance" columns={subjectColumns} multiline><SubjectSummarySkeleton /></TableCardSkeleton>}
       <Skeleton aria-hidden="true" className="h-7 w-full max-w-xl" />
       <div aria-hidden="true" className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => <KpiCardSkeleton key={index} />)}

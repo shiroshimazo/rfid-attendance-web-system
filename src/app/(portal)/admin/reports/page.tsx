@@ -1,8 +1,7 @@
 import { ReportBox } from "@/features/reports/report-box"
-import { KpiCardSkeleton, TableCardSkeleton, ChartCardSkeleton, SubjectSummarySkeleton, CalendarExceptionsSkeleton, SmsRecordsSkeleton } from "@/features/reports/panel-skeleton"
+import { KpiCardSkeleton, TableCardSkeleton, ChartCardSkeleton, CalendarExceptionsSkeleton, SmsRecordsSkeleton } from "@/features/reports/panel-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CalendarExceptions } from "@/features/reports/calendar-exceptions"
-import { SubjectRecords } from "@/features/subject-attendance/records"
 import type { Metadata } from "next"
 
 import { LiveRefresh } from "@/components/live-refresh"
@@ -59,9 +58,6 @@ function ReportsContent({ data }: { data: ReturnType<typeof getAdminReportsData>
           Generated {data.generatedAtLabel}. Rates exclude no-class and online/manual student-days.
           Program, year and section reflect current profiles. Tap campus comes from the recorded evidence; past exception campuses use stored snapshots.
         </p>}
-      </ReportBox>
-      <ReportBox data={data} fallback={<TableCardSkeleton title="Subject Attendance" columns={Array<string>(6).fill("")} multiline><SubjectSummarySkeleton /></TableCardSkeleton>}>
-        {data => <SubjectRecords rows={data.subjectAttendance} />}
       </ReportBox>
       <h2 className="text-lg font-semibold">Daily RFID evidence (separate from subject attendance)</h2>
       <section aria-label="Report key performance indicators" className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
