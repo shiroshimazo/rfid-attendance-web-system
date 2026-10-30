@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto"
+import { z } from "zod"
 import { createAdminSupabaseClient } from "@/services/supabase/admin"
 import { fetchAllRows } from "@/services/supabase/pagination"
-import { sendResendBatch } from "@/services/email/resend"
+import { sendSmtpBatch } from "@/services/email/smtp"
 import type { CalendarEmailDeliveryRow } from "@/services/calendar/query"
 
 export type Delivery = CalendarEmailDeliveryRow
@@ -38,18 +38,30 @@ export async function sendCalendarDeliveries(batchId: string, retryRows?: Delive
         .eq("id", row.id).eq("status", retryRows ? "Failed" : "Pending")
         .eq("attempt_count", row.attempt_count).eq("retry_allowed", true).select("*").maybeSingle<Delivery>()
       if (error) throw new Error("Calendar email attempts could not be claimed.")
-      if (data) claimed.push(data)
+      if (!data) continue
+      const domain = data.recipient_email.split("@").pop()?.toLowerCase() ?? ""
+      const placeholder = /(^|\.)example\.(com|net|org)$/.test(domain) || /(^|\.)(example|test|invalid|localhost)$/.test(domain)
+      if (!z.email().safeParse(data.recipient_email).success || placeholder) {
+        const { error: invalidError } = await client.from("calendar_email_deliveries").update({
+          status: "Failed", retry_allowed: false, resend_email_id: null, sent_at: null,
+          error_message: "Recipient email is invalid or uses a placeholder domain. Update the student's or teacher's email, then send a new announcement.",
+        }).eq("id", data.id).eq("status", "Pending").eq("attempt_count", data.attempt_count)
+        if (invalidError) throw new Error("Invalid calendar email recipient could not be recorded.")
+        continue
+      }
+      claimed.push(data)
     }
     if (!claimed.length) continue
     // Unknown acceptance and interrupted claims stay locked for operator review, never blind resend.
-    const outcome = await sendResendBatch(claimed.map(row => ({
+    const outcomes = await sendSmtpBatch(claimed.map(row => ({
       to: row.recipient_email, subject: row.subject, html: row.html_body, text: row.text_body,
-    })), `calendar/${batchId}/${randomUUID()}`)
+    })))
     for (const [index, row] of claimed.entries()) {
+      const outcome = outcomes[index]
       const accepted = outcome.status === "accepted"
       const { error } = await client.from("calendar_email_deliveries").update({
         status: accepted ? "Sent" : "Failed", retry_allowed: outcome.status === "rejected",
-        resend_email_id: accepted ? outcome.providerIds[index] : null,
+        resend_email_id: accepted ? outcome.providerId : null,
         sent_at: accepted ? new Date().toISOString() : null,
         error_message: accepted ? null : outcome.errorMessage,
       }).eq("id", row.id).eq("status", "Pending").eq("attempt_count", row.attempt_count)

@@ -2,9 +2,13 @@ import assert from "node:assert/strict"
 import { test, beforeEach, afterEach } from "node:test"
 import { createSourceLoader } from "./helpers/load-typescript.mjs"
 
-const load = createSourceLoader()
+let sendMail, transportOptions, closed
+const load = createSourceLoader({ nodemailer: { createTransport(options) {
+  transportOptions = options
+  return { sendMail: message => sendMail(message), close() { closed = true } }
+} } })
 const { renderCalendarEmail } = load("src/features/calendar/email.ts")
-const { sendResendBatch, isResendConfigured } = load("src/services/email/resend.ts")
+const { sendSmtpBatch, isSmtpConfigured } = load("src/services/email/smtp.ts")
 const entry = {
   title: "Meeting", description: "Details", reason: "Reason", tags: ["event"],
   attendance_impact: "normal", audience: "everyone", campuses: [],
@@ -15,7 +19,7 @@ let env, originalFetch
 beforeEach(() => {
   env = { ...process.env }
   originalFetch = globalThis.fetch
-  Object.assign(process.env, { RESEND_API_KEY: "re_test", CALENDAR_EMAIL_FROM: "School <calendar@example.com>", NEXT_PUBLIC_APP_URL: "https://school.example" })
+  Object.assign(process.env, { GMAIL_SMTP_USER: "sender@gmail.com", GMAIL_SMTP_APP_PASSWORD: "app password", NEXT_PUBLIC_APP_URL: "https://school.example" })
   delete process.env.CALENDAR_EMAIL_REPLY_TO
   globalThis.fetch = () => { throw new Error("Unexpected network call") }
 })
@@ -59,66 +63,60 @@ test("HTML escapes every dynamic field; text and subject remain readable", () =>
 })
 
 test("configuration rejects missing settings, unsafe mailboxes and unsafe URLs", () => {
-  assert.equal(isResendConfigured(), true)
+  assert.equal(isSmtpConfigured(), true)
   for (const [key, values] of Object.entries({
-    RESEND_API_KEY: ["", "bad\nkey"], CALENDAR_EMAIL_FROM: ["", "bad", "School\nBcc: x <a@example.com>"],
+    GMAIL_SMTP_APP_PASSWORD: [""], GMAIL_SMTP_USER: ["", "bad", "a@gmail.com\nBcc: x"],
     CALENDAR_EMAIL_REPLY_TO: ["bad", "a@example.com\nb@example.com"],
     NEXT_PUBLIC_APP_URL: ["", "javascript:alert(1)", "http://school.example", "https://x:y@school.example", "https://school.example/path", "https://school.example/?a=b"],
   })) {
     const old = process.env[key]
-    for (const value of values) { process.env[key] = value; assert.equal(isResendConfigured(), false, `${key}: ${value}`) }
+    for (const value of values) { process.env[key] = value; assert.equal(isSmtpConfigured(), false, `${key}: ${value}`) }
     if (old === undefined) delete process.env[key]; else process.env[key] = old
   }
   delete process.env.NEXT_PUBLIC_APP_URL
   assert.ok(!renderCalendarEmail(entry, "published", "student").html.includes("href="))
 })
 
-test("batch sends one private message per recipient and maps ordered IDs", async () => {
-  process.env.CALENDAR_EMAIL_REPLY_TO = "office@example.com"
-  globalThis.fetch = async (url, options) => {
-    assert.equal(url, "https://api.resend.com/emails/batch")
-    assert.equal(options.headers["Idempotency-Key"], "batch/1")
-    assert.equal(options.headers.Authorization, "Bearer re_test")
-    assert.equal(options.redirect, "error")
-    assert.ok(options.signal instanceof AbortSignal)
-    const body = JSON.parse(options.body)
-    assert.equal(body.length, 100)
-    assert.deepEqual(body[0].to, [message.to])
-    assert.equal(body[0].reply_to, "office@example.com")
-    assert.equal(body[0].from, "School <calendar@example.com>")
-    assert.equal(body[0].text, message.text)
-    return Response.json({ data: body.map((_, index) => ({ id: `id-${index}` })) })
-  }
-  const result = await sendResendBatch(Array(100).fill(message), "batch/1")
-  assert.equal(result.status, "accepted")
-  assert.equal(result.providerIds[99], "id-99")
+test("SMTP sends private messages with authenticated sender and TLS", async () => {
+  const sent = []
+  process.env.CALENDAR_EMAIL_REPLY_TO = "office@gmail.com"
+  sendMail = async message => { sent.push(message); return { accepted: [message.to], messageId: `id-${sent.length}` } }
+  const results = await sendSmtpBatch([message, { ...message, to: "other@gmail.com" }])
+  assert.equal(transportOptions.host, "smtp.gmail.com")
+  assert.equal(transportOptions.port, 465)
+  assert.equal(transportOptions.secure, true)
+  assert.equal(transportOptions.auth.pass, "apppassword")
+  assert.deepEqual(sent.map(value => value.to), [message.to, "other@gmail.com"])
+  assert.equal(sent[0].from.address, "sender@gmail.com")
+  assert.equal(sent[0].replyTo, "office@gmail.com")
+  assert.deepEqual(results.map(value => value.providerId), ["id-1", "id-2"])
+  assert.equal(closed, true)
 })
 
-test("invalid batches and missing configuration never call provider", async () => {
-  for (const messages of [[], Array(101).fill(message), [{ ...message, to: "a@example.com,b@example.com" }], [{ ...message, subject: "x\nBcc: y" }]]) {
-    assert.equal((await sendResendBatch(messages, "batch/1")).status, "rejected")
+test("SMTP partial failure preserves successful recipients and safe errors", async () => {
+  let attempts = 0
+  sendMail = async () => {
+    attempts++
+    if (attempts === 2) throw Object.assign(new Error("secret recipient and password"), { responseCode: 550 })
+    return { accepted: [message.to], messageId: `id-${attempts}` }
   }
-  assert.equal((await sendResendBatch([message], "bad\nkey")).status, "rejected")
-  delete process.env.RESEND_API_KEY
-  assert.match((await sendResendBatch([message], "batch/1")).errorMessage, /not configured/)
+  const results = await sendSmtpBatch([message, message, message])
+  assert.deepEqual(results.map(value => value.status), ["accepted", "rejected", "accepted"])
+  assert.equal(results[1].errorMessage, "Gmail rejected the email (SMTP 550).")
 })
 
-test("HTTP errors never expose provider secrets or recipient details", async () => {
-  for (const status of [400, 401, 403, 409, 422, 429, 500, 503, 408]) {
-    globalThis.fetch = async () => new Response("secret recipient@example.com", { status })
-    const result = await sendResendBatch([message], "batch/1")
-    assert.equal(result.status, status >= 500 || status === 408 ? "unknown" : "rejected")
-    assert.equal(result.errorMessage, `Email provider returned HTTP ${status}.`)
+test("SMTP unknown outcomes stay locked and authentication errors are actionable", async () => {
+  for (const [error, status] of [[{ code: "EAUTH" }, "rejected"], [{ code: "ETIMEDOUT" }, "unknown"], [{ responseCode: 421 }, "rejected"]]) {
+    sendMail = async () => { throw error }
+    assert.equal((await sendSmtpBatch([message]))[0].status, status)
   }
+  sendMail = async () => ({ accepted: [], messageId: "id" })
+  assert.equal((await sendSmtpBatch([message]))[0].status, "unknown")
 })
 
-test("malformed responses and network failures preserve uncertain acceptance", async () => {
-  for (const body of ["not JSON", JSON.stringify({ data: [] }), JSON.stringify({ data: [null] }), JSON.stringify({ data: [{ id: "" }] })]) {
-    globalThis.fetch = async () => new Response(body)
-    assert.equal((await sendResendBatch([message], "batch/1")).status, "unknown")
-  }
-  globalThis.fetch = async () => { throw new Error("secret token") }
-  const result = await sendResendBatch([message], "batch/1")
-  assert.equal(result.status, "unknown")
-  assert.ok(!result.errorMessage.includes("secret"))
+test("missing configuration and invalid messages never send", async () => {
+  sendMail = () => assert.fail("unexpected send")
+  assert.equal((await sendSmtpBatch([{ ...message, to: "bad" }]))[0].status, "rejected")
+  delete process.env.GMAIL_SMTP_APP_PASSWORD
+  assert.match((await sendSmtpBatch([message]))[0].errorMessage, /not configured/)
 })

@@ -11,7 +11,7 @@
   view, based on Asia/Manila. Reads paginate, allow long historical ranges, and
   propagate errors instead of assuming normal attendance. No reconciliation occurs.
 - `email.ts`: server-only service-role delivery persistence and atomic claims.
-  Sends batches of at most 100 through the shared Resend adapter. Only definite
+  Sends private messages through Gmail SMTP, with individual delivery results. Only definite
   failures are retryable; uncertain acceptance and interrupted claims require
   operator review. Stored recipient/content snapshots survive later roster edits.
 

@@ -10,8 +10,8 @@ const notification = {
     attendance_impact: "normal", audience: "everyone", campuses: [], starts_on: "2026-11-01",
     ends_on: "2026-11-01", start_time: null, end_time: null, location: null },
   recipients: [
-    { user_id: "student", email: "student@example.com", role: "student" },
-    { user_id: "teacher", email: "teacher@example.com", role: "teacher" },
+    { user_id: "student", email: "student@resend.dev", role: "student" },
+    { user_id: "teacher", email: "teacher@resend.dev", role: "teacher" },
   ],
 }
 // Evaluate filters at update time, matching Postgres compare-and-set semantics.
@@ -56,11 +56,13 @@ beforeEach(() => {
     "next/server": { after: callback => callbacks.push(callback) },
     "next/cache": { revalidatePath() {} },
     "@/services/supabase/admin": { createAdminSupabaseClient: client },
-    "@/services/email/resend": {
+    "@/services/email/smtp": {
       calendarEmailAppUrl: () => process.env.NEXT_PUBLIC_APP_URL ?? null,
-      sendResendBatch: async (messages, key) => {
+      sendSmtpBatch: async (messages, key) => {
         calls.push({ messages, key })
-        return typeof outcome === "function" ? outcome(messages) : outcome ?? { status: "accepted", providerIds: messages.map((_, i) => `provider-${calls.length}-${i}`) }
+        const result = typeof outcome === "function" ? outcome(messages) : outcome ?? { status: "accepted", providerIds: messages.map((_, i) => `provider-${calls.length}-${i}`) }
+        if (Array.isArray(result)) return result
+        return messages.map((_, i) => result.status === "accepted" ? { status: "accepted", providerId: result.providerIds[i] } : result)
       },
     },
   })
@@ -70,7 +72,7 @@ const notifications = () => load("src/features/calendar/notifications.ts")
 const service = () => load("src/services/calendar/email.ts")
 
 test("stores payloads before after(), excludes admins and deduplicates recipients", async () => {
-  await notifications().queueCalendarNotification({ ...notification, recipients: [...notification.recipients, notification.recipients[0], { user_id: "admin", role: "admin", email: "admin@example.com" }] })
+  await notifications().queueCalendarNotification({ ...notification, recipients: [...notification.recipients, notification.recipients[0], { user_id: "admin", role: "admin", email: "admin@resend.dev" }] })
   assert.equal(rows.length, 2); assert.equal(calls.length, 0); assert.equal(callbacks.length, 1)
   assert.match(rows[0].html_body, /student\/calendar/)
   assert.match(rows[1].html_body, /teacher\/calendar/)
@@ -91,7 +93,7 @@ test("duplicate callbacks and concurrent send attempts claim each recipient once
 })
 
 test("chunks at 100, retains successful chunks, retries only failed stored payloads", async () => {
-  await notifications().queueCalendarNotification({ ...notification, recipients: Array.from({ length: 101 }, (_, i) => ({ user_id: `student-${i}`, email: `s${i}@example.com`, role: "student" })) })
+  await notifications().queueCalendarNotification({ ...notification, recipients: Array.from({ length: 101 }, (_, i) => ({ user_id: `student-${i}`, email: `s${i}@resend.dev`, role: "student" })) })
   outcome = messages => calls.length === 2 ? { status: "rejected", errorMessage: "Email provider returned HTTP 429." } : { status: "accepted", providerIds: messages.map((_, i) => `provider-${i}`) }
   await callbacks[0]()
   assert.deepEqual(calls.map(call => call.messages.length), [100, 1])
@@ -147,4 +149,49 @@ test("unconfigured provider records failed deliveries and supports retry after s
   assert.equal(await notifications().queueCalendarEmailRetry({ batchId }), true)
   await callbacks[1]()
   assert.ok(rows.every(row => row.status === "Sent" && row.attempt_count === 2))
+})
+
+
+test("placeholder recipients fail individually without blocking valid recipients", async () => {
+  const invalid = ["student@example.com", "student@EXAMPLE.NET", "student@sub.example.org", "student@school.test", "not-an-email"]
+  await notifications().queueCalendarNotification({ ...notification, recipients: [
+    ...invalid.map((email, i) => ({ user_id: `invalid-${i}`, email, role: "student" })),
+    { user_id: "valid", email: "delivered@resend.dev", role: "teacher" },
+  ] })
+  await callbacks[0]()
+  assert.deepEqual(calls[0].messages.map(message => message.to), ["delivered@resend.dev"])
+  assert.ok(rows.slice(0, invalid.length).every(row => row.status === "Failed" && !row.retry_allowed && /placeholder domain/.test(row.error_message)))
+  assert.equal(rows.at(-1).status, "Sent")
+  assert.equal(rows.at(-1).resend_email_id, "provider-1-0")
+  assert.equal(await notifications().queueCalendarEmailRetry({ batchId }), false)
+})
+
+test("all-placeholder batches never call the provider, including retries of old failures", async () => {
+  await notifications().queueCalendarNotification({ ...notification, recipients: [
+    { user_id: "placeholder", email: "student@example.com", role: "student" },
+  ] })
+  rows[0].status = "Failed"
+  rows[0].attempt_count = 1
+  assert.equal(await notifications().queueCalendarEmailRetry({ batchId }), true)
+  await callbacks[1]()
+  assert.equal(calls.length, 0)
+  assert.equal(rows[0].status, "Failed")
+  assert.equal(rows[0].retry_allowed, false)
+  assert.equal(rows[0].attempt_count, 2)
+})
+
+
+test("mixed SMTP results persist independently and retry only definite rejection", async () => {
+  await notifications().queueCalendarNotification(notification)
+  outcome = [{ status: "accepted", providerId: "smtp-message-id" }, { status: "rejected", errorMessage: "Gmail rejected the email (SMTP 550)." }]
+  await callbacks[0]()
+  assert.equal(rows[0].status, "Sent")
+  assert.equal(rows[0].resend_email_id, "smtp-message-id")
+  assert.equal(rows[1].status, "Failed")
+  outcome = null
+  await notifications().queueCalendarEmailRetry({ batchId })
+  await callbacks[1]()
+  assert.equal(calls[1].messages.length, 1)
+  assert.equal(rows[0].attempt_count, 1)
+  assert.equal(rows[1].status, "Sent")
 })

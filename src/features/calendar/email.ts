@@ -1,5 +1,5 @@
 import type { CalendarEntryRow } from "@/services/calendar/query"
-import { calendarEmailAppUrl } from "@/services/email/resend"
+import { calendarEmailAppUrl } from "@/services/email/smtp"
 
 export type CalendarEmailType = "published" | "updated" | "cancelled"
 export interface RenderedEmail {
