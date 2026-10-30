@@ -78,7 +78,7 @@ const steps: WizardStep[] = [
     id: "personal",
     label: "Personal",
     title: "Student details",
-    description: "Enter the student's name, email and contact details.",
+    description: "Enter the student's name and sign-in email. The other details on this step are optional.",
     fields: [
       "fullName",
       "email",
@@ -94,23 +94,23 @@ const steps: WizardStep[] = [
     id: "guardian",
     label: "Guardian",
     title: "Parent or guardian",
-    description: "Enter the parent or guardian who should receive attendance texts.",
+    description: "Enter the parent or guardian's name and mobile number for attendance texts.",
     fields: ["parentName", "parentContactNumber"],
   },
   {
     id: "academic",
-    label: "Academic",
+    label: "Class",
     title: "Class details",
     description:
-      "Choose the student's program, year level, section and campus.",
+      "Enter the student ID, then select the program, year level, section and campus.",
     fields: ["studentId", "programId", "yearLevel", "section", "campus", "status"],
   },
   {
     id: "account",
-    label: "Account",
+    label: "Review",
     title: "Sign-in details",
     description:
-      "Review the student details. Set a password when adding a new student.",
+      "Check the student's details before saving. New students also need a sign-in password.",
     fields: ["password", "confirmPassword"],
   },
 ]
@@ -407,7 +407,7 @@ export function StudentFormDialog({
   }
 
   const selectedProgram = programs.find((program) => String(program.id) === summary.programId)
-  const programLabel = selectedProgram ? `${selectedProgram.code} - ${selectedProgram.name}` : "Select program"
+  const programLabel = selectedProgram ? `${selectedProgram.code} - ${selectedProgram.name}` : "Not selected"
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -895,7 +895,7 @@ export function StudentFormDialog({
                                 <Input
                                   type="password"
                                   autoComplete="new-password"
-                                  placeholder="Confirm password"
+                                  placeholder="Re-enter password"
                                   {...field}
                                 />
                               </FormControl>
@@ -920,23 +920,27 @@ export function StudentFormDialog({
                     <dl className="mt-3 space-y-1.5 text-sm">
                       <SummaryRow
                         label="Full name"
-                        value={summary.fullName || "(not set)"}
+                        value={summary.fullName || "Not entered"}
+                      />
+                      <SummaryRow
+                        label="Student ID"
+                        value={summary.studentId || "Not entered"}
                       />
                       <SummaryRow
                         label="Email address"
-                        value={summary.email || "(not set)"}
+                        value={summary.email || "Not entered"}
                       />
                       <SummaryRow
-                        label="Student contact"
-                        value={summary.contactNumber || "(not set)"}
+                        label="Student phone"
+                        value={summary.contactNumber || "Not provided"}
                       />
                       <SummaryRow
-                        label="Guardian"
-                        value={summary.parentName || "(not set)"}
+                        label="Parent or guardian"
+                        value={summary.parentName || "Not entered"}
                       />
                       <SummaryRow
-                        label="Guardian contact"
-                        value={summary.parentContactNumber || "(not set)"}
+                        label="Parent or guardian phone"
+                        value={summary.parentContactNumber || "Not entered"}
                       />
                       <SummaryRow label="Program" value={programLabel} />
                       <SummaryRow
@@ -945,11 +949,11 @@ export function StudentFormDialog({
                       />
                       <SummaryRow
                         label="Section"
-                        value={summary.section || "(not selected)"}
+                        value={summary.section || "Not selected"}
                       />
                       <SummaryRow
                         label="Campus"
-                        value={summary.campus || "(not selected)"}
+                        value={summary.campus || "Not selected"}
                       />
                       <SummaryRow
                         label="Account status"
@@ -979,7 +983,7 @@ export function StudentFormDialog({
             <DialogFooter className="sm:items-center sm:justify-between">
               {isLastStep ? (
                 <p className="text-sm text-muted-foreground text-pretty sm:mr-auto">
-                  Use Back or Edit details to review earlier steps before saving.
+                  Check the student ID and contact details. Use Back to correct them before saving.
                 </p>
               ) : null}
 
