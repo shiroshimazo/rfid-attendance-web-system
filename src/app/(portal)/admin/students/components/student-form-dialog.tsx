@@ -441,7 +441,7 @@ export function StudentFormDialog({
 
             <div className="min-h-[20rem]">
               {step.id === "personal" ? (
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid items-start gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="fullName"
@@ -610,7 +610,7 @@ export function StudentFormDialog({
               ) : null}
 
               {step.id === "guardian" ? (
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid items-start gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="parentName"
@@ -654,7 +654,7 @@ export function StudentFormDialog({
               ) : null}
 
               {step.id === "academic" ? (
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid items-start gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="studentId"
@@ -860,7 +860,7 @@ export function StudentFormDialog({
               ) : null}
 
               {step.id === "account" ? (
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid items-start gap-4 sm:grid-cols-2">
                   <div className="space-y-4">
                     {mode === "create" ? (
                       <>
