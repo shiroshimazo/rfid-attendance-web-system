@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { MailX } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -22,6 +23,14 @@ const timestamp = (value: string | null) => value ? new Date(value).toLocaleStri
 
 export function DeliveryTable({ panel, today }: { panel: CalendarDeliveryPanel; today: string }) {
   const router = useRouter(), pathname = usePathname(), params = useSearchParams()
+  const form = React.useRef<HTMLFormElement>(null)
+  const current = {
+    entry: panel.filters.entryId ? String(panel.filters.entryId) : "",
+    type: panel.filters.type ?? "",
+    status: panel.filters.status ?? "",
+    from: panel.filters.from ?? "",
+    to: panel.filters.to ?? "",
+  }
   function navigate(patch: Record<string, string>) {
     const next = new URLSearchParams(params.toString())
     for (const [key, value] of Object.entries(patch)) {
@@ -29,6 +38,14 @@ export function DeliveryTable({ panel, today }: { panel: CalendarDeliveryPanel; 
       else next.delete(key)
     }
     router.replace(`${pathname}?${next}`, { scroll: false })
+  }
+  function applyFilters(patch: Partial<typeof current> = {}) {
+    const data = form.current ? new FormData(form.current) : null
+    const value = (key: keyof typeof current) => {
+      const raw = patch[key] ?? (data ? String(data.get(key) ?? "") : current[key])
+      return raw === "all" ? "" : raw
+    }
+    navigate({ entry: value("entry"), type: value("type"), status: value("status"), from: value("from"), to: value("to"), page: "1" })
   }
   return <div className="min-w-0 space-y-4">
     <LiveRefresh channel="admin-calendar-deliveries" tables={["calendar_email_deliveries"]} />
@@ -40,21 +57,22 @@ export function DeliveryTable({ panel, today }: { panel: CalendarDeliveryPanel; 
         <CardAction><div className="flex flex-wrap justify-end gap-2"><Button size="sm" variant="outline" onClick={() => router.refresh()}>Refresh</Button><DeliveryControl today={today} /></div></CardAction>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form role="search" aria-label="Filter email deliveries" className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6" onSubmit={event => { event.preventDefault(); const data = new FormData(event.currentTarget); navigate({ entry: String(data.get("entry") ?? ""), type: String(data.get("type") ?? ""), status: String(data.get("status") ?? ""), from: String(data.get("from") ?? ""), to: String(data.get("to") ?? ""), page: "1" }) }}>
-          <div className="space-y-2"><Label htmlFor="delivery-entry">Entry ID</Label><Input id="delivery-entry" name="entry" type="number" min="1" step="1" defaultValue={panel.filters.entryId ?? ""} /></div>
-          {([['type', 'Type', calendarEmailTypes], ['status', 'Status', calendarEmailStatuses]] as const).map(([name, label, options]) => <div className="space-y-2" key={name}><Label htmlFor={`delivery-${name}`}>{label}</Label><Select name={name} defaultValue={panel.filters[name] ?? "all"}><SelectTrigger id={`delivery-${name}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem>{options.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select></div>)}
-          {([['from', 'Created from'], ['to', 'Created through']] as const).map(([name, label]) => <div className="space-y-2" key={name}><Label htmlFor={`delivery-${name}`}>{label}</Label><Input id={`delivery-${name}`} type="date" name={name} defaultValue={panel.filters[name] ?? ""} /></div>)}
-          <div className="flex items-end gap-2"><Button type="submit">Filter</Button><Button type="button" variant="outline" onClick={() => router.replace(`${pathname}?tab=deliveries`)}>Reset</Button></div>
+        <form ref={form} role="search" aria-label="Filter email deliveries" className="space-y-3" onSubmit={event => { event.preventDefault(); applyFilters() }}>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(5,minmax(0,1fr))_auto]">
+            <div className="space-y-2"><Label htmlFor="delivery-entry">Entry ID</Label><Input id="delivery-entry" name="entry" type="number" min="1" step="1" defaultValue={current.entry} onBlur={event => { const value = event.currentTarget.value.trim(); if (value !== current.entry) applyFilters({ entry: value }) }} /></div>
+            {([['type', 'Type', calendarEmailTypes], ['status', 'Status', calendarEmailStatuses]] as const).map(([name, label, options]) => <div className="space-y-2" key={name}><Label htmlFor={`delivery-${name}`}>{label}</Label><Select name={name} defaultValue={current[name] || "all"} onValueChange={value => applyFilters(name === "type" ? { type: value === "all" ? "" : value } : { status: value === "all" ? "" : value })}><SelectTrigger id={`delivery-${name}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem>{options.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select></div>)}
+            {([['from', 'Created from'], ['to', 'Created through']] as const).map(([name, label]) => <div className="space-y-2" key={name}><Label htmlFor={`delivery-${name}`}>{label}</Label><Input id={`delivery-${name}`} type="date" name={name} defaultValue={current[name]} onChange={event => applyFilters(name === "from" ? { from: event.currentTarget.value } : { to: event.currentTarget.value })} /></div>)}
+            <div className="space-y-2"><span aria-hidden className="block text-sm leading-none font-medium select-none">&nbsp;</span><Button type="button" variant="outline" onClick={() => router.replace(`${pathname}?tab=deliveries`)}>Reset</Button></div>
+          </div>
         </form>
         {panel.deliveries.length === 0 ? <EmptyState icon={MailX} title="No email deliveries" description="No deliveries match these filters. Reset or widen the date range." /> : <div className="overflow-x-auto rounded-lg border">
           <Table>
-            <TableHeader><TableRow className="bg-muted/50">{["Entry", "Type", "Recipient", "Role", "Status", "Attempts", "Last attempt", "Sent time", "Error / next step", "Retry"].map(label => <TableHead key={label} className="px-3">{label}</TableHead>)}</TableRow></TableHeader>
+            <TableHeader><TableRow className="bg-muted/50">{["Entry", "Type", "Recipient", "Role", "Status", "Attempts", "Last attempt", "Sent time", "Retry"].map(label => <TableHead key={label} className="px-3">{label}</TableHead>)}</TableRow></TableHeader>
             <TableBody>
               {panel.deliveries.map(row => <TableRow key={row.id}>
                 <TableCell className="px-3"><span className="block min-w-32 max-w-56 whitespace-normal break-words">{row.calendar_entries?.title ?? "Announcement"}</span><span className="text-xs text-muted-foreground tabular-nums">#{row.calendar_entry_id}</span></TableCell>
                 <TableCell className="px-3">{row.notification_type}</TableCell><TableCell className="px-3">{row.recipient_email}</TableCell><TableCell className="px-3">{row.recipient_role}</TableCell>
-                <TableCell className="px-3"><Badge variant={row.status === "Failed" ? "destructive" : "secondary"}>{row.status}</Badge></TableCell><TableCell className="px-3 tabular-nums">{row.attempt_count}</TableCell><TableCell className="px-3">{timestamp(row.last_attempt_at)}</TableCell><TableCell className="px-3">{timestamp(row.sent_at)}</TableCell>
-                <TableCell className="min-w-60 max-w-80 whitespace-normal break-words px-3">{row.error_message && <p>{row.error_message}</p>}{row.status === "Sent" ? "Accepted by provider." : row.status === "Failed" && row.retry_allowed ? "Retry this email or eligible failures in its batch." : row.attempt_count > 0 || !row.retry_allowed ? "Acceptance is uncertain. Check provider records before manual recovery; retry is blocked." : "Queued. Refresh for progress. If it stays pending, ask an administrator to inspect scheduling before resending."}</TableCell>
+                <TableCell className="px-3"><Badge variant={row.status === "Failed" ? "destructive" : "secondary"} title={row.error_message ?? undefined}>{row.status}</Badge></TableCell><TableCell className="px-3 tabular-nums">{row.attempt_count}</TableCell><TableCell className="px-3">{timestamp(row.last_attempt_at)}</TableCell><TableCell className="px-3">{timestamp(row.sent_at)}</TableCell>
                 <TableCell className="px-3">{row.status === "Failed" && row.retry_allowed ? <div className="flex gap-2"><DeliveryControl today={today} target={{ id: row.id }} /><DeliveryControl today={today} target={{ batchId: row.batch_id }} /></div> : "—"}</TableCell>
               </TableRow>)}
             </TableBody>
