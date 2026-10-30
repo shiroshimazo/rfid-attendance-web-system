@@ -2,6 +2,7 @@ import { requireRole } from "@/features/auth/server"
 import { calendarDateSchema, calendarEmailStatuses, calendarEmailTypes } from "@/features/calendar/schema"
 import { fetchCalendarDeliveryLog, type CalendarDeliveryFilters } from "@/services/calendar/query"
 import type { CalendarSearchParams } from "@/features/calendar/admin-view"
+import { searchTagsFromParams } from "@/lib/search-tags"
 
 const PAGE_SIZE = 10
 
@@ -10,7 +11,7 @@ export async function getCalendarDeliveryPanel(params: CalendarSearchParams) {
   const value = (key: string) => typeof params[key] === "string" ? params[key] as string : ""
   const integer = (key: string) => /^\d+$/.test(value(key)) && Number.isSafeInteger(Number(value(key))) && Number(value(key)) > 0 ? Number(value(key)) : undefined
   const filters: CalendarDeliveryFilters = {
-    search: (value("search") || value("entry")).trim().slice(0, 160) || undefined,
+    search: searchTagsFromParams(params.search ?? params.entry),
     type: calendarEmailTypes.find(type => type === value("type")),
     status: calendarEmailStatuses.find(status => status === value("status")),
     from: calendarDateSchema.safeParse(value("from")).data,

@@ -1,5 +1,6 @@
 "use client"
 
+import type { ReactNode } from "react"
 import { Search } from "lucide-react"
 
 import { TagInput } from "@/components/arc/tag-input/tag-input"
@@ -20,6 +21,8 @@ export interface SearchTagInputProps {
   className?: string
   /** Draws the magnifier glyph the other search fields carry. */
   showIcon?: boolean
+  /** Overrides the default magnifier glyph. */
+  leading?: ReactNode
 }
 
 const searchHint =
@@ -39,6 +42,7 @@ export function SearchTagInput({
   size = "md",
   className,
   showIcon = true,
+  leading,
 }: SearchTagInputProps) {
   return (
     <TagInput
@@ -52,7 +56,7 @@ export function SearchTagInput({
       placeholder={placeholder}
       description={description}
       className={className}
-      leading={showIcon ? <Search className="size-4" /> : undefined}
+      leading={leading ?? (showIcon ? <Search className="size-4" /> : undefined)}
     />
   )
 }

@@ -3,6 +3,8 @@
 import * as React from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { MailX } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Search01Icon } from "@hugeicons/core-free-icons"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,6 +15,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardAction, CardContent, 
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table"
 import { TablePagination } from "@/components/data-table"
 import { EmptyState } from "@/components/empty-state"
+import { SearchTagInput } from "@/components/search-tag-input"
 import { LiveRefresh } from "@/components/live-refresh"
 import type { CalendarDeliveryPanel } from "@/features/calendar/delivery"
 import { calendarEmailTypes, calendarEmailStatuses } from "@/features/calendar/schema"
@@ -23,29 +26,35 @@ const timestamp = (value: string | null) => value ? new Date(value).toLocaleStri
 
 export function DeliveryTable({ panel, today }: { panel: CalendarDeliveryPanel; today: string }) {
   const router = useRouter(), pathname = usePathname(), params = useSearchParams()
-  const form = React.useRef<HTMLFormElement>(null)
+  const [search, setSearch] = React.useState(panel.filters.search ?? [])
+  const searchKey = JSON.stringify(panel.filters.search ?? [])
+  const [previousSearchKey, setPreviousSearchKey] = React.useState(searchKey)
+  if (previousSearchKey !== searchKey) {
+    setPreviousSearchKey(searchKey)
+    setSearch(panel.filters.search ?? [])
+  }
   const current = {
-    search: panel.filters.search ?? "",
     type: panel.filters.type ?? "",
     status: panel.filters.status ?? "",
     from: panel.filters.from ?? "",
     to: panel.filters.to ?? "",
   }
-  function navigate(patch: Record<string, string>) {
+  function navigate(patch: Record<string, string | string[]>) {
     const next = new URLSearchParams(params.toString())
     for (const [key, value] of Object.entries(patch)) {
-      if (value) next.set(key, value)
-      else next.delete(key)
+      next.delete(key)
+      if (Array.isArray(value)) value.forEach(item => { if (item) next.append(key, item) })
+      else if (value) next.set(key, value)
     }
     router.replace(`${pathname}?${next}`, { scroll: false })
   }
   function applyFilters(patch: Partial<typeof current> = {}) {
-    const data = form.current ? new FormData(form.current) : null
-    const value = (key: keyof typeof current) => {
-      const raw = patch[key] ?? (data ? String(data.get(key) ?? "") : current[key])
-      return raw === "all" ? "" : raw.trim()
-    }
-    navigate({ search: value("search"), entry: "", type: value("type"), status: value("status"), from: value("from"), to: value("to"), page: "1" })
+    const value = (key: keyof typeof current) => (patch[key] ?? current[key]).trim()
+    navigate({ search, entry: "", type: value("type"), status: value("status"), from: value("from"), to: value("to"), page: "1" })
+  }
+  function applySearch(next: string[]) {
+    setSearch(next)
+    navigate({ search: next, entry: "", ...current, page: "1" })
   }
   return <div className="min-w-0 space-y-4">
     <LiveRefresh channel="admin-calendar-deliveries" tables={["calendar_email_deliveries"]} />
@@ -57,14 +66,14 @@ export function DeliveryTable({ panel, today }: { panel: CalendarDeliveryPanel; 
         <CardAction><div className="flex flex-wrap justify-end gap-2"><Button size="sm" variant="outline" onClick={() => router.refresh()}>Refresh</Button><DeliveryControl today={today} /></div></CardAction>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form ref={form} role="search" aria-label="Filter email deliveries" className="space-y-3" onSubmit={event => { event.preventDefault(); applyFilters() }}>
+        <div role="search" aria-label="Filter email deliveries">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(5,minmax(0,1fr))_auto]">
-            <div className="space-y-2"><Label htmlFor="delivery-search">Search</Label><Input id="delivery-search" name="search" type="search" maxLength={160} placeholder="ID, title, recipient, or role" defaultValue={current.search} onBlur={event => { const value = event.currentTarget.value.trim(); if (value !== current.search) applyFilters({ search: value }) }} /></div>
+            <div className="space-y-2"><span className="block text-sm leading-none font-medium select-none">Search</span><SearchTagInput id="delivery-search" label="Search email deliveries" value={search} onValueChange={applySearch} placeholder="ID, title, recipient, or role" leading={<HugeiconsIcon icon={Search01Icon} size={16} />} /></div>
             {([['type', 'Type', calendarEmailTypes], ['status', 'Status', calendarEmailStatuses]] as const).map(([name, label, options]) => <div className="space-y-2" key={name}><Label htmlFor={`delivery-${name}`}>{label}</Label><Select name={name} defaultValue={current[name] || "all"} onValueChange={value => applyFilters(name === "type" ? { type: value === "all" ? "" : value } : { status: value === "all" ? "" : value })}><SelectTrigger id={`delivery-${name}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem>{options.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select></div>)}
             {([['from', 'Created from'], ['to', 'Created through']] as const).map(([name, label]) => <div className="space-y-2" key={name}><Label htmlFor={`delivery-${name}`}>{label}</Label><Input id={`delivery-${name}`} type="date" name={name} defaultValue={current[name]} onChange={event => applyFilters(name === "from" ? { from: event.currentTarget.value } : { to: event.currentTarget.value })} /></div>)}
             <div className="space-y-2"><span aria-hidden className="block text-sm leading-none font-medium select-none">&nbsp;</span><Button type="button" variant="outline" onClick={() => router.replace(`${pathname}?tab=deliveries`)}>Reset</Button></div>
           </div>
-        </form>
+        </div>
         {panel.deliveries.length === 0 ? <EmptyState icon={MailX} title="No email deliveries" description="No deliveries match these filters. Reset or widen the date range." /> : <div className="overflow-x-auto rounded-lg border">
           <Table>
             <TableHeader><TableRow className="bg-muted/50">{["Entry", "Type", "Recipient", "Role", "Status", "Attempts", "Last attempt", "Sent time", "Retry"].map(label => <TableHead key={label} className="px-3">{label}</TableHead>)}</TableRow></TableHeader>

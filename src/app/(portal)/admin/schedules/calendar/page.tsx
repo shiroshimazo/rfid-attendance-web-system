@@ -14,7 +14,7 @@ async function Deliveries({ params, today }: { params: CalendarSearchParams; tod
   let panel
   try { panel = await getCalendarDeliveryPanel(params) }
   catch { return <DataErrorCard title="Email deliveries could not be loaded" message="Try again. Ask your administrator to check the calendar email setup if this persists." /> }
-  return <DeliveryTable key={JSON.stringify(params)} panel={panel} today={today} />
+  return <DeliveryTable key={JSON.stringify({ ...params, search: undefined })} panel={panel} today={today} />
 }
 
 export const metadata: Metadata = { title: "Calendar & Announcements" }

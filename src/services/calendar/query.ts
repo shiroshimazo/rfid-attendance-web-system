@@ -433,7 +433,7 @@ export type CalendarDeliveryLogRow = Pick<CalendarEmailDeliveryRow,
   }
 
 export interface CalendarDeliveryFilters {
-  search?: string
+  search?: string[]
   type?: CalendarEmailDeliveryRow["notification_type"]
   status?: CalendarEmailDeliveryRow["status"]
   from?: string
@@ -457,19 +457,23 @@ export async function fetchCalendarDeliveryLog(
       { count: "exact" }
     )
     .order("created_at", { ascending: false }).order("id", { ascending: false })
-  if (filters.search) {
-    const cleaned = filters.search.replace(/[,()*%"]/g, " ").replace(/\s+/g, " ").trim().slice(0, 160)
-    if (!cleaned) return { deliveries: [], total: 0 }
-    const pattern = `%${cleaned.replace(/[\\%_]/g, "\\$&")}%`
+  if (filters.search?.length) {
+    const terms = filters.search
+      .map(term => term.replace(/[,()*%"]/g, " ").replace(/\s+/g, " ").trim().slice(0, 160))
+      .filter(Boolean)
+    if (!terms.length) return { deliveries: [], total: 0 }
+    const patterns = terms.map(term => `"%${term.replace(/[\\%_]/g, "\\$&")}%"`)
     const entryIds = new Set<number>()
-    if (/^\d+$/.test(cleaned) && Number.isSafeInteger(Number(cleaned))) entryIds.add(Number(cleaned))
+    for (const term of terms) {
+      if (/^\d+$/.test(term) && Number.isSafeInteger(Number(term))) entryIds.add(Number(term))
+    }
     const { data: entries, error: entriesError } = await supabase
       .from("calendar_entries")
       .select("id")
-      .ilike("title", pattern)
+      .or(patterns.map(pattern => `title.ilike.${pattern}`).join(","))
     if (entriesError) throw new Error(entriesError.message)
     for (const entry of entries ?? []) entryIds.add(entry.id)
-    const conditions = [`recipient_email.ilike.${pattern}`, `recipient_role.ilike.${pattern}`]
+    const conditions = patterns.flatMap(pattern => [`recipient_email.ilike.${pattern}`, `recipient_role.ilike.${pattern}`])
     if (entryIds.size) conditions.push(`calendar_entry_id.in.(${[...entryIds].join(",")})`)
     query = query.or(conditions.join(","))
   }
