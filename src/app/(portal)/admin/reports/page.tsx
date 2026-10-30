@@ -14,6 +14,7 @@ import {
 } from "@/features/reports/panel"
 
 import { AttendanceBySectionTable } from "./components/attendance-by-section-table"
+import { AttendanceBySubjectTable } from "./components/attendance-by-subject-table"
 import { DateRangePicker } from "./components/date-range-picker"
 import { ExportPdfButton } from "./components/export-pdf-button"
 import { GroupBreakdownChart } from "./components/group-breakdown-chart"
@@ -59,7 +60,7 @@ function ReportsContent({ data }: { data: ReturnType<typeof getAdminReportsData>
           Program, year and section reflect current profiles. Tap campus comes from the recorded evidence; past exception campuses use stored snapshots.
         </p>}
       </ReportBox>
-      <h2 className="text-lg font-semibold">Daily RFID evidence (separate from subject attendance)</h2>
+      <h2 className="text-lg font-semibold">Attendance overview</h2>
       <section aria-label="Report key performance indicators" className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
         {[0, 1, 2, 3].map(index => <ReportBox key={index} data={data} fallback={<KpiCardSkeleton />}>
           {data => <ReportKpiCard index={index} kpis={data.kpis} sessionDays={data.sessionDays} />}
@@ -83,6 +84,9 @@ function ReportsContent({ data }: { data: ReturnType<typeof getAdminReportsData>
       </ReportBox>
       <ReportBox data={data} fallback={<TableCardSkeleton title="Attendance by Section" columns={["px-3", "px-3", "px-3", "px-3", "hidden px-3 md:table-cell", "hidden px-3 lg:table-cell", "hidden px-3 lg:table-cell", "hidden px-3 lg:table-cell", "px-3"]} />}>
         {data => <AttendanceBySectionTable rows={data.bySection} rangeLabel={data.rangeLabel} />}
+      </ReportBox>
+      <ReportBox data={data} fallback={<TableCardSkeleton title="Attendance by Subject" columns={Array<string>(6).fill("")} multiline />}>
+        {data => <AttendanceBySubjectTable rows={data.subjectAttendance} />}
       </ReportBox>
 
       <ReportBox data={data} fallback={<TableCardSkeleton title="Recent Attendance Logs" columns={["px-3", "px-3", "hidden px-3 md:table-cell", "hidden px-3 lg:table-cell", "hidden px-3 lg:table-cell", "px-3", "hidden px-3 sm:table-cell"]} multiline />}>

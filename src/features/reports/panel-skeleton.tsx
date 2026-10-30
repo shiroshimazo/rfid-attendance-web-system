@@ -155,6 +155,7 @@ export function ReportsPanelSkeleton({ role }: { role: "admin" | "teacher" }) {
       </div>
       {admin && <ChartCardSkeleton breakdown />}
       <TableCardSkeleton title="Attendance by Section" columns={sectionColumns} />
+      {admin && <TableCardSkeleton title="Attendance by Subject" columns={subjectColumns} multiline><Skeleton className="h-9 w-full sm:w-80" /></TableCardSkeleton>}
       {!admin && <TableCardSkeleton title="Subject Attendance" columns={subjectColumns} multiline><SubjectSummarySkeleton teacher /></TableCardSkeleton>}
       <TableCardSkeleton title="Recent Attendance Logs" columns={["px-3", "px-3", "hidden px-3 md:table-cell", "hidden px-3 lg:table-cell", "hidden px-3 lg:table-cell", "px-3", "hidden px-3 sm:table-cell"]} multiline />
       {admin && <SmsRecordsSkeleton />}
