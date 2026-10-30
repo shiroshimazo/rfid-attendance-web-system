@@ -473,7 +473,9 @@ export async function fetchCalendarDeliveryLog(
       .or(patterns.map(pattern => `title.ilike.${pattern}`).join(","))
     if (entriesError) throw new Error(entriesError.message)
     for (const entry of entries ?? []) entryIds.add(entry.id)
-    const conditions = patterns.flatMap(pattern => [`recipient_email.ilike.${pattern}`, `recipient_role.ilike.${pattern}`])
+    const conditions = patterns.map(pattern => `recipient_email.ilike.${pattern}`)
+    const roles = ["teacher", "student"].filter(role => terms.some(term => role.includes(term.toLowerCase())))
+    if (roles.length) conditions.push(`recipient_role.in.(${roles.join(",")})`)
     if (entryIds.size) conditions.push(`calendar_entry_id.in.(${[...entryIds].join(",")})`)
     query = query.or(conditions.join(","))
   }

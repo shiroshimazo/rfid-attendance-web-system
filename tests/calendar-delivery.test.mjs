@@ -13,11 +13,20 @@ test("delivery search matches any tag across titles, IDs, recipients and roles",
       return query
     } }) },
   })
-  await load("src/services/calendar/query.ts").fetchCalendarDeliveryLog(1, 10, { search: ["42", "teacher"] })
+  const fetch = load("src/services/calendar/query.ts").fetchCalendarDeliveryLog
+  await fetch(1, 10, { search: ["42", "TEACH"] })
   assert.deepEqual(calls.filter(call => call[1] === "or"), [
-    ["calendar_entries", "or", 'title.ilike."%42%",title.ilike."%teacher%"'],
-    ["calendar_email_deliveries", "or", 'recipient_email.ilike."%42%",recipient_role.ilike."%42%",recipient_email.ilike."%teacher%",recipient_role.ilike."%teacher%",calendar_entry_id.in.(42,9)'],
+    ["calendar_entries", "or", 'title.ilike."%42%",title.ilike."%TEACH%"'],
+    ["calendar_email_deliveries", "or", 'recipient_email.ilike."%42%",recipient_email.ilike."%TEACH%",recipient_role.in.(teacher),calendar_entry_id.in.(42,9)'],
   ])
+  for (const [search, expected] of [["student", "recipient_role.in.(student)"], ["t", "recipient_role.in.(teacher,student)"], ["notice", null]]) {
+    calls.length = 0
+    await fetch(1, 10, { search: [search] })
+    const filter = calls.find(call => call[0] === "calendar_email_deliveries" && call[1] === "or")[2]
+    assert.ok(!filter.includes("recipient_role.ilike"))
+    if (expected) assert.ok(filter.includes(expected))
+    else assert.ok(!filter.includes("recipient_role."))
+  }
 })
 
 test("delivery reads filter Manila dates, paginate stably and exclude stored email bodies", async () => {
