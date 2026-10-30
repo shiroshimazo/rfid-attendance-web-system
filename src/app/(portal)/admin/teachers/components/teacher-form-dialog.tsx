@@ -79,9 +79,10 @@ interface WizardStep {
 const steps: WizardStep[] = [
   {
     id: "personal",
-    label: "Personal Info",
-    title: "Personal Information",
-    description: "Identity and contact details for the teacher.",
+    label: "Personal details",
+    title: "Personal details",
+    description:
+      "Enter the teacher's full name and sign-in email. Other personal details are optional.",
     fields: [
       "fullName",
       "email",
@@ -95,24 +96,25 @@ const steps: WizardStep[] = [
   {
     id: "employment",
     label: "Employment",
-    title: "Employment Information",
-    description: "Institutional identifiers and account state.",
+    title: "Employment details",
+    description:
+      "Enter the teacher ID and department, then choose the account status. Date hired is optional.",
     fields: ["teacherId", "department", "dateHired", "status"],
   },
   {
     id: "assignments",
     label: "Assignments",
-    title: "Teaching Assignments",
+    title: "Teaching assignments",
     description:
-      "Classes from Academic Setup. A teacher can handle several without duplicating the profile.",
+      "Choose at least one teaching assignment from Academic Setup. Add another for each subject or class.",
     fields: ["assignments"],
   },
   {
     id: "account",
     label: "Account",
-    title: "Account Information",
+    title: "Review and account",
     description:
-      "The login account is created on the server; passwords are never stored in this database.",
+      "Review the teacher's details and set a password for signing in.",
     fields: ["password", "confirmPassword"],
   },
 ]
@@ -421,7 +423,7 @@ export function TeacherFormDialog({
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="text-balance">
-            {mode === "create" ? "Add Teacher" : "Edit Teacher"}
+            {mode === "create" ? "Add teacher" : "Edit teacher"}
           </DialogTitle>
           <DialogDescription className="sr-only">
             Step {stepIndex + 1} of {steps.length}: {step.title}
@@ -442,7 +444,9 @@ export function TeacherFormDialog({
                 Step {stepIndex + 1} of {steps.length}: {step.title}
               </h3>
               <p className="text-sm text-muted-foreground text-pretty">
-                {step.description}
+                {step.id === "account" && mode === "edit"
+                  ? "Review the teacher's details before saving your changes."
+                  : step.description}
               </p>
             </div>
 
@@ -481,7 +485,7 @@ export function TeacherFormDialog({
                           />
                         </FormControl>
                         <FormDescription>
-                          Also used as the login identifier.
+                          The teacher uses this email to sign in.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -578,7 +582,7 @@ export function TeacherFormDialog({
                           />
                         </FormControl>
                         <FormDescription>
-                          Mobile number without the leading 0 (e.g., 9181234567).
+                          Enter the mobile number after +63, without the leading 0.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -604,7 +608,7 @@ export function TeacherFormDialog({
                           />
                         </FormControl>
                         <FormDescription>
-                          JPG, PNG, or WebP, up to 2 MB. Initials are shown when no image is selected.
+                          Choose a JPG, PNG, or WebP file up to 2 MB.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -623,7 +627,7 @@ export function TeacherFormDialog({
                         <FormLabel>Teacher ID</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Enter teacher ID (e.g., T-001)"
+                            placeholder="Enter teacher ID"
                             {...field}
                           />
                         </FormControl>
@@ -650,7 +654,7 @@ export function TeacherFormDialog({
                           ))}
                         </datalist>
                         <FormDescription>
-                          Pick an existing department, or type a new one.
+                          Choose an existing department or enter a new one.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -680,14 +684,14 @@ export function TeacherFormDialog({
                     name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <FormLabel>Account status</FormLabel>
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select status (default: Active)" />
+                              <SelectValue placeholder="Select account status" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -807,7 +811,7 @@ export function TeacherFormDialog({
                                         <SelectValue
                                           placeholder={
                                             selectedProgram
-                                              ? "Select course"
+                                              ? "Select subject"
                                               : "Select a program first"
                                           }
                                         />
@@ -820,7 +824,7 @@ export function TeacherFormDialog({
                                           className="whitespace-normal break-words"
                                           value={String(course.id)}
                                         >
-                                          {course.code} — {course.name}
+                                          {course.code}: {course.name}
                                           {course.status === "active"
                                             ? ""
                                             : ` (${accountStatusLabels[course.status].toLowerCase()})`}
@@ -831,8 +835,7 @@ export function TeacherFormDialog({
                                   {selectedProgram &&
                                   programCourses.length === 0 ? (
                                     <FormDescription>
-                                      No active subjects for this program yet.
-                                      Add them in Academic Setup.
+                                      This program has no active subjects. Add a subject in Academic Setup.
                                     </FormDescription>
                                   ) : null}
                                   <FormMessage />
@@ -1018,7 +1021,7 @@ export function TeacherFormDialog({
                                 />
                               </FormControl>
                               <FormDescription>
-                                Use at least 8 characters.
+                                Use 8 to 72 characters.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -1034,12 +1037,12 @@ export function TeacherFormDialog({
                                 <Input
                                   type="password"
                                   autoComplete="new-password"
-                                  placeholder="Confirm password"
+                                  placeholder="Enter the same password again"
                                   {...field}
                                 />
                               </FormControl>
                               <FormDescription>
-                                Passwords must match.
+                                Re-enter the password to check for typos.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -1048,14 +1051,13 @@ export function TeacherFormDialog({
                       </>
                     ) : (
                       <p className="text-sm text-muted-foreground text-pretty">
-                        The login password is not editable here. Ask the teacher
-                        to reset it from the sign-in page.
+                        Ask the teacher to reset their password from the sign-in page.
                       </p>
                     )}
                   </div>
 
                   <div className="rounded-lg border p-4">
-                    <h4 className="text-sm font-semibold">Review Summary</h4>
+                    <h4 className="text-sm font-semibold">Teacher details</h4>
                     <dl className="mt-3 space-y-1.5 text-sm">
                       <SummaryRow
                         label="Full name"
@@ -1106,7 +1108,7 @@ export function TeacherFormDialog({
                         }
                       />
                       <SummaryRow
-                        label="Status"
+                        label="Account status"
                         value={
                           summary.status
                             ? accountStatusLabels[summary.status]
@@ -1133,8 +1135,9 @@ export function TeacherFormDialog({
             <DialogFooter className="sm:items-center sm:justify-between">
               {isLastStep ? (
                 <p className="text-sm text-muted-foreground text-pretty sm:mr-auto">
-                  Helper: You can navigate back to review or edit previous
-                  information before adding the teacher.
+                  {mode === "create"
+                    ? "Check the details before adding the teacher. Use Back to make changes."
+                    : "Check the details before saving. Use Back to make changes."}
                 </p>
               ) : null}
 
@@ -1172,7 +1175,9 @@ export function TeacherFormDialog({
                     {isSubmitting ? (
                       <Loader2 aria-hidden className="animate-spin" />
                     ) : null}
-                    {mode === "create" ? "Add teacher" : "Save changes"}
+                    {isSubmitting
+                      ? mode === "create" ? "Adding teacher..." : "Saving changes..."
+                      : mode === "create" ? "Add teacher" : "Save changes"}
                   </Button>
                 ) : (
                   <Button
