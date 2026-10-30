@@ -41,7 +41,10 @@ async function AttendanceContent({ status }: { status: string }) {
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
-      <h2 className="text-lg font-semibold">Daily RFID history (separate from subject attendance)</h2>
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold">Daily RFID history</h2>
+        <p className="text-sm text-muted-foreground">Your teachers&apos; confirmations appear in Subject Attendance below.</p>
+      </div>
       <KpiCards kpis={data.kpis} />
       <StatusChart kpis={data.kpis} />
       <div className="flex flex-wrap gap-2"><Button asChild variant="outline" size="sm"><Link href="/student/my-attendance?status=NoClasses">No classes ({data.kpis.noClasses})</Link></Button><Button asChild variant="outline" size="sm"><Link href="/student/my-attendance?status=OnlineManual">Online / manual ({data.kpis.onlineManual})</Link></Button></div>
@@ -74,7 +77,7 @@ export default async function StudentAttendancePage({ searchParams }: {
             My Attendance
           </h1>
           <p className="text-sm text-muted-foreground text-pretty">
-            Personal attendance history visible only to the signed-in student.
+            Check your campus RFID records and attendance confirmed by your teachers.
           </p>
         </div>
       </div>

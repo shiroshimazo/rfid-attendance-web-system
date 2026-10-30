@@ -107,8 +107,8 @@ export function AttendanceTrendChart({
         ) : (
           <EmptyState
             icon={LineChartIcon}
-            title={hasHistory ? "No finalized RFID attendance" : "No attendance history yet"}
-            description={hasHistory ? "Calendar exceptions and provisional missing taps have no daily RFID rate (—)." : "Trends appear once RFID taps start creating records for your assigned students."}
+            title={hasHistory ? "No RFID attendance rate yet" : "No attendance history yet"}
+            description={hasHistory ? "No rate is available for days with only calendar exceptions or students with no tap yet." : "Trends appear once your assigned students record RFID taps."}
           />
         )}
       </CardContent>

@@ -49,7 +49,7 @@ async function DashboardContent() {
             Teacher Dashboard
           </h1>
           <p className="text-sm text-muted-foreground text-pretty">
-            Assigned-student RFID attendance for {readableDate}.
+            Campus RFID attendance for your assigned students on {readableDate}.
           </p>
         </div>
       </div>
@@ -58,7 +58,10 @@ async function DashboardContent() {
 
       <CampusStatusStrip states={data.campusStates} />
 
-      <h2 className="text-lg font-semibold">Daily RFID evidence (separate from subject attendance)</h2>
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold">Daily RFID attendance</h2>
+        <p className="text-sm text-muted-foreground">Campus taps do not confirm subject attendance.</p>
+      </div>
 
       <KpiCards data={data} />
 

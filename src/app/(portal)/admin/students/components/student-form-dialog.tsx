@@ -76,9 +76,9 @@ interface WizardStep {
 const steps: WizardStep[] = [
   {
     id: "personal",
-    label: "Personal Info",
-    title: "Personal Information",
-    description: "Identity and contact details for the student.",
+    label: "Personal",
+    title: "Student details",
+    description: "Enter the student's name, email and contact details.",
     fields: [
       "fullName",
       "email",
@@ -93,24 +93,24 @@ const steps: WizardStep[] = [
   {
     id: "guardian",
     label: "Guardian",
-    title: "Parent or Guardian",
-    description: "Attendance SMS notifications are sent to this number.",
+    title: "Parent or guardian",
+    description: "Enter the parent or guardian who should receive attendance texts.",
     fields: ["parentName", "parentContactNumber"],
   },
   {
     id: "academic",
     label: "Academic",
-    title: "Academic Information",
+    title: "Class details",
     description:
-      "Academic program and class placement. Used by attendance, reports, and teacher access.",
+      "Choose the student's program, year level, section and campus.",
     fields: ["studentId", "programId", "yearLevel", "section", "campus", "status"],
   },
   {
     id: "account",
     label: "Account",
-    title: "Account Information",
+    title: "Sign-in details",
     description:
-      "The login account is created on the server; passwords are never stored in this database.",
+      "Review the student details. Set a password when adding a new student.",
     fields: ["password", "confirmPassword"],
   },
 ]
@@ -474,7 +474,7 @@ export function StudentFormDialog({
                           />
                         </FormControl>
                         <FormDescription>
-                          Also used as the login identifier.
+                          The student uses this email address to sign in.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -557,7 +557,7 @@ export function StudentFormDialog({
                           />
                         </FormControl>
                         <FormDescription>
-                          Mobile number without the leading 0 (e.g., 9181234567).
+                          Enter 10 digits without the leading 0. The +63 country code is included.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -600,7 +600,7 @@ export function StudentFormDialog({
                           />
                         </FormControl>
                         <FormDescription>
-                          JPG, PNG, or WebP, up to 2 MB. Initials are shown when no image is selected.
+                          Upload a JPG, PNG or WebP up to 2 MB. Leave blank to use the student&apos;s initials.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -644,7 +644,7 @@ export function StudentFormDialog({
                           />
                         </FormControl>
                         <FormDescription>
-                          Mobile number without the leading 0 (e.g., 9191234567).
+                          Enter 10 digits without the leading 0. The +63 country code is included.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -663,7 +663,7 @@ export function StudentFormDialog({
                         <FormLabel>Student ID</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Enter student ID (e.g., 2026-001)"
+                            placeholder="Enter student ID"
                             {...field}
                           />
                         </FormControl>
@@ -790,8 +790,8 @@ export function StudentFormDialog({
                         </Select>
                         {sectionOptions.length === 0 ? (
                           <FormDescription>
-                            No class groupings for this program and year level.
-                            Add them in Academic Setup.
+                            No sections are available for this program and year level.
+                            Add class groupings in Academic Setup.
                           </FormDescription>
                         ) : null}
                         <FormMessage />
@@ -834,14 +834,14 @@ export function StudentFormDialog({
                     name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Status</FormLabel>
+                        <FormLabel>Account status</FormLabel>
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select status (default: Active)" />
+                              <SelectValue placeholder="Select account status" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -879,7 +879,7 @@ export function StudentFormDialog({
                                 />
                               </FormControl>
                               <FormDescription>
-                                Use at least 8 characters.
+                                Use 8 to 72 characters.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -900,7 +900,7 @@ export function StudentFormDialog({
                                 />
                               </FormControl>
                               <FormDescription>
-                                Passwords must match.
+                                Enter the same password again.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -909,21 +909,21 @@ export function StudentFormDialog({
                       </>
                     ) : (
                       <p className="text-sm text-muted-foreground text-pretty">
-                        The login password is not editable here. Ask the student
-                        to reset it from the sign-in page.
+                        Ask the student to select “Forgot your password?” on the
+                        sign-in page to reset their password.
                       </p>
                     )}
                   </div>
 
                   <div className="rounded-lg border p-4">
-                    <h4 className="text-sm font-semibold">Review Summary</h4>
+                    <h4 className="text-sm font-semibold">Review student details</h4>
                     <dl className="mt-3 space-y-1.5 text-sm">
                       <SummaryRow
                         label="Full name"
                         value={summary.fullName || "(not set)"}
                       />
                       <SummaryRow
-                        label="Email"
+                        label="Email address"
                         value={summary.email || "(not set)"}
                       />
                       <SummaryRow
@@ -952,7 +952,7 @@ export function StudentFormDialog({
                         value={summary.campus || "(not selected)"}
                       />
                       <SummaryRow
-                        label="Status"
+                        label="Account status"
                         value={
                           summary.status
                             ? accountStatusLabels[summary.status]
@@ -979,8 +979,7 @@ export function StudentFormDialog({
             <DialogFooter className="sm:items-center sm:justify-between">
               {isLastStep ? (
                 <p className="text-sm text-muted-foreground text-pretty sm:mr-auto">
-                  Helper: You can navigate back to review or edit previous
-                  information before adding the student.
+                  Use Back or Edit details to review earlier steps before saving.
                 </p>
               ) : null}
 

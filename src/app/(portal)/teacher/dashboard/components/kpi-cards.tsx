@@ -100,12 +100,12 @@ export function KpiCards({ data }: { data: TeacherDashboardData }) {
 
   return (
     <section
-      aria-label="Attendance key performance indicators"
+      aria-label="Attendance summary"
       className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-5"
     >
       <KpiCard
         href="/teacher/students"
-        label="Total Assigned"
+        label="Assigned Students"
         value={<SlidingNumber value={kpis.totalAssigned} />}
         icon={UsersRound}
         headline="Assigned students"
@@ -117,7 +117,7 @@ export function KpiCards({ data }: { data: TeacherDashboardData }) {
         value={<SlidingNumber value={kpis.presentToday} />}
         icon={UserRoundCheck}
         headline="Tapped in today"
-        detail="Eligible assigned students with a time-in today."
+        detail="Students expected on campus who tapped in today, including late arrivals."
       />
       <KpiCard
         href={`/teacher/attendance?date=${data.today}&status=Late`}
@@ -125,7 +125,7 @@ export function KpiCards({ data }: { data: TeacherDashboardData }) {
         value={<SlidingNumber value={kpis.lateToday} />}
         icon={Clock4}
         headline="Tapped in after the cutoff"
-        detail="Assigned students only. Late still counts as present."
+        detail="Late arrivals count as present."
       />
       <KpiCard
         href={`/teacher/attendance?date=${data.today}&status=Absent`}
@@ -133,14 +133,14 @@ export function KpiCards({ data }: { data: TeacherDashboardData }) {
         value={<SlidingNumber value={kpis.absentToday} />}
         icon={UserRoundX}
         headline="Recorded absences"
-        detail="Missing taps remain provisional."
+        detail="Students with no tap yet are not counted as absent."
       />
       <KpiCard
         href={`/teacher/attendance?date=${data.today}`}
         label="Attendance Rate"
         value={kpis.attendanceRate === null ? "—" : <SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={TrendingUp}
-        headline="Present over present plus absent"
+        headline="Late arrivals count as present"
         detail={`${formatNumber(kpis.expectedStudents)} eligible students; calendar exceptions excluded.`}
         trend={trend}
       />

@@ -36,7 +36,7 @@ function ReportsHeader({ range }: { range: ReportsRange }) {
           Reports
         </h1>
         <p className="text-sm text-muted-foreground text-pretty">
-          Assigned-class RFID attendance for{" "}
+          Campus RFID attendance for{" "}
           {formatRangeLabel(range.from, range.to)}.
         </p>
       </div>
@@ -54,12 +54,15 @@ function ReportsContent({ data }: { data: ReturnType<typeof getTeacherReportsDat
     <div className="flex flex-col gap-4 md:gap-6">
       <ReportBox data={data} fallback={<div aria-label="Loading report details" className="space-y-1"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3" /></div>}>
         {data => <p className="text-sm text-muted-foreground tabular-nums">
-          Generated {data.generatedAtLabel}. Rates exclude no-class and online/manual student-days.
-          Program, year and section reflect current profiles. Tap campus comes from the recorded evidence; past exception campuses use stored snapshots.
+          Generated {data.generatedAtLabel}. Rates exclude days with no classes or online/manual attendance.
+          Program, year and section use current student details. Campus comes from each tap or the saved calendar exception.
         </p>}
       </ReportBox>
 
-      <h2 className="text-lg font-semibold">Daily RFID evidence (separate from subject attendance)</h2>
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold">Daily RFID attendance</h2>
+        <p className="text-sm text-muted-foreground">Campus taps do not confirm subject attendance.</p>
+      </div>
       <section aria-label="Report key performance indicators" className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
         {[0, 1, 2, 3].map(index => <ReportBox key={index} data={data} fallback={<KpiCardSkeleton />}>
           {data => <ReportKpiCard index={index} kpis={data.kpis} sessionDays={data.sessionDays} />}

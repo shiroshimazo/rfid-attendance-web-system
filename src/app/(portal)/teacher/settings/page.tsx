@@ -61,8 +61,7 @@ export default function TeacherSettingsPage() {
           Settings
         </h1>
         <p className="text-sm text-muted-foreground text-pretty">
-          Review employment and assignment information and maintain account
-          security.
+          View your profile and teaching assignments, or change your password.
         </p>
       </div>
 

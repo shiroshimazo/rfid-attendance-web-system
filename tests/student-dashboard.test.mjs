@@ -72,7 +72,7 @@ for (const [name, instant] of [
     assert.equal(data.kpis.totalPresent, 1)
     const html = renderToStaticMarkup(createElement(TodayAttendanceCard, { attendance: data.attendance }))
     assert.match(html, /No tap recorded yet/)
-    assert.match(html, /Absence is finalized by school policy, not by a missing tap/)
+    assert.match(html, /No tap is recorded yet\. This does not mean you are marked absent/)
     assert.doesNotMatch(html, />Absent<|second tap/)
   })
 }

@@ -26,8 +26,7 @@ export function AssignmentsCard({ profile }: { profile: TeacherProfile }) {
       <CardHeader>
         <CardTitle>Teaching assignments</CardTitle>
         <CardDescription className="text-pretty">
-          Active class assignments. A dash means the assignment covers every
-          value for that field.
+          Your active class assignments. “All” means the assignment has no restriction for that field.
         </CardDescription>
       </CardHeader>
 
@@ -44,7 +43,7 @@ export function AssignmentsCard({ profile }: { profile: TeacherProfile }) {
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead className="px-3">Program</TableHead>
-                  <TableHead className="px-3">Course / Subject</TableHead>
+                  <TableHead className="px-3">Subject</TableHead>
                   <TableHead className="hidden px-3 md:table-cell">
                     Year Level
                   </TableHead>
@@ -81,13 +80,13 @@ export function AssignmentsCard({ profile }: { profile: TeacherProfile }) {
                       </span>
                     </TableCell>
                     <TableCell className="hidden px-3 md:table-cell">
-                      {assignment.yearLevel ?? "—"}
+                      {assignment.yearLevel ?? "All years"}
                     </TableCell>
                     <TableCell className="hidden px-3 md:table-cell">
-                      {assignment.section ?? "—"}
+                      {assignment.section ?? "All sections"}
                     </TableCell>
                     <TableCell className="hidden px-3 lg:table-cell">
-                      {assignment.campus ?? "—"}
+                      {assignment.campus ?? "All campuses"}
                     </TableCell>
                   </TableRow>
                 ))}

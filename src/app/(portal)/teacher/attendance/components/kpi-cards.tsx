@@ -74,7 +74,7 @@ export function KpiCards({
       className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-3"
     >
       <KpiCard
-        label="Total Assigned"
+        label="Assigned Students"
         value={<SlidingNumber value={kpis.totalAssigned} />}
         icon={UsersRound}
         detail="Assigned students matching the current filters."
@@ -100,8 +100,8 @@ export function KpiCards({
         share={shareOf(kpis.absent, kpis.expectedStudents)}
         detail={`Recorded absences only; ${formatNumber(kpis.noRecord)} students have no tap yet.`}
       />
-      <KpiCard label="No classes" value={<SlidingNumber value={kpis.noClasses} />} icon={CalendarOff} detail="Calendar exception; excluded from daily RFID decisions." />
-      <KpiCard label="Online / manual" value={<SlidingNumber value={kpis.onlineManual} />} icon={Laptop} detail="Attendance is confirmed in Subject Attendance." />
+      <KpiCard label="No classes" value={<SlidingNumber value={kpis.noClasses} />} icon={CalendarOff} detail="No classes on the calendar. Excluded from daily RFID attendance." />
+      <KpiCard label="Online / manual" value={<SlidingNumber value={kpis.onlineManual} />} icon={Laptop} detail="Confirm attendance for each subject in Confirm Attendance by Subject." />
     </section>
   )
 }

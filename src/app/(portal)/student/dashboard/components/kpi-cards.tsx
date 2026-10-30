@@ -59,34 +59,34 @@ export function KpiCards({ kpis }: { kpis: StudentDashboardKpis }) {
     >
       <KpiCard
         href="/student/my-attendance?status=Attended"
-        label="Total Present"
+        label="Days Present"
         value={<SlidingNumber value={kpis.totalPresent} />}
         icon={UserRoundCheck}
         headline="Days tapped in"
-        detail="Present and late arrivals combined; calendar exceptions excluded."
+        detail="Includes late arrivals. Excludes days with no classes or online/manual attendance."
       />
       <KpiCard
         href="/student/my-attendance?status=Late"
-        label="Total Late"
+        label="Days Late"
         value={<SlidingNumber value={kpis.totalLate} />}
         icon={Clock4}
         headline="Days tapped in after the cutoff"
-        detail="Already counted inside Total Present."
+        detail="Late arrivals also count toward Days Present."
       />
       <KpiCard
         href="/student/my-attendance?status=Absent"
-        label="Total Absent"
+        label="Days Absent"
         value={<SlidingNumber value={kpis.totalAbsent} />}
         icon={UserRoundX}
-        headline="School days missed"
-        detail="Eligible recorded absences; unrecorded days excluded."
+        headline="Recorded absences"
+        detail="Days without an attendance record are not counted as absent."
       />
       <KpiCard
         href="/student/my-attendance"
-        label="Total RFID Taps"
+        label="RFID Taps"
         value={<SlidingNumber value={kpis.totalRfidTaps} />}
         icon={ScanLine}
-        headline="Reader activity"
+        headline="Campus card taps"
         detail="Time-in and time-out taps combined."
       />
     </section>

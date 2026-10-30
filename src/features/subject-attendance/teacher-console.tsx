@@ -58,7 +58,7 @@ export function TeacherSubjectConsole({ schedules, students, records, enrollment
 
   return <Card>
     <CardHeader><CardTitle>Confirm Attendance by Subject</CardTitle>
-      <CardDescription>A campus tap leaves every subject unconfirmed. Check this class, then confirm Present, Late or Absent. Your confirmation creates no RFID time-in or time-out; students without a card can still be confirmed.</CardDescription>
+      <CardDescription>Check each student&apos;s attendance for this class, then mark Present, Late or Absent. Campus taps do not confirm subject attendance. You can mark students without an RFID card; this does not add campus time-in or time-out records.</CardDescription>
     </CardHeader>
     <CardContent className="space-y-4">
       <div className="grid gap-3 md:grid-cols-2">
@@ -88,22 +88,22 @@ export function TeacherSubjectConsole({ schedules, students, records, enrollment
           </Button>)}
         </div>
       </nav>
-      {date > today && <p role="status" className="text-sm text-muted-foreground">Upcoming attendance sheet. Confirmations become available on the session date.</p>}
-      <p className="text-sm text-muted-foreground">Your assigned subject is selected automatically. On days without classes, opening this panel shows your latest scheduled date. Check the sheet date before confirming.</p>
-      {!available.length && <p className="text-sm text-muted-foreground">No active subject schedule for this date. Ask the administrator to configure it in Schedules.</p>}
+      {date > today && <p role="status" className="text-sm text-muted-foreground">You can confirm attendance on or after the session date.</p>}
+      <p className="text-sm text-muted-foreground">The first scheduled subject is selected for you. If you open this page on a day without classes, it shows your latest class date. Check the date and subject before confirming.</p>
+      {!available.length && <p className="text-sm text-muted-foreground">No subject is scheduled for this date. Choose another date or ask an administrator to update your schedule.</p>}
       {schedule && <>
         <div className="space-y-1">
-          <h2 className="font-semibold">Attendance sheet ? {formatDateValue(date)}</h2>
-          <p className="text-sm text-muted-foreground">{schedule.course?.course_code} ? {schedule.section} ? {schedule.campus}</p>
-          <p className="text-sm text-muted-foreground">Each scheduled date has its own sheet. Students start unconfirmed; previous dates keep their saved results.</p>
+          <h2 className="font-semibold">Attendance sheet: {formatDateValue(date)}</h2>
+          <p className="text-sm text-muted-foreground">{schedule.course?.course_code} · {schedule.section} · {schedule.campus}</p>
+          <p className="text-sm text-muted-foreground">Each class date has a separate sheet. Changing the date keeps your saved confirmations.</p>
         </div>
-        <p className="text-sm">{roster.length} students · {unconfirmed} unconfirmed. Unconfirmed is not Absent.</p>
-        <SearchTagInput label="Search subject students" value={search} onValueChange={setSearch} placeholder="Search student name or ID" />
-        <Table><TableHeader><TableRow><TableHead>No.</TableHead><TableHead>Student</TableHead><TableHead>RFID taps (campus)</TableHead><TableHead>Current confirmation</TableHead><TableHead>Confirm after checking</TableHead></TableRow></TableHeader>
+        <p className="text-sm">{roster.length} students · {unconfirmed} unconfirmed. Students without a confirmation are not marked absent.</p>
+        <SearchTagInput label="Search students in this subject" value={search} onValueChange={setSearch} placeholder="Search student name or ID" />
+        <Table><TableHeader><TableRow><TableHead>No.</TableHead><TableHead>Student</TableHead><TableHead>Campus RFID taps</TableHead><TableHead>Subject attendance</TableHead><TableHead>Mark attendance</TableHead></TableRow></TableHeader>
           <TableBody>{filtered.map((student, index) => <TableRow key={student.id}>
             <TableCell className="tabular-nums">{index + 1}</TableCell>
             <TableCell>{student.full_name}<br />{student.student_id}</TableCell>
-            <TableCell>{evidence === null ? "RFID evidence unavailable" : evidenceByStudent.get(student.id)?.time_in
+            <TableCell>{evidence === null ? "Campus RFID records unavailable" : evidenceByStudent.get(student.id)?.time_in
               ? <><span>Tapped in</span><br /><span className="text-xs tabular-nums">In: {formatClockTime(evidenceByStudent.get(student.id)?.time_in ?? null)} · Out: {formatClockTime(evidenceByStudent.get(student.id)?.time_out ?? null)}</span></>
               : "No tap recorded"}</TableCell>
             <TableCell>{byStudent.get(student.id)?.attendance_status ?? "Not confirmed yet"}</TableCell>
@@ -115,7 +115,7 @@ export function TeacherSubjectConsole({ schedules, students, records, enrollment
           </TableRow>)}</TableBody>
         </Table>
         {!filtered.length && <p className="text-sm text-muted-foreground">{roster.length ? "No matching students in this subject." : "No active students enrolled. Ask the administrator to assign students in Schedules > Student Subject Enrollment."}</p>}
-        <p role="status" className="text-sm text-muted-foreground">{pending ? "Saving confirmation…" : "A correction replaces only this student's result for this subject session."}</p>
+        <p role="status" className="text-sm text-muted-foreground">{pending ? "Saving confirmation…" : "Changing a result updates only that student's attendance for this subject and date."}</p>
       </>}
     </CardContent>
   </Card>

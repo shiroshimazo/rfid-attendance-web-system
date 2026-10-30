@@ -17,7 +17,7 @@ import { KpiCards } from "../components/kpi-cards"
 import { PanelSkeleton } from "../components/panel-skeleton"
 
 export const metadata: Metadata = {
-  title: "Attendance",
+  title: "Daily RFID Attendance",
 }
 
 export const dynamic = "force-dynamic"
@@ -48,7 +48,7 @@ async function AttendanceContent({ query }: { query: AttendancePanelQuery }) {
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
-      <h2 className="text-lg font-semibold">Daily RFID evidence (separate from subject attendance)</h2>
+      <h2 className="text-lg font-semibold">Campus tap summary</h2>
       <KpiCards kpis={data.kpis} readableDate={readableDate} />
       <FiltersBar query={data.query} options={data.options} />
       <AttendanceTable
@@ -81,11 +81,11 @@ export default async function TeacherAttendancePage({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-balance">
-            Attendance
+            Daily RFID Attendance
           </h1>
           <p className="text-sm text-muted-foreground text-pretty">
             Campus RFID attendance for{" "}
-            {readableDateOf(query.date)}.
+            {readableDateOf(query.date)}. Confirm subject attendance separately.
           </p>
         </div>
       </div>

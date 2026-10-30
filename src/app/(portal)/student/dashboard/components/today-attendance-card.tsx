@@ -40,15 +40,15 @@ export function TodayAttendanceCard({
       </CardHeader>
       <CardContent>
         {attendance.status === "NoClasses" && <p className="mb-3 text-sm">No classes today. RFID taps are not expected.</p>}
-        {attendance.status === "OnlineManual" && <p className="mb-3 text-sm">Online class today — attendance is confirmed in Subject Attendance.</p>}
-        {(attendance.status === "NoClasses" || attendance.status === "OnlineManual") && (attendance.timeIn || attendance.timeOut) && <p className="mb-3 text-xs text-muted-foreground">Retained RFID evidence for this date:</p>}
+        {attendance.status === "OnlineManual" && <p className="mb-3 text-sm">Online/manual attendance today. Check Subject Attendance for your teacher&apos;s confirmation.</p>}
+        {(attendance.status === "NoClasses" || attendance.status === "OnlineManual") && (attendance.timeIn || attendance.timeOut) && <p className="mb-3 text-xs text-muted-foreground">Campus RFID taps recorded today:</p>}
         <dl className="space-y-2">
           <TapRow label="Time in" value={attendance.timeIn} />
           <TapRow label="Time out" value={attendance.timeOut} />
         </dl>
         {attendance.status === "NoRecord" ? (
           <p className="mt-3 text-xs text-muted-foreground text-pretty">
-            Absence is finalized by school policy, not by a missing tap.
+            No tap is recorded yet. This does not mean you are marked absent.
           </p>
         ) : (attendance.status === "Present" || attendance.status === "Late") &&
           attendance.timeIn && !attendance.timeOut ? (

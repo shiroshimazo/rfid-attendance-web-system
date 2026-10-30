@@ -52,8 +52,7 @@ export default function TeacherStudentsPage() {
             Students
           </h1>
           <p className="text-sm text-muted-foreground text-pretty">
-            Read-only list of students in your assigned classes, with
-            today&apos;s attendance status.
+            View students in your assigned classes and today&apos;s campus RFID attendance.
           </p>
         </div>
       </div>

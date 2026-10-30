@@ -35,7 +35,7 @@ export default function TeacherSchedulePage() {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight text-balance">My Schedule</h1>
         <p className="text-sm text-muted-foreground text-pretty">
-          Your weekly subjects, sections, campuses, and class times in one place.
+          Check your weekly class times, subjects, sections and campuses.
         </p>
       </div>
       <Suspense fallback={<ScheduleSkeleton />}>

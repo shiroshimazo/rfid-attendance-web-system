@@ -83,10 +83,10 @@ try {
   await sheet.getByRole('button',{name:'Present',exact:true}).first().waitFor();
   await page.waitForFunction(()=>document.querySelector('tbody tr button').disabled && !document.body.textContent.includes('Saving confirmation'));
   await page.evaluate(()=>window.changeDate('2026-09-15'));
-  await sheet.getByText('Attendance sheet ? Sep 15, 2026',{exact:true}).waitFor();
+  await sheet.getByText('Attendance sheet: Sep 15, 2026',{exact:true}).waitFor();
   assert.equal(await sheet.getByText('Not confirmed yet',{exact:true}).count(),25);
   await page.evaluate(()=>window.changeDate('2026-09-08'));
-  await sheet.getByText('Attendance sheet ? Sep 8, 2026',{exact:true}).waitFor();
+  await sheet.getByText('Attendance sheet: Sep 8, 2026',{exact:true}).waitFor();
   assert.equal(await sheet.getByText('Not confirmed yet',{exact:true}).count(),24);
   assert.equal(await sheet.locator('tbody tr').count(),25);
   console.log('PASS: full 25-student sheet, new scheduled date starts unconfirmed, previous date retains confirmation');

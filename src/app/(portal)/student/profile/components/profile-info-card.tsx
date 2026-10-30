@@ -27,8 +27,7 @@ export function ProfileInfoCard({ profile }: { profile: StudentProfile }) {
       <CardHeader>
         <CardTitle>Student information</CardTitle>
         <CardDescription className="text-pretty">
-          Personal and academic record on file. Contact an administrator to
-          correct any detail.
+          Contact an administrator to update your student details.
         </CardDescription>
       </CardHeader>
 

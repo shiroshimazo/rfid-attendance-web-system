@@ -74,8 +74,7 @@ export function PasswordForm() {
           <CardHeader>
             <CardTitle>Change password</CardTitle>
             <CardDescription className="text-pretty">
-              Your current password is checked before the new one is stored, so
-              an open session on a shared computer cannot take over the account.
+              Enter your current password to set a new one.
             </CardDescription>
           </CardHeader>
 
@@ -99,7 +98,7 @@ export function PasswordForm() {
                       variant="outline"
                       size="icon"
                       aria-label={
-                        isCurrentVisible ? "Hide password" : "Show password"
+                        isCurrentVisible ? "Hide current password" : "Show current password"
                       }
                       aria-pressed={isCurrentVisible}
                       onClick={() =>
@@ -114,7 +113,7 @@ export function PasswordForm() {
                     </Button>
                   </div>
                   <FormDescription>
-                    The password you sign in with today.
+                    Enter the password you use to sign in.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -140,7 +139,7 @@ export function PasswordForm() {
                       variant="outline"
                       size="icon"
                       aria-label={
-                        isVisible ? "Hide password" : "Show password"
+                        isVisible ? "Hide new passwords" : "Show new passwords"
                       }
                       aria-pressed={isVisible}
                       onClick={() => setIsVisible((visible) => !visible)}
@@ -165,7 +164,7 @@ export function PasswordForm() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirm password</FormLabel>
+                  <FormLabel>Confirm new password</FormLabel>
                   <FormControl>
                     <Input
                       type={isVisible ? "text" : "password"}

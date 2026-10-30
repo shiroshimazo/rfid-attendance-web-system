@@ -64,7 +64,7 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
       className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4"
     >
       <KpiCard
-        label="Total Present"
+        label="Days Present"
         value={<SlidingNumber value={kpis.totalPresent} />}
         icon={UserRoundCheck}
         share={
@@ -72,10 +72,10 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
             ? formatPercent((kpis.totalPresent / denominator) * 100)
             : undefined
         }
-        detail="Eligible days tapped in, late arrivals included."
+        detail="Days you tapped in for campus attendance, including late arrivals."
       />
       <KpiCard
-        label="Total Late"
+        label="Days Late"
         value={<SlidingNumber value={kpis.totalLate} />}
         icon={Clock4}
         share={
@@ -83,10 +83,10 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
             ? formatPercent((kpis.totalLate / kpis.totalPresent) * 100)
             : undefined
         }
-        detail="Days tapped in after the cutoff, already inside Total Present."
+        detail="Days you tapped in after the cutoff. Also counted in Days Present."
       />
       <KpiCard
-        label="Total Absent"
+        label="Days Absent"
         value={<SlidingNumber value={kpis.totalAbsent} />}
         icon={UserRoundX}
         share={
@@ -94,13 +94,13 @@ export function KpiCards({ kpis }: { kpis: StudentAttendanceKpis }) {
             ? formatPercent((kpis.totalAbsent / denominator) * 100)
             : undefined
         }
-        detail="Recorded absences; unrecorded days excluded."
+        detail="Recorded absences only. Days without a record are excluded."
       />
       <KpiCard
         label="Attendance Rate"
         value={kpis.attendanceRate === null ? "—" : <SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={Percent}
-        detail="Present days over present plus absent days."
+        detail="Present days divided by the total of present and absent days. Late arrivals count as present."
       />
     </section>
   )

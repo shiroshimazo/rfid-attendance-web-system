@@ -52,7 +52,7 @@ export function ReportKpiCard({ kpis, sessionDays, index }: {
   return [
       <KpiCard
         key="0"
-        label="Total Assigned"
+        label="Assigned Students"
         value={<SlidingNumber value={kpis.totalAssigned} />}
         icon={UsersRound}
         detail="Assigned students counted in this report."
@@ -76,7 +76,7 @@ export function ReportKpiCard({ kpis, sessionDays, index }: {
         label="Recorded Attendance Rate"
         value={kpis.attendanceRate === null ? "—" : <SlidingNumber value={kpis.attendanceRate} decimalPlaces={1} suffix="%" />}
         icon={TrendingUp}
-        detail="Present and Late over attended plus recorded absent sessions."
+        detail="Present and late records divided by present, late and absent records."
       />
   ][index]
 }

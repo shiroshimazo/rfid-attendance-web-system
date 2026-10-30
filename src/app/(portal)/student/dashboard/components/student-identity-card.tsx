@@ -16,7 +16,7 @@ export function StudentIdentityCard({ student }: { student: StudentIdentity }) {
       <CardHeader>
         <CardTitle>Student Information</CardTitle>
         <CardDescription>
-          Identity on record for the signed-in student.
+          Your student details on file.
         </CardDescription>
       </CardHeader>
       <CardContent>

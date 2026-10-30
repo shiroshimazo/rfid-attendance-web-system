@@ -27,8 +27,7 @@ export function TeacherInfoCard({ profile }: { profile: TeacherProfile }) {
       <CardHeader>
         <CardTitle>Teacher information</CardTitle>
         <CardDescription className="text-pretty">
-          Employment record on file. Contact an administrator to correct any
-          detail.
+          Contact an administrator to update your profile details.
         </CardDescription>
       </CardHeader>
 

@@ -46,8 +46,7 @@ export default function AdminStudentsPage() {
             Manage Students
           </h1>
           <p className="text-sm text-muted-foreground text-pretty">
-            Create, update, and archive student accounts, keep their academic
-            placement current, and give them a registered RFID card.
+            Add students, update their details, assign RFID cards or archive accounts.
           </p>
         </div>
       </div>

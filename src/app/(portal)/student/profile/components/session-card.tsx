@@ -41,8 +41,7 @@ export function SessionCard({
       <CardHeader>
         <CardTitle>Session details</CardTitle>
         <CardDescription className="text-pretty">
-          The account this browser is signed in with. Role and status are
-          managed by the system, not from this page.
+          You are signed in with this account.
         </CardDescription>
       </CardHeader>
 

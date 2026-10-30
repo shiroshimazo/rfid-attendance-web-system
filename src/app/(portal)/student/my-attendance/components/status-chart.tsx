@@ -25,7 +25,7 @@ export function StatusChart({ kpis }: { kpis: StudentAttendanceKpis }) {
       <CardHeader>
         <CardTitle>My Attendance Status</CardTitle>
         <CardDescription>
-          Recorded daily RFID decisions and calendar exceptions. Late arrivals are shown separately from on-time days.
+          Your campus attendance, including days with no classes or online/manual attendance. Late arrivals appear separately from on-time days.
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -22,9 +22,9 @@ export default async function CurrentEnrollmentPage() {
   }
   const { student, schedules } = data
   const information = [
-    ["Category", "College"],
-    ["Branch / Campus", student.campus],
-    ["Program / Strand", student.program?.program_name],
+    ["Education Level", "College"],
+    ["Campus", student.campus],
+    ["Program", student.program?.program_name],
     ["Year Level", student.year_level],
     ["Current Section", [student.program?.program_code, student.section].filter(Boolean).join(" ")],
     ["Academic Year", "Not recorded"],
@@ -40,10 +40,10 @@ export default async function CurrentEnrollmentPage() {
       </dl></CardContent>
     </Card>
     <Card className="gap-0 overflow-hidden rounded-2xl py-0">
-      <CardHeader className="border-b px-6 py-6"><CardTitle className="text-base font-medium">Subject Information</CardTitle></CardHeader>
+      <CardHeader className="border-b px-6 py-6"><CardTitle className="text-base font-medium">Enrolled Subjects</CardTitle></CardHeader>
       <CardContent className="min-w-0 p-4">
         {schedules.length ? <Table aria-label="Current enrolled subjects" className="min-w-[1100px]">
-          <TableHeader><TableRow>{["Section", "Subject Code", "Subject", "Days", "Time", "Frequency", "Room", "Category", "Subject Teacher", "Status"].map(label => <TableHead key={label} className="px-4 py-4 text-xs">{label}</TableHead>)}</TableRow></TableHeader>
+          <TableHeader><TableRow>{["Section", "Subject Code", "Subject", "Day", "Class Time", "Frequency", "Room", "Class Format", "Teacher", "Status"].map(label => <TableHead key={label} className="px-4 py-4 text-xs">{label}</TableHead>)}</TableRow></TableHeader>
           <TableBody>{schedules.map(schedule => <TableRow key={schedule.id}>
             <TableCell className="px-4">{schedule.section}</TableCell>
             <TableCell className="px-4">{schedule.course?.course_code ?? "Not recorded"}</TableCell>
@@ -52,7 +52,7 @@ export default async function CurrentEnrollmentPage() {
             <TableCell className="px-4 tabular-nums">{formatClockTime(schedule.time_start)} – {formatClockTime(schedule.time_end)}</TableCell>
             <TableCell className="px-4">Weekly</TableCell>
             <TableCell className="px-4">{roomForSection(schedule.section) ?? "Not assigned"}</TableCell>
-            <TableCell className="px-4">Face To Face</TableCell>
+            <TableCell className="px-4">In person</TableCell>
             <TableCell className="px-4">{schedule.teacher?.full_name ?? "Unavailable"}</TableCell>
             <TableCell className="px-4"><Badge variant="secondary" className="rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">Active</Badge></TableCell>
           </TableRow>)}</TableBody>

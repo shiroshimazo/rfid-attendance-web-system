@@ -59,8 +59,7 @@ export default function StudentProfilePage() {
           Student Profile
         </h1>
         <p className="text-sm text-muted-foreground text-pretty">
-          Review personal and academic information and maintain account
-          security.
+          View your student details or change your password.
         </p>
       </div>
 

@@ -36,9 +36,9 @@ export function AttendanceDistributionChart({
   return (
     <Card className="flex flex-col">
       <CardHeader>
-        <CardTitle>Attendance Status Distribution</CardTitle>
+        <CardTitle>Today&apos;s Attendance</CardTitle>
         <CardDescription>
-          Recorded decisions, calendar exceptions, and provisional missing taps
+          Campus RFID status, including students with no tap yet.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1">

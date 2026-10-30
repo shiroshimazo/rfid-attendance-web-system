@@ -140,7 +140,7 @@ try {
   await page.getByText('Enrollment save failed', {exact:true}).waitFor()
   assert.equal(await page.getByText('Tapped in', {exact:true}).count(),1)
   await page.evaluate(()=>{window.fail=false;window.unavailable()})
-  assert.equal(await page.getByText('RFID evidence unavailable', {exact:true}).count(),2)
+  assert.equal(await page.getByText('Campus RFID records unavailable', {exact:true}).count(),2)
   assert.equal(await page.getByRole('button',{name:'Absent',exact:true}).first().isEnabled(),true)
   await page.getByRole('button', {name:'Save enrollment',exact:true}).click()
   await page.waitForFunction(()=>!document.body.textContent.includes('Tapped in') && document.querySelectorAll('input[type=checkbox]:checked').length===1)
