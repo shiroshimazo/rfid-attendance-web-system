@@ -25,7 +25,7 @@ export function DeliveryTable({ panel, today }: { panel: CalendarDeliveryPanel; 
   const router = useRouter(), pathname = usePathname(), params = useSearchParams()
   const form = React.useRef<HTMLFormElement>(null)
   const current = {
-    entry: panel.filters.entryId ? String(panel.filters.entryId) : "",
+    search: panel.filters.search ?? "",
     type: panel.filters.type ?? "",
     status: panel.filters.status ?? "",
     from: panel.filters.from ?? "",
@@ -43,9 +43,9 @@ export function DeliveryTable({ panel, today }: { panel: CalendarDeliveryPanel; 
     const data = form.current ? new FormData(form.current) : null
     const value = (key: keyof typeof current) => {
       const raw = patch[key] ?? (data ? String(data.get(key) ?? "") : current[key])
-      return raw === "all" ? "" : raw
+      return raw === "all" ? "" : raw.trim()
     }
-    navigate({ entry: value("entry"), type: value("type"), status: value("status"), from: value("from"), to: value("to"), page: "1" })
+    navigate({ search: value("search"), entry: "", type: value("type"), status: value("status"), from: value("from"), to: value("to"), page: "1" })
   }
   return <div className="min-w-0 space-y-4">
     <LiveRefresh channel="admin-calendar-deliveries" tables={["calendar_email_deliveries"]} />
@@ -59,7 +59,7 @@ export function DeliveryTable({ panel, today }: { panel: CalendarDeliveryPanel; 
       <CardContent className="space-y-4">
         <form ref={form} role="search" aria-label="Filter email deliveries" className="space-y-3" onSubmit={event => { event.preventDefault(); applyFilters() }}>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(5,minmax(0,1fr))_auto]">
-            <div className="space-y-2"><Label htmlFor="delivery-entry">Entry ID</Label><Input id="delivery-entry" name="entry" type="number" min="1" step="1" defaultValue={current.entry} onBlur={event => { const value = event.currentTarget.value.trim(); if (value !== current.entry) applyFilters({ entry: value }) }} /></div>
+            <div className="space-y-2"><Label htmlFor="delivery-search">Search</Label><Input id="delivery-search" name="search" type="search" maxLength={160} placeholder="ID, title, recipient, or role" defaultValue={current.search} onBlur={event => { const value = event.currentTarget.value.trim(); if (value !== current.search) applyFilters({ search: value }) }} /></div>
             {([['type', 'Type', calendarEmailTypes], ['status', 'Status', calendarEmailStatuses]] as const).map(([name, label, options]) => <div className="space-y-2" key={name}><Label htmlFor={`delivery-${name}`}>{label}</Label><Select name={name} defaultValue={current[name] || "all"} onValueChange={value => applyFilters(name === "type" ? { type: value === "all" ? "" : value } : { status: value === "all" ? "" : value })}><SelectTrigger id={`delivery-${name}`} className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem>{options.map(value => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select></div>)}
             {([['from', 'Created from'], ['to', 'Created through']] as const).map(([name, label]) => <div className="space-y-2" key={name}><Label htmlFor={`delivery-${name}`}>{label}</Label><Input id={`delivery-${name}`} type="date" name={name} defaultValue={current[name]} onChange={event => applyFilters(name === "from" ? { from: event.currentTarget.value } : { to: event.currentTarget.value })} /></div>)}
             <div className="space-y-2"><span aria-hidden className="block text-sm leading-none font-medium select-none">&nbsp;</span><Button type="button" variant="outline" onClick={() => router.replace(`${pathname}?tab=deliveries`)}>Reset</Button></div>

@@ -10,7 +10,7 @@ export async function getCalendarDeliveryPanel(params: CalendarSearchParams) {
   const value = (key: string) => typeof params[key] === "string" ? params[key] as string : ""
   const integer = (key: string) => /^\d+$/.test(value(key)) && Number.isSafeInteger(Number(value(key))) && Number(value(key)) > 0 ? Number(value(key)) : undefined
   const filters: CalendarDeliveryFilters = {
-    entryId: integer("entry"),
+    search: (value("search") || value("entry")).trim().slice(0, 160) || undefined,
     type: calendarEmailTypes.find(type => type === value("type")),
     status: calendarEmailStatuses.find(status => status === value("status")),
     from: calendarDateSchema.safeParse(value("from")).data,

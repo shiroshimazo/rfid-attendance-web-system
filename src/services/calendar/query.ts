@@ -433,7 +433,7 @@ export type CalendarDeliveryLogRow = Pick<CalendarEmailDeliveryRow,
   }
 
 export interface CalendarDeliveryFilters {
-  entryId?: number
+  search?: string
   type?: CalendarEmailDeliveryRow["notification_type"]
   status?: CalendarEmailDeliveryRow["status"]
   from?: string
@@ -457,7 +457,22 @@ export async function fetchCalendarDeliveryLog(
       { count: "exact" }
     )
     .order("created_at", { ascending: false }).order("id", { ascending: false })
-  if (filters.entryId) query = query.eq("calendar_entry_id", filters.entryId)
+  if (filters.search) {
+    const cleaned = filters.search.replace(/[,()*%"]/g, " ").replace(/\s+/g, " ").trim().slice(0, 160)
+    if (!cleaned) return { deliveries: [], total: 0 }
+    const pattern = `%${cleaned.replace(/[\\%_]/g, "\\$&")}%`
+    const entryIds = new Set<number>()
+    if (/^\d+$/.test(cleaned) && Number.isSafeInteger(Number(cleaned))) entryIds.add(Number(cleaned))
+    const { data: entries, error: entriesError } = await supabase
+      .from("calendar_entries")
+      .select("id")
+      .ilike("title", pattern)
+    if (entriesError) throw new Error(entriesError.message)
+    for (const entry of entries ?? []) entryIds.add(entry.id)
+    const conditions = [`recipient_email.ilike.${pattern}`, `recipient_role.ilike.${pattern}`]
+    if (entryIds.size) conditions.push(`calendar_entry_id.in.(${[...entryIds].join(",")})`)
+    query = query.or(conditions.join(","))
+  }
   if (filters.type) query = query.eq("notification_type", filters.type)
   if (filters.status) query = query.eq("status", filters.status)
   if (filters.from) query = query.gte("created_at", `${filters.from}T00:00:00+08:00`)
