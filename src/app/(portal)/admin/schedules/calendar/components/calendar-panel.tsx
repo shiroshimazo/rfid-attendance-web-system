@@ -28,24 +28,22 @@ const dateLabel = (date: string) => calendarDate(date).toLocaleDateString("en-PH
 const scope = (entry: CalendarEntryRow) => entry.campuses.join(", ") || "All campuses"
 
 function EntryDetails({ entry, today, campuses }: { entry: CalendarEntryRow; today: string; campuses: string[] }) {
-  return <article className="space-y-2 rounded-lg border p-4">
-    <div className="flex flex-wrap items-start justify-between gap-2">
-      <h3 className="min-w-0 break-words font-medium">{entry.title}</h3>
-      <Badge variant={entry.status === "published" ? "default" : "outline"}>{calendarLabels[entry.status]}</Badge>
-    </div>
-    <div className="flex flex-wrap gap-1">{entry.tags.map(tag => <Badge variant="secondary" key={tag}>{calendarLabels[tag] ?? tag}</Badge>)}</div>
-    <dl className="grid gap-1 text-sm">
-      <div><dt className="inline text-muted-foreground">Attendance: </dt><dd className="inline">{calendarLabels[entry.attendance_impact]}</dd></div>
-      <div><dt className="inline text-muted-foreground">Campus: </dt><dd className="inline">{scope(entry)}</dd></div>
-      <div><dt className="inline text-muted-foreground">Audience: </dt><dd className="inline">{calendarLabels[entry.audience]}</dd></div>
-      <div><dt className="inline text-muted-foreground">Dates: </dt><dd className="inline">{dateLabel(entry.starts_on)}{entry.ends_on !== entry.starts_on && ` – ${dateLabel(entry.ends_on)}`}</dd></div>
-      <div><dt className="inline text-muted-foreground">Time: </dt><dd className="inline">{entry.start_time ? `${entry.start_time.slice(0, 5)} – ${entry.end_time?.slice(0, 5)} PHT` : "All day"}</dd></div>
-      {entry.location && <div><dt className="inline text-muted-foreground">Location: </dt><dd className="inline">{entry.location}</dd></div>}
-    </dl>
-    {entry.reason && <p className="whitespace-pre-wrap break-words text-sm"><span className="font-medium">Reason: </span>{entry.reason}</p>}
-    {entry.description && <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{entry.description}</p>}
-    <EntryActions entry={entry} today={today} campuses={campuses} />
-  </article>
+  return <TableRow>
+    <TableCell className="min-w-64 max-w-96 whitespace-normal align-top">
+      <h3 className="break-words font-medium">{entry.title}</h3>
+      <div className="mt-2 flex flex-wrap gap-1">{entry.tags.map(tag => <Badge variant="secondary" key={tag}>{calendarLabels[tag] ?? tag}</Badge>)}</div>
+      {entry.reason && <p className="mt-2 whitespace-pre-wrap break-words"><span className="font-medium">Reason: </span>{entry.reason}</p>}
+      {entry.description && <p className="mt-2 whitespace-pre-wrap break-words text-muted-foreground">{entry.description}</p>}
+    </TableCell>
+    <TableCell className="align-top"><Badge variant={entry.status === "published" ? "default" : "outline"}>{calendarLabels[entry.status]}</Badge></TableCell>
+    <TableCell className="align-top">{calendarLabels[entry.attendance_impact]}</TableCell>
+    <TableCell className="min-w-36 max-w-48 whitespace-normal align-top">{scope(entry)}</TableCell>
+    <TableCell className="align-top">{calendarLabels[entry.audience]}</TableCell>
+    <TableCell className="align-top">{dateLabel(entry.starts_on)}{entry.ends_on !== entry.starts_on && <><br />to {dateLabel(entry.ends_on)}</>}</TableCell>
+    <TableCell className="align-top">{entry.start_time ? `${entry.start_time.slice(0, 5)} to ${entry.end_time?.slice(0, 5)} PHT` : "All day"}</TableCell>
+    <TableCell className="min-w-32 max-w-48 whitespace-normal break-words align-top">{entry.location || "Not specified"}</TableCell>
+    <TableCell className="align-top"><EntryActions entry={entry} today={today} campuses={campuses} /></TableCell>
+  </TableRow>
 }
 
 function FilterSelect({ name, label, value, options }: { name: string; label: string; value: string; options: readonly string[] }) {
@@ -90,7 +88,7 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
     <Tabs value={query.tab} onValueChange={tab => navigate({ tab })}>
       <TabsList aria-label="Calendar views" className="h-auto flex-wrap">{[["calendar", "Calendar"], ["list", "All announcements"], ["deliveries", "Email deliveries"]].map(([tab, label]) => <TabsTrigger key={tab} value={tab} asChild><PortalLink href={navigationUrl({ tab })} onClick={event => event.preventDefault()}>{label}</PortalLink></TabsTrigger>)}</TabsList>
       <TabsContent value="calendar" className="mt-4">
-        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-4">
           <Card className="min-w-0"><CardHeader><CardTitle>{calendarDate(`${query.month}-01`).toLocaleDateString("en-PH", { month: "long", year: "numeric" })}</CardTitle><CardDescription>Choose a date to view announcements across all campuses.</CardDescription></CardHeader>
             <CardContent className="space-y-4">
               <div className="hidden sm:block"><MonthCalendar days={days} month={query.month} date={query.date} today={query.today} onSelect={selectDate} onMonthChange={(month, date) => navigate({ month, date })} /></div>
@@ -103,7 +101,10 @@ export function CalendarPanel({ panel }: { panel: AdminCalendarPanel }) {
             </CardContent>
           </Card>
           <Card className="min-w-0"><CardHeader><CardTitle>{dateLabel(query.date)}</CardTitle><CardDescription><SlidingNumber value={(days[query.date] ?? []).length} /> announcements · All campuses</CardDescription></CardHeader><CardContent className="space-y-3">
-            {(days[query.date] ?? []).length ? days[query.date].map(entry => <EntryDetails key={entry.id} entry={entry} today={query.today} campuses={panel.campuses} />) : <EmptyState icon={CalendarDays} title="No announcements on this date" description="Select another day to see its details." />}
+            {(days[query.date] ?? []).length ? <Table aria-label={`Announcements for ${dateLabel(query.date)}`}>
+              <TableHeader><TableRow>{["Announcement", "Status", "Attendance", "Campus", "Audience", "Dates", "Time", "Location", "Actions"].map(label => <TableHead key={label} scope="col">{label}</TableHead>)}</TableRow></TableHeader>
+              <TableBody>{days[query.date].map(entry => <EntryDetails key={entry.id} entry={entry} today={query.today} campuses={panel.campuses} />)}</TableBody>
+            </Table> : <EmptyState icon={CalendarDays} title="No announcements on this date" description="Select another day to see its details." />}
           </CardContent></Card>
         </div>
       </TabsContent>
